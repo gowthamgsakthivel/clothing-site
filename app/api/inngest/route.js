@@ -9,4 +9,4 @@ export const { GET, POST, PUT } = serve({
         syncUserUpdation,
         syncUserDeletion
     ],
-});
+});  
