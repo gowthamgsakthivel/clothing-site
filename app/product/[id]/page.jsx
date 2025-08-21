@@ -50,13 +50,15 @@ const Product = () => {
                                 onClick={() => setMainImage(image)}
                                 className="cursor-pointer rounded-lg overflow-hidden bg-gray-500/10"
                             >
-                                <Image
-                                    src={image}
-                                    alt="alt"
-                                    className="w-full h-auto object-cover mix-blend-multiply"
-                                    width={1280}
-                                    height={720}
-                                />
+                                <div className="w-24 h-24 rounded overflow-hidden bg-gray-100 flex items-center justify-center">
+                                    <Image
+                                        src={image}
+                                        alt="alt"
+                                        className="object-cover w-full h-full"
+                                        width={96}
+                                        height={96}
+                                    />
+                                </div>
                             </div>
 
                         ))}

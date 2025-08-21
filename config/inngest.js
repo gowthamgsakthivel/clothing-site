@@ -63,6 +63,6 @@ export const syncUserDeletion = inngest.createFunction(
         await connectDB()
         await User.findByIdAndDelete(id)
     }
-
-
 )
+
+// Inngest function to create user's order in database
