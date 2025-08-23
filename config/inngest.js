@@ -1,6 +1,8 @@
 import { Inngest } from "inngest";
 import connectDB from "./db";
 import User from "../models/User";
+import Order from "@/models/Orders";
+
 
 // Create a client to send and receive events
 export const inngest = new Inngest({ id: "sparrow-sports" });
@@ -78,20 +80,24 @@ export const createUserOrder = inngest.createFunction(
         event: 'order/created'
     },
     async ({ events }) => {
-        const orders = events.map((event) => {
-            return {
-                userId: event.data.userId,
-                items: event.data.items,
-                amount: event.data.amount,
-                address: event.data.address,
-                date: event.data.date
-            }
-        })
+        try {
+            const orders = events.map((event) => {
+                return {
+                    userId: event.data.userId,
+                    items: event.data.items,
+                    amount: event.data.amount,
+                    address: event.data.address,
+                    date: event.data.date
+                }
+            })
 
-        await connectDB();
-        await Order.insertMany(orders)
+            await connectDB();
+            await Order.insertMany(orders);
 
-        return { success: true, processed: orders.length };
-
+            return { success: true, processed: orders.length };
+        } catch (error) {
+            console.error('Inngest order creation failed:', error);
+            return { success: false, error: error.message };
+        }
     }
 )
