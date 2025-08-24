@@ -18,11 +18,15 @@ export async function POST(request) {
             return NextResponse.json({ success: false, message: 'Invalid data' });
         }
 
-        // calculate amount using items
-        const amount = await items.reduce(async (acc, item) => {
+
+        // calculate amount using items (fix async reduce bug)
+        let amount = 0;
+        for (const item of items) {
             const product = await Product.findById(item.product);
-            return await (acc + product.offerPrice * item.quantity);
-        }, 0);
+            if (product) {
+                amount += product.offerPrice * item.quantity;
+            }
+        }
 
         await inngest.send({
             name: 'order/created',
