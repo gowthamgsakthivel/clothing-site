@@ -1,31 +1,23 @@
-'use client'
+"use client"
 
-import ProductCard from "@/components/ProductCard";
+import { Suspense, useState, useEffect } from "react";
+import { useAppContext } from "@/context/AppContext";
+import { useSearchParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { useAppContext } from "@/context/AppContext";
-import { useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import ProductCard from "@/components/ProductCard";
 
-const AllProducts = () => {
-
-
+function AllProductsContent() {
     const { products } = useAppContext();
     const [selectedGender, setSelectedGender] = useState('All');
     const [selectedCategories, setSelectedCategories] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
-
     const searchParams = useSearchParams();
-
     useEffect(() => {
         const q = searchParams.get("search") || "";
         setSearchTerm(q);
     }, [searchParams]);
-
-    // Gender/age filter
     const genderCategories = ["All", "Men", "Women", "Kids", "Girls", "Boys", "Unisex"];
-
-    // Fixed list of all possible categories (matches product form)
     const allCategories = [
         "Shorts",
         "Pants",
@@ -35,8 +27,6 @@ const AllProducts = () => {
         "Sleeveless",
         "Accessories"
     ];
-
-    // Handle category checkbox toggle
     const handleCategoryChange = (cat) => {
         setSelectedCategories(prev =>
             prev.includes(cat)
@@ -44,8 +34,6 @@ const AllProducts = () => {
                 : [...prev, cat]
         );
     };
-
-    // Filter logic
     let filteredProducts = products;
     if (searchTerm.trim()) {
         const q = searchTerm.trim().toLowerCase();
@@ -66,7 +54,6 @@ const AllProducts = () => {
             (product) => selectedCategories.includes(product.category)
         );
     }
-
     return (
         <>
             <Navbar />
@@ -117,6 +104,12 @@ const AllProducts = () => {
             <Footer />
         </>
     );
-};
+}
 
-export default AllProducts;
+export default function AllProducts() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <AllProductsContent />
+        </Suspense>
+    );
+}
