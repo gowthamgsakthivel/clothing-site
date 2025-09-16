@@ -13,6 +13,7 @@ const ProductList = () => {
   const { router, getToken, user } = useAppContext()
 
   const [products, setProducts] = useState([])
+  const [stockEdits, setStockEdits] = useState({});
   const [loading, setLoading] = useState(true)
 
   const fetchSellerProduct = async () => {
@@ -36,6 +37,25 @@ const ProductList = () => {
     }
   }, [user])
 
+  const handleStockChange = (id, value) => {
+    setStockEdits({ ...stockEdits, [id]: value });
+  };
+
+  const handleStockSave = async (id) => {
+    const token = await getToken();
+    try {
+      const { data } = await axios.post('/api/product/update-stock', { id, stock: Number(stockEdits[id]) }, { headers: { Authorization: `Bearer ${token}` } });
+      if (data.success) {
+        toast.success('Stock updated');
+        setProducts(products.map(p => p._id === id ? { ...p, stock: Number(stockEdits[id]) } : p));
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
   return (
     <div className="flex-1 min-h-screen flex flex-col justify-between">
       {loading ? <Loading /> : <div className="w-full md:p-10 p-4">
@@ -46,9 +66,8 @@ const ProductList = () => {
               <tr>
                 <th className="w-2/3 md:w-2/5 px-4 py-3 font-medium truncate">Product</th>
                 <th className="px-4 py-3 font-medium truncate max-sm:hidden">Category</th>
-                <th className="px-4 py-3 font-medium truncate">
-                  Price
-                </th>
+                <th className="px-4 py-3 font-medium truncate">Price</th>
+                <th className="px-4 py-3 font-medium truncate">Stock</th>
                 <th className="px-4 py-3 font-medium truncate max-sm:hidden">Action</th>
               </tr>
             </thead>
@@ -71,6 +90,22 @@ const ProductList = () => {
                   </td>
                   <td className="px-4 py-3 max-sm:hidden">{product.category}</td>
                   <td className="px-4 py-3">₹{product.offerPrice}</td>
+                  <td className="px-4 py-3">
+                    <input
+                      type="number"
+                      className="w-16 px-2 py-1 border rounded mr-2"
+                      value={stockEdits[product._id] !== undefined ? stockEdits[product._id] : product.stock}
+                      onChange={e => handleStockChange(product._id, e.target.value)}
+                      min={0}
+                    />
+                    <button
+                      className="px-2 py-1 bg-orange-500 text-white rounded text-xs"
+                      onClick={() => handleStockSave(product._id)}
+                      disabled={stockEdits[product._id] === undefined || Number(stockEdits[product._id]) === product.stock}
+                    >
+                      Save
+                    </button>
+                  </td>
                   <td className="px-4 py-3 max-sm:hidden">
                     <button onClick={() => router.push(`/product/${product._id}`)} className="flex items-center gap-1 px-1.5 md:px-3.5 py-2 bg-orange-600 text-white rounded-md">
                       <span className="hidden md:block">Visit</span>

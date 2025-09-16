@@ -13,6 +13,9 @@ const ProductCard = ({ product }) => {
             className="flex flex-col items-start gap-0.5 max-w-[200px] w-full cursor-pointer"
         >
             <div className="cursor-pointer group relative bg-gray-500/10 rounded-lg w-full h-52 flex items-center justify-center">
+                {product.stock !== undefined && product.stock < 10 && (
+                    <span className="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded z-10">Only few left</span>
+                )}
                 <Image
                     src={product.image[0]}
                     alt={product.name}
