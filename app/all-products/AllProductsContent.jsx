@@ -8,10 +8,11 @@ import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
 
 function AllProductsContent() {
-    const { products } = useAppContext();
+    const { products, favorites, user } = useAppContext();
     const [selectedGender, setSelectedGender] = useState('All');
     const [selectedCategories, setSelectedCategories] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
+    const [showFavorites, setShowFavorites] = useState(false);
     const searchParams = useSearchParams();
     useEffect(() => {
         const q = searchParams.get("search") || "";
@@ -52,6 +53,11 @@ function AllProductsContent() {
     if (selectedCategories.length > 0) {
         filteredProducts = filteredProducts.filter(
             (product) => selectedCategories.includes(product.category)
+        );
+    }
+    if (showFavorites && user) {
+        filteredProducts = filteredProducts.filter(
+            (product) => favorites.includes(product._id)
         );
     }
     return (
@@ -95,6 +101,17 @@ function AllProductsContent() {
                                 {cat}
                             </button>
                         ))}
+                        {/* Show Favorites Toggle */}
+                        {user && (
+                            <button
+                                className={`px-4 py-1.5 rounded-full border transition text-sm font-semibold shadow-sm flex items-center gap-2 ${showFavorites ? 'bg-orange-600 text-white border-orange-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-orange-50'}`}
+                                onClick={() => setShowFavorites((prev) => !prev)}
+                                aria-label={showFavorites ? 'Show all products' : 'Show favorites'}
+                            >
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill={showFavorites ? '#ea580c' : 'none'} stroke="#ea580c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><path d="M20.8 4.6c-1.5-1.3-3.7-1.1-5 .3l-.8.8-.8-.8c-1.3-1.4-3.5-1.6-5-.3-1.7 1.5-1.8 4.1-.2 5.7l8 8c.4.4 1 .4 1.4 0l8-8c1.6-1.6 1.5-4.2-.2-5.7z"></path></svg>
+                                {showFavorites ? 'Show All' : 'Show Favorites'}
+                            </button>
+                        )}
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 flex-col items-center gap-6 pb-14 w-full">
                         {filteredProducts.map((product, index) => <ProductCard key={index} product={product} />)}

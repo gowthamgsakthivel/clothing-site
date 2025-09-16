@@ -24,6 +24,7 @@ export const AppContextProvider = (props) => {
     const [userData, setUserData] = useState(false)
     const [isSeller, setIsSeller] = useState(false)
     const [cartItems, setCartItems] = useState({})
+    const [favorites, setFavorites] = useState([])
 
     const fetchProductData = async () => {
         try {
@@ -50,6 +51,52 @@ export const AppContextProvider = (props) => {
             if (data.success) {
                 setUserData(data.user);
                 setCartItems(data.user.cartItems);
+            } else {
+                toast.error(data.message);
+            }
+        } catch (error) {
+            toast.error(error.message);
+        }
+    }
+
+    // Favorite management
+    const fetchFavorites = async () => {
+        if (!user) return;
+        try {
+            const token = await getToken();
+            const { data } = await axios.get('/api/user/favorite', { headers: { Authorization: `Bearer ${token}` } });
+            if (data.success) {
+                setFavorites(data.favorites);
+            }
+        } catch (error) {
+            toast.error(error.message);
+        }
+    }
+
+    const addFavorite = async (productId) => {
+        if (!user) return;
+        try {
+            const token = await getToken();
+            const { data } = await axios.post('/api/user/favorite', { productId, action: 'add' }, { headers: { Authorization: `Bearer ${token}` } });
+            if (data.success) {
+                setFavorites(data.favorites);
+                toast.success('Added to favorites');
+            } else {
+                toast.error(data.message);
+            }
+        } catch (error) {
+            toast.error(error.message);
+        }
+    }
+
+    const removeFavorite = async (productId) => {
+        if (!user) return;
+        try {
+            const token = await getToken();
+            const { data } = await axios.post('/api/user/favorite', { productId, action: 'remove' }, { headers: { Authorization: `Bearer ${token}` } });
+            if (data.success) {
+                setFavorites(data.favorites);
+                toast.success('Removed from favorites');
             } else {
                 toast.error(data.message);
             }
@@ -138,6 +185,7 @@ export const AppContextProvider = (props) => {
     useEffect(() => {
         if (user) {
             fetchUserData()
+            fetchFavorites()
         }
     }, [user])
 
@@ -149,7 +197,8 @@ export const AppContextProvider = (props) => {
         products, fetchProductData,
         cartItems, setCartItems,
         addToCart, updateCartQuantity,
-        getCartCount, getCartAmount
+        getCartCount, getCartAmount,
+        favorites, fetchFavorites, addFavorite, removeFavorite
     }
 
     return (
