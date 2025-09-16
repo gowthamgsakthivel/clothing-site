@@ -106,10 +106,4 @@ function AllProductsContent() {
     );
 }
 
-export default function AllProducts() {
-    return (
-        <Suspense fallback={<div>Loading...</div>}>
-            <AllProductsContent />
-        </Suspense>
-    );
-}
+export default AllProductsContent;
