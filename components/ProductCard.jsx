@@ -4,8 +4,18 @@ import Image from 'next/image';
 import { useAppContext } from '@/context/AppContext';
 
 const ProductCard = ({ product }) => {
+    const { currency, router, favorites, addFavorite, removeFavorite, user } = useAppContext();
+    const isFavorite = favorites?.includes(product._id);
 
-    const { currency, router } = useAppContext()
+    const handleFavoriteClick = (e) => {
+        e.stopPropagation();
+        if (!user) return; // Optionally show login prompt
+        if (isFavorite) {
+            removeFavorite(product._id);
+        } else {
+            addFavorite(product._id);
+        }
+    };
 
     return (
         <div
@@ -23,11 +33,16 @@ const ProductCard = ({ product }) => {
                     width={800}
                     height={800}
                 />
-                <button className="absolute top-2 right-2 bg-white p-2 rounded-full shadow-md">
+                <button
+                    className={`absolute top-2 right-2 bg-white p-2 rounded-full shadow-md ${isFavorite ? 'text-orange-600' : ''}`}
+                    onClick={handleFavoriteClick}
+                    aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+                >
                     <Image
                         className="h-3 w-3"
                         src={assets.heart_icon}
                         alt="heart_icon"
+                        style={{ filter: isFavorite ? 'invert(32%) sepia(98%) saturate(749%) hue-rotate(359deg) brightness(97%) contrast(101%)' : 'none' }}
                     />
                 </button>
             </div>
