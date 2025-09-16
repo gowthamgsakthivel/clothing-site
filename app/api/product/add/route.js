@@ -22,13 +22,31 @@ export async function POST(request) {
             return NextResponse.json({ success: false, message: 'not authorized' });
         }
 
+
         const formData = await request.formData();
 
         const name = formData.get('name');
         const description = formData.get('description');
         const category = formData.get('category');
+        const genderCategory = formData.get('genderCategory');
         const price = formData.get('price');
         const offerPrice = formData.get('offerPrice');
+        const brand = formData.get('brand');
+        // Parse colors as array of objects
+        let colors = formData.getAll('colors[]');
+        if (colors && colors.length > 0) {
+            colors = colors.map(c => {
+                try {
+                    return JSON.parse(c);
+                } catch {
+                    return null;
+                }
+            }).filter(Boolean);
+        } else {
+            colors = [];
+        }
+        const sizes = formData.getAll('sizes');
+        const stock = formData.get('stock');
 
         const files = formData.getAll('images');
 
@@ -61,14 +79,20 @@ export async function POST(request) {
 
         await connectDB();
 
+
         const newProduct = await Product.create({
             userId,
             name,
             description,
             category,
+            genderCategory,
             price: Number(price),
             offerPrice: Number(offerPrice),
             image,
+            brand,
+            color: colors,
+            sizes,
+            stock: Number(stock),
             date: Date.now()
         })
 

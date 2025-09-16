@@ -1,5 +1,5 @@
 "use client"
-import React from "react";
+import React, { useState } from "react";
 import { assets, BagIcon, BoxIcon, CartIcon, HomeIcon } from "@/assets/assets";
 import Link from "next/link"
 import { useAppContext } from "@/context/AppContext";
@@ -9,6 +9,17 @@ import { useClerk, UserButton } from "@clerk/nextjs";
 const Navbar = () => {
 
   const { isSeller, router, user } = useAppContext();
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    if (searchTerm.trim()) {
+      router.push(`/all-products?search=${encodeURIComponent(searchTerm.trim())}`);
+      setShowSearch(false);
+      setSearchTerm("");
+    }
+  };
   const { openSignIn } = useClerk();
 
   return (
@@ -24,12 +35,12 @@ const Navbar = () => {
           Home
         </Link>
         <Link href="/all-products" className="hover:text-gray-900 transition">
-          Shop
+          Products
         </Link>
-        <Link href="/" className="hover:text-gray-900 transition">
+        <Link href="/about" className="hover:text-gray-900 transition">
           About Us
         </Link>
-        <Link href="/" className="hover:text-gray-900 transition">
+        <Link href="/contact" className="hover:text-gray-900 transition">
           Contact
         </Link>
 
@@ -38,7 +49,30 @@ const Navbar = () => {
       </div>
 
       <ul className="hidden md:flex items-center gap-4 ">
-        <Image className="w-4 h-4" src={assets.search_icon} alt="search icon" />
+        <li>
+          <button
+            className="flex items-center"
+            aria-label="Search"
+            onClick={() => setShowSearch((v) => !v)}
+            type="button"
+          >
+            <Image className="w-4 h-4" src={assets.search_icon} alt="search icon" />
+          </button>
+        </li>
+        {showSearch && (
+          <li>
+            <form onSubmit={handleSearchSubmit} className="flex items-center gap-2">
+              <input
+                type="text"
+                className="border rounded px-2 py-1 text-sm outline-none"
+                placeholder="Search products..."
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                autoFocus
+              />
+            </form>
+          </li>
+        )}
         {
           user
             ? <>

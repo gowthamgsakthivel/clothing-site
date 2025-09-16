@@ -58,59 +58,61 @@ export const AppContextProvider = (props) => {
         }
     }
 
-    const addToCart = async (itemId) => {
-
+    // Add to cart with color and size support
+    const addToCart = async (itemId, options = {}) => {
+        // options: { color, size }
         let cartData = structuredClone(cartItems);
-        if (cartData[itemId]) {
-            cartData[itemId] += 1;
+        let key = itemId;
+        if (options.color && options.size) {
+            key = `${itemId}_${options.color}_${options.size}`;
+        } else if (options.color) {
+            key = `${itemId}_${options.color}`;
+        } else if (options.size) {
+            key = `${itemId}_${options.size}`;
         }
-        else {
-            cartData[itemId] = 1;
+        if (cartData[key]) {
+            cartData[key] += 1;
+        } else {
+            cartData[key] = 1;
         }
         setCartItems(cartData);
 
         if (user) {
             try {
-
                 const token = await getToken();
                 await axios.post('/api/cart/update', { cartData }, { headers: { Authorization: `Bearer ${token}` } })
                 toast.success('Item added to cart')
-
             } catch (error) {
                 toast.error(error.message);
             }
         }
-
     }
 
-    const updateCartQuantity = async (itemId, quantity) => {
-
+    // Update cart quantity with color support
+    const updateCartQuantity = async (itemKey, quantity) => {
         let cartData = structuredClone(cartItems);
         if (quantity === 0) {
-            delete cartData[itemId];
+            delete cartData[itemKey];
         } else {
-            cartData[itemId] = quantity;
+            cartData[itemKey] = quantity;
         }
         setCartItems(cartData)
         if (user) {
             try {
-
                 const token = await getToken();
                 await axios.post('/api/cart/update', { cartData }, { headers: { Authorization: `Bearer ${token}` } })
                 toast.success('Cart Updated');
-
             } catch (error) {
                 toast.error(error.message);
             }
         }
-
     }
 
     const getCartCount = () => {
         let totalCount = 0;
-        for (const items in cartItems) {
-            if (cartItems[items] > 0) {
-                totalCount += cartItems[items];
+        for (const key in cartItems) {
+            if (cartItems[key] > 0) {
+                totalCount += cartItems[key];
             }
         }
         return totalCount;
@@ -118,10 +120,12 @@ export const AppContextProvider = (props) => {
 
     const getCartAmount = () => {
         let totalAmount = 0;
-        for (const items in cartItems) {
-            let itemInfo = products.find((product) => product._id === items);
-            if (cartItems[items] > 0) {
-                totalAmount += itemInfo.offerPrice * cartItems[items];
+        for (const key in cartItems) {
+            // key: productId or productId_color
+            const [productId] = key.split('_');
+            let itemInfo = products.find((product) => product._id === productId);
+            if (cartItems[key] > 0 && itemInfo) {
+                totalAmount += itemInfo.offerPrice * cartItems[key];
             }
         }
         return Math.floor(totalAmount * 100) / 100;

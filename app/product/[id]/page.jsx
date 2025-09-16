@@ -18,6 +18,8 @@ const Product = () => {
 
     const [mainImage, setMainImage] = useState(null);
     const [productData, setProductData] = useState(null);
+    const [selectedColor, setSelectedColor] = useState(null);
+    const [selectedSize, setSelectedSize] = useState(null);
 
     const fetchProductData = async () => {
         const product = products.find(product => product._id === id);
@@ -28,12 +30,21 @@ const Product = () => {
         fetchProductData();
     }, [id, products.length])
 
+    // Helper: get color object by value
+    const getColorObj = (color) => (productData?.color || []).find(c => c.color === color);
+
     return productData ? (<>
         <Navbar />
         <div className="px-6 md:px-16 lg:px-32 pt-14 space-y-10">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
                 <div className="px-5 lg:px-16 xl:px-20">
-                    <div className="rounded-lg overflow-hidden bg-gray-500/10 mb-4">
+                    <div className="rounded-lg overflow-hidden bg-gray-500/10 mb-4 relative">
+                        {/* Show badge only if selected color has less than 10 units */}
+                        {selectedColor && getColorObj(selectedColor) && getColorObj(selectedColor).stock < 10 && (
+                            <span className="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded z-10">
+                                Only few left
+                            </span>
+                        )}
                         <Image
                             src={mainImage || productData.image[0]}
                             alt="alt"
@@ -98,11 +109,53 @@ const Product = () => {
                             <tbody>
                                 <tr>
                                     <td className="text-gray-600 font-medium">Brand</td>
-                                    <td className="text-gray-800/50 ">Generic</td>
+                                    <td className="text-gray-800/50 ">{productData.brand}</td>
                                 </tr>
                                 <tr>
                                     <td className="text-gray-600 font-medium">Color</td>
-                                    <td className="text-gray-800/50 ">Multi</td>
+                                    <td className="text-gray-800/50 ">
+                                        <div className="flex gap-2 flex-wrap">
+                                            {Array.isArray(productData.color) && productData.color.length > 0 ? (
+                                                productData.color.map((c, idx) => (
+                                                    <button
+                                                        key={c._id || idx}
+                                                        type="button"
+                                                        className={`w-6 h-6 rounded-full border-2 ${selectedColor === c.color ? 'border-orange-500 ring-2 ring-orange-300' : 'border-gray-300'} focus:outline-none`}
+                                                        style={{ backgroundColor: c.color }}
+                                                        onClick={() => setSelectedColor(c.color)}
+                                                        aria-label={`Select color ${c.color}`}
+                                                        disabled={c.stock < 1}
+                                                        title={c.stock < 1 ? 'Out of stock' : ''}
+                                                    >
+                                                        {selectedColor === c.color && <span className="block w-full h-full rounded-full border-2 border-white"></span>}
+                                                    </button>
+                                                ))
+                                            ) : (
+                                                <span>-</span>
+                                            )}
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td className="text-gray-600 font-medium">Size</td>
+                                    <td className="text-gray-800/50 ">
+                                        <div className="flex gap-2 flex-wrap">
+                                            {Array.isArray(productData.sizes) && productData.sizes.length > 0 ? (
+                                                productData.sizes.map((size, idx) => (
+                                                    <button
+                                                        key={size}
+                                                        type="button"
+                                                        className={`px-2 py-1 rounded border text-xs font-medium ${selectedSize === size ? 'bg-orange-500 text-white border-orange-500' : 'bg-gray-100 text-gray-700 border-gray-300'}`}
+                                                        onClick={() => setSelectedSize(size)}
+                                                    >
+                                                        {size}
+                                                    </button>
+                                                ))
+                                            ) : (
+                                                <span>-</span>
+                                            )}
+                                        </div>
+                                    </td>
                                 </tr>
                                 <tr>
                                     <td className="text-gray-600 font-medium">Category</td>
@@ -115,10 +168,23 @@ const Product = () => {
                     </div>
 
                     <div className="flex items-center mt-10 gap-4">
-                        <button onClick={() => addToCart(productData._id)} className="w-full py-3.5 bg-gray-100 text-gray-800/80 hover:bg-gray-200 transition">
+                        <button
+                            onClick={() => selectedColor && selectedSize && addToCart(productData._id, { color: selectedColor, size: selectedSize })}
+                            className={`w-full py-3.5 ${(selectedColor && selectedSize) ? 'bg-gray-100 text-gray-800/80 hover:bg-gray-200' : 'bg-gray-200 text-gray-400 cursor-not-allowed'} transition`}
+                            disabled={!(selectedColor && selectedSize)}
+                        >
                             Add to Cart
                         </button>
-                        <button onClick={() => { addToCart(productData._id); router.push('/cart') }} className="w-full py-3.5 bg-orange-500 text-white hover:bg-orange-600 transition">
+                        <button
+                            onClick={() => {
+                                if (selectedColor && selectedSize) {
+                                    addToCart(productData._id, { color: selectedColor, size: selectedSize });
+                                    router.push('/cart');
+                                }
+                            }}
+                            className={`w-full py-3.5 ${(selectedColor && selectedSize) ? 'bg-orange-500 text-white hover:bg-orange-600' : 'bg-orange-200 text-gray-400 cursor-not-allowed'} transition`}
+                            disabled={!(selectedColor && selectedSize)}
+                        >
                             Buy now
                         </button>
                     </div>

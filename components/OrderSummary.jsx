@@ -4,6 +4,19 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
 
+// Razorpay script loader
+const loadRazorpayScript = () => {
+  return new Promise((resolve) => {
+    if (document.getElementById('razorpay-script')) return resolve(true);
+    const script = document.createElement('script');
+    script.id = 'razorpay-script';
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
+
 const OrderSummary = () => {
 
   const { currency, router, getCartCount, getCartAmount, getToken, user, cartItems, setCartItems } = useAppContext()
@@ -37,39 +50,115 @@ const OrderSummary = () => {
 
   const createOrder = async () => {
     try {
-
       if (!selectedAddress) {
-        return toast.error('Please select an address')
+        return toast.error('Please select an address');
       }
-
-      let cartItemsArray = Object.keys(cartItems).map((key) => ({ product: key, quantity: cartItems[key] }))
+      let cartItemsArray = Object.keys(cartItems).map((key) => ({ product: key, quantity: cartItems[key] }));
       cartItemsArray = cartItemsArray.filter(item => item.quantity > 0);
-
       if (cartItemsArray.length === 0) {
         return toast.error('Cart is empty');
       }
-
       const token = await getToken();
-
       const { data } = await axios.post('/api/order/create', {
         address: selectedAddress._id,
         items: cartItemsArray
       }, {
         headers: { Authorization: `Bearer ${token}` }
-      })
-
+      });
       if (data.success) {
         toast.success(data.message);
-        setCartItems({})
-        router.push('/order-placed')
+        setCartItems({});
+        router.push('/order-placed');
       } else {
         toast.error(data.message);
       }
-
     } catch (error) {
       toast.error(error.message);
     }
-  }
+  };
+
+  // Razorpay payment handler
+  const handleRazorpayPayment = async () => {
+    if (!selectedAddress) {
+      return toast.error('Please select an address');
+    }
+    let cartItemsArray = Object.keys(cartItems).map((key) => ({ product: key, quantity: cartItems[key] }));
+    cartItemsArray = cartItemsArray.filter(item => item.quantity > 0);
+    if (cartItemsArray.length === 0) {
+      return toast.error('Cart is empty');
+    }
+    const totalAmount = getCartAmount() + Math.floor(getCartAmount() * 0.02);
+    const loaded = await loadRazorpayScript();
+    if (!loaded) {
+      toast.error('Failed to load Razorpay SDK');
+      return;
+    }
+    try {
+      const token = await getToken();
+      // Create Razorpay order on backend
+      const { data } = await axios.post('/api/razorpay/order', {
+        amount: totalAmount,
+        currency: 'INR',
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!data.success) {
+        toast.error('Failed to create payment order');
+        return;
+      }
+      const order = data.order;
+      const options = {
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || '',
+        amount: order.amount,
+        currency: order.currency,
+        name: 'Sparrow Sports',
+        description: 'Order Payment',
+        order_id: order.id,
+        handler: async function (response) {
+          // Verify payment on backend
+          const verifyRes = await axios.post('/api/razorpay/verify', {
+            razorpay_order_id: response.razorpay_order_id,
+            razorpay_payment_id: response.razorpay_payment_id,
+            razorpay_signature: response.razorpay_signature,
+          });
+          if (verifyRes.data.success) {
+            // Debug log for order payload
+            const orderPayload = {
+              address: selectedAddress._id,
+              items: cartItemsArray,
+              paymentMethod: 'Razorpay',
+              paymentStatus: 'Paid'
+            };
+            console.log('Creating order with:', orderPayload);
+            // Place order in DB with Razorpay payment info
+            const orderRes = await axios.post('/api/order/create', orderPayload, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            if (orderRes.data.success) {
+              toast.success('Payment successful! Order placed.');
+              setCartItems({});
+              router.push('/order-placed');
+            } else {
+              toast.error('Payment succeeded but order failed.');
+            }
+          } else {
+            toast.error('Payment verification failed.');
+          }
+        },
+        prefill: {
+          name: user?.fullName || '',
+          email: user?.email || '',
+        },
+        theme: {
+          color: '#F97316',
+        },
+      };
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
 
   useEffect(() => {
     if (user) {
@@ -166,7 +255,13 @@ const OrderSummary = () => {
       </div>
 
       <button onClick={createOrder} className="w-full bg-orange-600 text-white py-3 mt-5 hover:bg-orange-700">
-        Place Order
+        Place Order (COD)
+      </button>
+      <button
+        onClick={handleRazorpayPayment}
+        className="w-full bg-blue-600 text-white py-3 mt-3 hover:bg-blue-700"
+      >
+        Pay with Razorpay
       </button>
     </div>
   );

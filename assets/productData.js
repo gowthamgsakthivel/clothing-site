@@ -8,6 +8,7 @@ export const products = [
     rating: 4.5,
     price: "$299.99",
     imgSrc: assets.apple_earphone_image,
+    genderCategory: "Unisex",
   },
   {
     id: 2,
@@ -16,6 +17,7 @@ export const products = [
     rating: 4.5,
     price: "$329.99",
     imgSrc: assets.bose_headphone_image,
+    genderCategory: "Men",
   },
   {
     id: 3,
@@ -24,6 +26,7 @@ export const products = [
     rating: 4.5,
     price: "$799.99",
     imgSrc: assets.samsung_s23phone_image,
+    genderCategory: "Women",
   },
   {
     id: 4,
@@ -32,6 +35,7 @@ export const products = [
     rating: 4.5,
     price: "$349.99",
     imgSrc: assets.venu_watch_image,
+    genderCategory: "Kids",
   },
   {
     id: 5,
@@ -40,6 +44,7 @@ export const products = [
     rating: 4.5,
     price: "$499.99",
     imgSrc: assets.apple_earphone_image,
+    genderCategory: "Boys",
   },
   {
     id: 6,
@@ -48,6 +53,7 @@ export const products = [
     rating: 4.5,
     price: "$3,899.99",
     imgSrc: assets.cannon_camera_image,
+    genderCategory: "Girls",
   },
   {
     id: 7,

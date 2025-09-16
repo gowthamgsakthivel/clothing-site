@@ -9,8 +9,15 @@ const productSchema = new mongoose.Schema({
     offerPrice: { type: Number, required: true },
     image: { type: Array, required: true },
     category: { type: String, required: true },
+    genderCategory: { type: String, enum: ["Men", "Women", "Kids", "Girls", "Boys", "Unisex"], default: "Unisex" },
+    brand: { type: String, required: true },
+    color: [{
+        color: { type: String, required: true },
+        stock: { type: Number, required: true }
+    }],
+    sizes: { type: [String], required: true },
+    stock: { type: Number, required: true },
     date: { type: Number, required: true }
-
 })
 const Product = mongoose.models.product || mongoose.model('product', productSchema)
 

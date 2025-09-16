@@ -1,36 +1,90 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
 
-## Getting Started
+# Sparrow Sports E-Commerce Platform
 
-First, run the development server:
+## Overview
+Sparrow Sports is a modern, full-stack e-commerce platform for sports and electronics products. It features advanced product filtering, seller dashboard with modal product management, secure checkout via Razorpay, centralized category/gender management, and a beautiful, responsive UI built with Next.js, React, MongoDB, and Tailwind CSS.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Features
+- Product listing with sidebar category and gender/age filters
+- Product search by name, brand, or description
+- Seller dashboard with modal for product management
+- Add/edit products with category, gender, color, size, and stock
+- Image upload via Cloudinary
+- Cart and order management
+- Secure authentication (Clerk)
+- Order tracking and history
+- Responsive design for mobile and desktop
+- Centralized category/genderCategory management (MongoDB collections)
+- Payment gateway integration (Razorpay)
+- Event-driven order processing (Inngest)
+
+## Tech Stack
+- **Frontend:** Next.js, React, Tailwind CSS
+- **Backend:** Next.js API routes, MongoDB (Mongoose)
+- **Auth:** Clerk
+- **Image Storage:** Cloudinary
+- **Payments:** Razorpay
+- **Notifications/Events:** Inngest
+
+## Project Structure
+- `app/` — Next.js pages and API routes
+- `components/` — Reusable React components
+- `context/` — Global state/context providers
+- `models/` — Mongoose models (Product, User, Orders, Address)
+- `config/` — Database and event config
+- `assets/` — Images and icons
+
+
+## Environment Variables
+
+Create a `.env.local` file in the project root with the following variables:
+
+```
+MONGODB_URI=your_mongodb_connection_string
+CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
+CLOUDINARY_API_KEY=your_cloudinary_api_key
+CLOUDINARY_API_SECRET=your_cloudinary_api_secret
+CLERK_SECRET_KEY=your_clerk_secret_key
+CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
+RAZORPAY_KEY_ID=your_razorpay_key_id
+RAZORPAY_KEY_SECRET=your_razorpay_key_secret
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Replace values with your actual credentials.
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+## Setup & Installation
+1. Clone the repo:
+	```bash
+	git clone https://github.com/gowthamgsakthivel/clothing-site.git
+	cd sparrow-sports
+	```
+2. Install dependencies:
+	```bash
+	npm install
+	```
+3. Configure your environment variables as above.
+4. Run the development server:
+	```bash
+	npm run dev
+	```
+5. Access the app at `http://localhost:3000`
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Diagrams
 
-## Learn More
+### Architecture
+See [`ARCHITECTURE_DIAGRAM.md`](./ARCHITECTURE_DIAGRAM.md) for a high-level overview.
 
-To learn more about Next.js, take a look at the following resources:
+### Project Flow
+See [`PROJECT_FLOWCHART.md`](./PROJECT_FLOWCHART.md) for customer, seller, and system flows.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### User Flow
+See [`USER_FLOW_DIAGRAM.md`](./USER_FLOW_DIAGRAM.md) for user journey from landing to order.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Contributing
+Pull requests are welcome! For major changes, please open an issue first to discuss what you would like to change.
 
-## Deploy on Vercel
+## License
+MIT
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+**Developed by Gowtham G Sakthivel and contributors.**
