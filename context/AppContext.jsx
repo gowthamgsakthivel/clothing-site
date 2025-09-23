@@ -3,7 +3,7 @@ import { productsDummyData, userDummyData } from "@/assets/assets";
 import { useAuth, useUser } from "@clerk/nextjs";
 import axios from "axios";
 import { useRouter } from "next/navigation";
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import toast from "react-hot-toast";
 
 export const AppContext = createContext();
@@ -26,36 +26,73 @@ export const AppContextProvider = (props) => {
     const [cartItems, setCartItems] = useState({})
     const [favorites, setFavorites] = useState([])
 
-    const fetchProductData = async () => {
-        try {
-            const { data } = await axios.get('/api/product/list');
-            if (data.success) {
-                setProducts(data.products)
-            } else {
-                toast.error(data.message)
-            }
+    // Loading states for different operations
+    const [loadingStates, setLoadingStates] = useState({
+        products: false,
+        userData: false,
+        cart: false,
+        favorites: false,
+        order: false,
+        productDetails: false,
+        checkout: false,
+        orderPlacement: false,
+        payment: false,
+        addressFetching: false,
+        search: false
+    })
 
+    // Use useCallback to memoize the fetchProductData function
+    const fetchProductData = useCallback(async (page = 1, limit = 10) => {
+        try {
+            // Set loading state
+            setLoadingStates(prev => ({ ...prev, products: true }));
+
+            const { data } = await axios.get(`/api/product/list?page=${page}&limit=${limit}`);
+
+            if (data.success) {
+                setProducts(data.products);
+                return {
+                    products: data.products,
+                    pagination: data.pagination
+                };
+            } else {
+                toast.error(data.message || "Failed to fetch products");
+                return null;
+            }
         } catch (error) {
-            toast.error(error.message);
+            console.error("Error fetching products:", error);
+            toast.error(error.message || "An error occurred while fetching products");
+            return null;
+        } finally {
+            // Clear loading state when done
+            setLoadingStates(prev => ({ ...prev, products: false }));
         }
-    }
+    }, []); // Empty dependency array since this function shouldn't depend on any props/state
 
     const fetchUserData = async () => {
         try {
-            if (user.publicMetadata.role === "seller") {
+            setLoadingStates(prev => ({ ...prev, userData: true }));
+
+            if (user?.publicMetadata?.role === "seller") {
                 setIsSeller(true);
             }
+
             const token = await getToken();
-            const { data } = await axios.get('/api/user/data', { headers: { Authorization: `Bearer ${token}` } });
+            const { data } = await axios.get('/api/user/data', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
 
             if (data.success) {
                 setUserData(data.user);
                 setCartItems(data.user.cartItems);
             } else {
-                toast.error(data.message);
+                toast.error(data.message || "Failed to load user data");
             }
         } catch (error) {
-            toast.error(error.message);
+            console.error("Error fetching user data:", error);
+            toast.error(error.message || "An error occurred while loading user data");
+        } finally {
+            setLoadingStates(prev => ({ ...prev, userData: false }));
         }
     }
 
@@ -63,95 +100,173 @@ export const AppContextProvider = (props) => {
     const fetchFavorites = async () => {
         if (!user) return;
         try {
+            setLoadingStates(prev => ({ ...prev, favorites: true }));
+
             const token = await getToken();
-            const { data } = await axios.get('/api/user/favorite', { headers: { Authorization: `Bearer ${token}` } });
+            const { data } = await axios.get('/api/user/favorite', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
             if (data.success) {
                 setFavorites(data.favorites);
+            } else {
+                toast.error(data.message || "Failed to fetch favorites");
             }
         } catch (error) {
-            toast.error(error.message);
+            console.error("Error fetching favorites:", error);
+            toast.error(error.message || "An error occurred while loading favorites");
+        } finally {
+            setLoadingStates(prev => ({ ...prev, favorites: false }));
         }
     }
 
     const addFavorite = async (productId) => {
-        if (!user) return;
+        if (!user) {
+            toast.error("Please sign in to add favorites");
+            return;
+        }
+
         try {
+            // Update UI immediately for better experience
+            setFavorites(prev => [...prev, productId]);
+
             const token = await getToken();
-            const { data } = await axios.post('/api/user/favorite', { productId, action: 'add' }, { headers: { Authorization: `Bearer ${token}` } });
+            const { data } = await axios.post('/api/user/favorite',
+                { productId, action: 'add' },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+
             if (data.success) {
                 setFavorites(data.favorites);
                 toast.success('Added to favorites');
             } else {
-                toast.error(data.message);
+                // Restore previous state if there's an error
+                fetchFavorites();
+                toast.error(data.message || "Failed to add to favorites");
             }
         } catch (error) {
-            toast.error(error.message);
+            // Restore previous state if there's an error
+            fetchFavorites();
+            console.error("Error adding favorite:", error);
+            toast.error(error.message || "An error occurred while adding favorite");
         }
     }
 
     const removeFavorite = async (productId) => {
         if (!user) return;
+
         try {
+            // Update UI immediately for better experience
+            setFavorites(prev => prev.filter(id => id !== productId));
+
             const token = await getToken();
-            const { data } = await axios.post('/api/user/favorite', { productId, action: 'remove' }, { headers: { Authorization: `Bearer ${token}` } });
+            const { data } = await axios.post('/api/user/favorite',
+                { productId, action: 'remove' },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+
             if (data.success) {
                 setFavorites(data.favorites);
                 toast.success('Removed from favorites');
             } else {
-                toast.error(data.message);
+                // Restore previous state if there's an error
+                fetchFavorites();
+                toast.error(data.message || "Failed to remove from favorites");
             }
         } catch (error) {
-            toast.error(error.message);
+            // Restore previous state if there's an error
+            fetchFavorites();
+            console.error("Error removing favorite:", error);
+            toast.error(error.message || "An error occurred while removing favorite");
         }
     }
 
     // Add to cart with color and size support
     const addToCart = async (itemId, options = {}) => {
-        // options: { color, size }
-        let cartData = structuredClone(cartItems);
-        let key = itemId;
-        if (options.color && options.size) {
-            key = `${itemId}_${options.color}_${options.size}`;
-        } else if (options.color) {
-            key = `${itemId}_${options.color}`;
-        } else if (options.size) {
-            key = `${itemId}_${options.size}`;
-        }
-        if (cartData[key]) {
-            cartData[key] += 1;
-        } else {
-            cartData[key] = 1;
-        }
-        setCartItems(cartData);
+        try {
+            setLoadingStates(prev => ({ ...prev, cart: true }));
 
-        if (user) {
-            try {
-                const token = await getToken();
-                await axios.post('/api/cart/update', { cartData }, { headers: { Authorization: `Bearer ${token}` } })
-                toast.success('Item added to cart')
-            } catch (error) {
-                toast.error(error.message);
+            // options: { color, size }
+            let cartData = structuredClone(cartItems);
+            let key = itemId;
+
+            if (options.color && options.size) {
+                key = `${itemId}_${options.color}_${options.size}`;
+            } else if (options.color) {
+                key = `${itemId}_${options.color}`;
+            } else if (options.size) {
+                key = `${itemId}_${options.size}`;
             }
+
+            if (cartData[key]) {
+                cartData[key] += 1;
+            } else {
+                cartData[key] = 1;
+            }
+
+            // Update local state immediately for responsive UI
+            setCartItems(cartData);
+
+            if (user) {
+                const token = await getToken();
+                const response = await axios.post('/api/cart/update',
+                    { cartData },
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+
+                if (response.data.success) {
+                    toast.success('Item added to cart');
+                } else {
+                    toast.error(response.data.message || 'Failed to update cart');
+                }
+            } else {
+                // For non-logged in users, store in localStorage
+                localStorage.setItem('sparrow-cart', JSON.stringify(cartData));
+            }
+        } catch (error) {
+            console.error("Error adding to cart:", error);
+            toast.error(error.message || 'An error occurred while adding to cart');
+        } finally {
+            setLoadingStates(prev => ({ ...prev, cart: false }));
         }
     }
 
     // Update cart quantity with color support
     const updateCartQuantity = async (itemKey, quantity) => {
-        let cartData = structuredClone(cartItems);
-        if (quantity === 0) {
-            delete cartData[itemKey];
-        } else {
-            cartData[itemKey] = quantity;
-        }
-        setCartItems(cartData)
-        if (user) {
-            try {
-                const token = await getToken();
-                await axios.post('/api/cart/update', { cartData }, { headers: { Authorization: `Bearer ${token}` } })
-                toast.success('Cart Updated');
-            } catch (error) {
-                toast.error(error.message);
+        try {
+            setLoadingStates(prev => ({ ...prev, cart: true }));
+
+            let cartData = structuredClone(cartItems);
+            if (quantity === 0) {
+                delete cartData[itemKey];
+            } else {
+                cartData[itemKey] = quantity;
             }
+
+            // Update local state immediately for responsive UI
+            setCartItems(cartData);
+
+            if (user) {
+                const token = await getToken();
+                const response = await axios.post('/api/cart/update',
+                    { cartData },
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
+
+                if (response.data.success) {
+                    toast.success('Cart updated');
+                } else {
+                    toast.error(response.data.message || 'Failed to update cart');
+                }
+            } else {
+                // For non-logged in users, store in localStorage
+                localStorage.setItem('sparrow-cart', JSON.stringify(cartData));
+            }
+        } catch (error) {
+            console.error("Error updating cart:", error);
+            toast.error(error.message || 'An error occurred while updating cart');
+        } finally {
+            setLoadingStates(prev => ({ ...prev, cart: false }));
         }
     }
 
@@ -168,11 +283,51 @@ export const AppContextProvider = (props) => {
     const getCartAmount = () => {
         let totalAmount = 0;
         for (const key in cartItems) {
-            // key: productId or productId_color
-            const [productId] = key.split('_');
-            let itemInfo = products.find((product) => product._id === productId);
-            if (cartItems[key] > 0 && itemInfo) {
-                totalAmount += itemInfo.offerPrice * cartItems[key];
+            // Check if it's a custom design
+            if (key.startsWith('custom_')) {
+                // Get the design ID from the cart key
+                const designId = key.replace('custom_', '');
+
+                // First check if we have the design in userData.customDesigns (from database)
+                if (userData && userData.customDesigns && userData.customDesigns[designId]) {
+                    const designData = userData.customDesigns[designId];
+                    // Price is stored in amount field as cents/paisa
+                    if (designData.quote && designData.quote.amount) {
+                        totalAmount += (designData.quote.amount / 100) * cartItems[key];
+                    } else {
+                        // Default price if quote not found
+                        totalAmount += 11000 * cartItems[key]; // Default price of ₹11000
+                    }
+                } else {
+                    // Fallback to localStorage for backward compatibility
+                    try {
+                        const storedDesign = localStorage.getItem(`design_${designId}`);
+                        if (storedDesign) {
+                            const designData = JSON.parse(storedDesign);
+                            // Price is stored in amount field as cents/paisa
+                            if (designData.quote && designData.quote.amount) {
+                                totalAmount += (designData.quote.amount / 100) * cartItems[key];
+                            } else {
+                                // Default price if quote not found
+                                totalAmount += 11000 * cartItems[key]; // Default price of ₹11000
+                            }
+                        } else {
+                            // Default price if design data not found
+                            totalAmount += 11000 * cartItems[key];
+                        }
+                    } catch (err) {
+                        console.error("Error calculating custom design price:", err);
+                        // Default price if there's an error
+                        totalAmount += 11000 * cartItems[key];
+                    }
+                }
+            } else {
+                // Regular product
+                const [productId] = key.split('_');
+                let itemInfo = products.find((product) => product._id === productId);
+                if (cartItems[key] > 0 && itemInfo) {
+                    totalAmount += itemInfo.offerPrice * cartItems[key];
+                }
             }
         }
         return Math.floor(totalAmount * 100) / 100;
@@ -189,16 +344,55 @@ export const AppContextProvider = (props) => {
         }
     }, [user])
 
+    // Add search function using the new API endpoint
+    const searchProducts = useCallback(async (searchQuery, options = {}) => {
+        try {
+            setLoadingStates(prev => ({ ...prev, search: true }));
+
+            // Build query parameters
+            const params = new URLSearchParams();
+            if (searchQuery) params.append('q', searchQuery);
+            if (options.page) params.append('page', options.page);
+            if (options.limit) params.append('limit', options.limit);
+            if (options.category) params.append('category', options.category);
+            if (options.gender) params.append('gender', options.gender);
+            if (options.minPrice) params.append('minPrice', options.minPrice);
+            if (options.maxPrice) params.append('maxPrice', options.maxPrice);
+            if (options.sortBy) params.append('sortBy', options.sortBy);
+            if (options.sortOrder) params.append('sortOrder', options.sortOrder);
+
+            const { data } = await axios.get(`/api/product/search?${params.toString()}`);
+
+            if (data.success) {
+                return {
+                    products: data.products,
+                    pagination: data.pagination
+                };
+            } else {
+                toast.error(data.message || "Search failed");
+                return null;
+            }
+        } catch (error) {
+            console.error("Error searching products:", error);
+            toast.error(error.message || "An error occurred while searching");
+            return null;
+        } finally {
+            setLoadingStates(prev => ({ ...prev, search: false }));
+        }
+    }, []);
+
     const value = {
         user, getToken,
         currency, router,
         isSeller, setIsSeller,
         userData, fetchUserData,
         products, fetchProductData,
+        searchProducts, // Add the search function
         cartItems, setCartItems,
         addToCart, updateCartQuantity,
         getCartCount, getCartAmount,
-        favorites, fetchFavorites, addFavorite, removeFavorite
+        favorites, fetchFavorites, addFavorite, removeFavorite,
+        loadingStates, setLoadingStates
     }
 
     return (

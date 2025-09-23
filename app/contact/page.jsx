@@ -1,6 +1,34 @@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
+export const metadata = {
+    title: 'Contact Us | Sparrow Sports',
+    description: 'Get in touch with the Sparrow Sports team. We\'d love to hear from you and answer any questions you may have.',
+    keywords: 'contact us, sparrow sports, customer service, support, feedback, help, contact form',
+    openGraph: {
+        title: 'Contact Us | Sparrow Sports',
+        description: 'Get in touch with the Sparrow Sports team. We\'d love to hear from you and answer any questions you may have.',
+        url: '/contact',
+        images: [
+            {
+                url: '/logo.svg',
+                width: 1200,
+                height: 630,
+                alt: 'Sparrow Sports Logo',
+            },
+        ],
+        type: 'website',
+    },
+    twitter: {
+        card: 'summary_large_image',
+        title: 'Contact Us | Sparrow Sports',
+        description: 'Get in touch with the Sparrow Sports team. We\'d love to hear from you and answer any questions you may have.',
+        images: ['/logo.svg'],
+        creator: '@sparrowsports',
+        site: '@sparrowsports',
+    }
+};
+
 export default function ContactPage() {
     return (
         <>
