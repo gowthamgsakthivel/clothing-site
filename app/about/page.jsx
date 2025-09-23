@@ -2,6 +2,33 @@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
+export const metadata = {
+    title: 'About Us | Sparrow Sports',
+    description: 'Learn about Sparrow Sports, your one-stop destination for the latest and greatest in sportswear and lifestyle products.',
+    keywords: 'about us, sparrow sports, sports equipment, sports retailer, company mission, sports store',
+    openGraph: {
+        title: 'About Us | Sparrow Sports',
+        description: 'Learn about Sparrow Sports, your one-stop destination for the latest and greatest in sportswear and lifestyle products.',
+        url: '/about',
+        images: [
+            {
+                url: '/logo.svg',
+                width: 1200,
+                height: 630,
+                alt: 'Sparrow Sports Logo',
+            },
+        ],
+        type: 'website',
+    },
+    twitter: {
+        card: 'summary_large_image',
+        title: 'About Us | Sparrow Sports',
+        description: 'Learn about Sparrow Sports, your one-stop destination for the latest and greatest in sportswear and lifestyle products.',
+        images: ['/logo.svg'],
+        creator: '@sparrowsports',
+        site: '@sparrowsports',
+    }
+};
 
 export default function AboutPage() {
     return (

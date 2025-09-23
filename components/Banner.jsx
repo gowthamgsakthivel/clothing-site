@@ -1,8 +1,12 @@
+'use client';
 import React from "react";
 import { assets } from "@/assets/assets";
 import Image from "next/image";
+import { useAppContext } from "@/context/AppContext";
 
 const Banner = () => {
+  const { router } = useAppContext();
+
   return (
     <div className="flex flex-col md:flex-row items-center justify-between md:pl-20 py-14 md:py-0 bg-[#E6E9F2] my-16 rounded-xl overflow-hidden">
       <Image
@@ -10,17 +14,20 @@ const Banner = () => {
         src={assets.header_adidas_jacket}
         alt="header_adidas_jacket"
       />
-      <div className="flex flex-col items-center justify-center text-center space-y-2 px-4 md:px-0">
+      <div className="flex flex-col items-center justify-center text-center space-y-4 px-4 md:px-0">
         <h2 className="text-2xl md:text-3xl font-semibold max-w-[290px]">
-          Gear Up for Performance
+          Design Your Custom Sportswear
         </h2>
         <p className="max-w-[343px] font-medium text-gray-800/60">
-          Stay comfortable, stay confident—wherever you move
+          Upload your design, get quotes, and make it yours!
         </p>
-        {/* <button className="group flex items-center justify-center gap-1 px-12 py-2.5 bg-orange-600 rounded text-white">
-          Buy now
+        <button
+          onClick={() => router.push('/custom-design')}
+          className="group flex items-center justify-center gap-1 px-12 py-2.5 bg-orange-600 rounded text-white hover:bg-orange-700"
+        >
+          Design Now
           <Image className="group-hover:translate-x-1 transition" src={assets.arrow_icon_white} alt="arrow_icon_white" />
-        </button> */}
+        </button>
       </div>
       <Image
         className="hidden md:block max-w-72"

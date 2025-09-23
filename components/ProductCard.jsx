@@ -2,6 +2,7 @@ import React from 'react'
 import { assets } from '@/assets/assets'
 import Image from 'next/image';
 import { useAppContext } from '@/context/AppContext';
+import toast from 'react-hot-toast';
 
 const ProductCard = ({ product }) => {
     const { currency, router, favorites, addFavorite, removeFavorite, user } = useAppContext();
@@ -9,11 +10,18 @@ const ProductCard = ({ product }) => {
 
     const handleFavoriteClick = (e) => {
         e.stopPropagation();
-        if (!user) return; // Optionally show login prompt
+        if (!user) {
+            toast.error('Please sign in to add favorites');
+            setTimeout(() => router.push('/sign-in'), 1500);
+            return;
+        }
+
         if (isFavorite) {
             removeFavorite(product._id);
+            toast.success('Removed from favorites');
         } else {
             addFavorite(product._id);
+            toast.success('Added to favorites');
         }
     };
 
@@ -23,7 +31,12 @@ const ProductCard = ({ product }) => {
             className="flex flex-col items-start gap-0.5 max-w-[200px] w-full cursor-pointer"
         >
             <div className="cursor-pointer group relative bg-gray-500/10 rounded-lg w-full h-52 flex items-center justify-center">
-                {product.stock !== undefined && product.stock < 10 && (
+                {/* Handle various stock states */}
+                {product.stock === 0 ? (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 z-10 rounded-lg">
+                        <p className="text-white font-medium mb-2">Out of Stock</p>
+                    </div>
+                ) : product.stock !== undefined && product.stock > 0 && product.stock < 10 && (
                     <span className="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded z-10">Only few left</span>
                 )}
                 <Image
@@ -69,9 +82,34 @@ const ProductCard = ({ product }) => {
 
             <div className="flex items-end justify-between w-full mt-1">
                 <p className="text-base font-medium">{currency}{product.offerPrice}</p>
-                <button className=" max-sm:hidden px-4 py-1.5 text-gray-500 border border-gray-500/20 rounded-full text-xs hover:bg-slate-50 transition">
-                    Buy now
-                </button>
+                {product.stock !== undefined && product.stock === 0 ? (
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            if (!user) {
+                                toast.error('Please sign in to get notified');
+                                setTimeout(() => router.push('/sign-in'), 1500);
+                                return;
+                            }
+                            // Show notification modal or navigate to notification page
+                            router.push(`/product/${product._id}?notify=true`);
+                            toast.success('Select your preferred options');
+                        }}
+                        className="px-4 py-1.5 text-blue-600 border border-blue-500/50 rounded-full text-xs hover:bg-blue-50 transition"
+                    >
+                        Notify Me
+                    </button>
+                ) : (
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            router.push(`/product/${product._id}`);
+                        }}
+                        className="px-4 py-1.5 text-gray-500 border border-gray-500/20 rounded-full text-xs hover:bg-slate-50 transition"
+                    >
+                        Buy now
+                    </button>
+                )}
             </div>
         </div>
     )

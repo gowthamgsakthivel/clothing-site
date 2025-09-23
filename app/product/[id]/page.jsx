@@ -8,32 +8,173 @@ import Image from "next/image";
 import { useParams } from "next/navigation";
 import Loading from "@/components/Loading";
 import { useAppContext } from "@/context/AppContext";
+import SEOMetadata from "@/components/SEOMetadata";
 import React from "react";
+import toast from "react-hot-toast";
 
 const Product = () => {
 
     const { id } = useParams();
 
-    const { products, router, addToCart } = useAppContext()
+    const { products, router, addToCart, user, getToken } = useAppContext();
 
     const [mainImage, setMainImage] = useState(null);
     const [productData, setProductData] = useState(null);
     const [selectedColor, setSelectedColor] = useState(null);
     const [selectedSize, setSelectedSize] = useState(null);
+    const [isNotifying, setIsNotifying] = useState(false);
+    const [notifySuccess, setNotifySuccess] = useState(false);
 
     const fetchProductData = async () => {
-        const product = products.find(product => product._id === id);
-        setProductData(product);
+        // Safely find product and handle if products array is undefined
+        if (Array.isArray(products)) {
+            const product = products.find(product => product?._id === id);
+            if (product) {
+                setProductData(product);
+
+                // Reset color and size selection when product changes
+                setSelectedColor(null);
+                setSelectedSize(null);
+
+                // Set default color if available
+                if (Array.isArray(product.color) && product.color.length > 0) {
+                    // Find first color that has stock
+                    const inStockColor = product.color.find(c => c.stock > 0);
+                    if (inStockColor) {
+                        setSelectedColor(inStockColor.color);
+                    } else {
+                        // If all colors are out of stock, just select the first one
+                        setSelectedColor(product.color[0].color);
+                    }
+                }
+            }
+        }
     }
 
     useEffect(() => {
         fetchProductData();
-    }, [id, products.length])
+    }, [id, products]);
+
+    // Check URL parameters for notify flag
+    useEffect(() => {
+        // Get search params from URL for App Router
+        if (typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('notify') === 'true') {
+                setIsNotifying(true);
+            }
+        }
+    }, []);
+
+    // Function to subscribe for stock notifications
+    const subscribeToStockNotifications = async () => {
+        if (!user) {
+            toast.error("Please sign in to subscribe for notifications");
+            setTimeout(() => router.push('/sign-in'), 1500);
+            return;
+        }
+
+        if (!selectedColor) {
+            toast.error("Please select a color first");
+            return;
+        }
+
+        if (!selectedSize) {
+            toast.error("Please select a size first");
+            return;
+        }
+
+        try {
+            setIsNotifying(true);
+
+            // Show loading toast while processing
+            const toastId = toast.loading("Subscribing to stock notification...");
+
+            // Get the token for authentication
+            const token = await getToken();
+
+            const response = await fetch('/api/product/notify-stock', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    productId: id,
+                    productName: productData.name,
+                    color: selectedColor,
+                    size: selectedSize,
+                    image: productData.image && productData.image.length > 0 ? productData.image[0] : '',
+                    price: productData.offerPrice
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                setNotifySuccess(true);
+                toast.success("You'll be notified when this item is back in stock!", {
+                    id: toastId,
+                    duration: 4000,
+                });
+
+                // Reset after 3 seconds
+                setTimeout(() => {
+                    setIsNotifying(false);
+                    setNotifySuccess(false);
+                }, 3000);
+            } else {
+                console.error('Notification subscription failed:', data.message);
+                toast.error(data.message || 'Something went wrong. Please try again.', {
+                    id: toastId,
+                    duration: 3000,
+                });
+
+                setIsNotifying(false);
+                // Reset state after error
+                setTimeout(() => {
+                    setIsNotifying(false);
+                }, 3000);
+            }
+        } catch (error) {
+            console.error('Error subscribing to stock notification:', error);
+            toast.error('Failed to subscribe. Please try again later.');
+
+            setIsNotifying(false);
+            // Reset state after error
+            setTimeout(() => {
+                setIsNotifying(false);
+            }, 3000);
+        }
+    };
 
     // Helper: get color object by value
     const getColorObj = (color) => (productData?.color || []).find(c => c.color === color);
 
     return productData ? (<>
+        <SEOMetadata
+            title={`${productData.name} | ${productData.brand} | Sparrow Sports`}
+            description={`${productData.description.slice(0, 150)}... - ${productData.brand} ${productData.category} at ₹${productData.offerPrice}`}
+            keywords={`${productData.name}, ${productData.brand}, ${productData.category}, sports, athletic wear`}
+            imageUrl={productData.image[0]}
+            url={`/product/${id}`}
+            product={{
+                name: productData.name,
+                description: productData.description,
+                image: productData.image[0],
+                brand: productData.brand,
+                category: productData.category,
+                _id: productData._id,
+                sku: productData.sku || productData._id,
+                offerPrice: productData.offerPrice,
+                new_price: productData.offerPrice,
+                price: productData.price,
+                stock: Array.isArray(productData.color) && productData.color.length > 0
+                    ? productData.color.reduce((total, color) => total + color.stock, 0)
+                    : 10, // default to 10 if no color stock data
+                ratings: productData.ratings || []
+            }}
+        />
         <Navbar />
         <div className="px-6 md:px-16 lg:px-32 pt-14 space-y-10">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
@@ -117,18 +258,23 @@ const Product = () => {
                                         <div className="flex gap-2 flex-wrap">
                                             {Array.isArray(productData.color) && productData.color.length > 0 ? (
                                                 productData.color.map((c, idx) => (
-                                                    <button
-                                                        key={c._id || idx}
-                                                        type="button"
-                                                        className={`w-6 h-6 rounded-full border-2 ${selectedColor === c.color ? 'border-orange-500 ring-2 ring-orange-300' : 'border-gray-300'} focus:outline-none`}
-                                                        style={{ backgroundColor: c.color }}
-                                                        onClick={() => setSelectedColor(c.color)}
-                                                        aria-label={`Select color ${c.color}`}
-                                                        disabled={c.stock < 1}
-                                                        title={c.stock < 1 ? 'Out of stock' : ''}
-                                                    >
-                                                        {selectedColor === c.color && <span className="block w-full h-full rounded-full border-2 border-white"></span>}
-                                                    </button>
+                                                    <div key={c._id || idx} className="relative">
+                                                        <button
+                                                            type="button"
+                                                            className={`w-6 h-6 rounded-full border-2 ${c.stock < 1 ? 'opacity-50' : ''} ${selectedColor === c.color ? 'border-orange-500 ring-2 ring-orange-300' : 'border-gray-300'} focus:outline-none`}
+                                                            style={{ backgroundColor: c.color }}
+                                                            onClick={() => c.stock >= 1 && setSelectedColor(c.color)}
+                                                            aria-label={`Select color ${c.color}`}
+                                                            title={c.stock < 1 ? 'Out of stock' : `${c.stock} in stock`}
+                                                        >
+                                                            {selectedColor === c.color && <span className="block w-full h-full rounded-full border-2 border-white"></span>}
+                                                        </button>
+                                                        {c.stock < 1 && (
+                                                            <div className="absolute inset-0 flex items-center justify-center">
+                                                                <div className="w-8 h-0.5 bg-red-500 transform rotate-45"></div>
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 ))
                                             ) : (
                                                 <span>-</span>
@@ -145,8 +291,18 @@ const Product = () => {
                                                     <button
                                                         key={size}
                                                         type="button"
-                                                        className={`px-2 py-1 rounded border text-xs font-medium ${selectedSize === size ? 'bg-orange-500 text-white border-orange-500' : 'bg-gray-100 text-gray-700 border-gray-300'}`}
-                                                        onClick={() => setSelectedSize(size)}
+                                                        className={`px-2 py-1 rounded border text-xs font-medium ${selectedColor && getColorObj(selectedColor)?.stock <= 0
+                                                            ? 'bg-gray-100 text-gray-400 opacity-50 cursor-not-allowed'
+                                                            : selectedSize === size
+                                                                ? 'bg-orange-500 text-white border-orange-500'
+                                                                : 'bg-gray-100 text-gray-700 border-gray-300'
+                                                            }`}
+                                                        onClick={() => {
+                                                            if (selectedColor && getColorObj(selectedColor)?.stock > 0) {
+                                                                setSelectedSize(size);
+                                                            }
+                                                        }}
+                                                        disabled={selectedColor && getColorObj(selectedColor)?.stock <= 0}
                                                     >
                                                         {size}
                                                     </button>
@@ -168,25 +324,55 @@ const Product = () => {
                     </div>
 
                     <div className="flex items-center mt-10 gap-4">
-                        <button
-                            onClick={() => selectedColor && selectedSize && addToCart(productData._id, { color: selectedColor, size: selectedSize })}
-                            className={`w-full py-3.5 ${(selectedColor && selectedSize) ? 'bg-gray-100 text-gray-800/80 hover:bg-gray-200' : 'bg-gray-200 text-gray-400 cursor-not-allowed'} transition`}
-                            disabled={!(selectedColor && selectedSize)}
-                        >
-                            Add to Cart
-                        </button>
-                        <button
-                            onClick={() => {
-                                if (selectedColor && selectedSize) {
-                                    addToCart(productData._id, { color: selectedColor, size: selectedSize });
-                                    router.push('/cart');
-                                }
-                            }}
-                            className={`w-full py-3.5 ${(selectedColor && selectedSize) ? 'bg-orange-500 text-white hover:bg-orange-600' : 'bg-orange-200 text-gray-400 cursor-not-allowed'} transition`}
-                            disabled={!(selectedColor && selectedSize)}
-                        >
-                            Buy now
-                        </button>
+                        {/* Check if selected color is out of stock or not selected yet */}
+                        {selectedColor && getColorObj(selectedColor) && getColorObj(selectedColor).stock <= 0 ? (
+                            <button
+                                onClick={subscribeToStockNotifications}
+                                className={`w-full py-3.5 ${isNotifying ? 'bg-gray-200 cursor-wait' : notifySuccess ? 'bg-green-500 text-white' : 'bg-blue-500 text-white hover:bg-blue-600'} transition`}
+                                disabled={isNotifying || notifySuccess || !(selectedColor && selectedSize)}
+                            >
+                                {isNotifying ? 'Processing...' : notifySuccess ? 'You will be notified!' : 'Notify When In Stock'}
+                            </button>
+                        ) : (
+                            <>
+                                <button
+                                    onClick={() => selectedColor && selectedSize && addToCart(productData._id, { color: selectedColor, size: selectedSize })}
+                                    className={`w-full py-3.5 ${(selectedColor && selectedSize) ? 'bg-gray-100 text-gray-800/80 hover:bg-gray-200' : 'bg-gray-200 text-gray-400 cursor-not-allowed'} transition`}
+                                    disabled={!(selectedColor && selectedSize)}
+                                >
+                                    Add to Cart
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        if (selectedColor && selectedSize) {
+                                            addToCart(productData._id, { color: selectedColor, size: selectedSize });
+                                            router.push('/cart');
+                                        }
+                                    }}
+                                    className={`w-full py-3.5 ${(selectedColor && selectedSize) ? 'bg-orange-500 text-white hover:bg-orange-600' : 'bg-orange-200 text-gray-400 cursor-not-allowed'} transition`}
+                                    disabled={!(selectedColor && selectedSize)}
+                                >
+                                    Buy now
+                                </button>
+                            </>
+                        )}
+                    </div>
+
+                    {/* Show message about stock status */}
+                    <div className="mt-2 text-sm">
+                        {!selectedColor ? (
+                            <p className="text-gray-600">Please select a color to see availability.</p>
+                        ) : selectedColor && getColorObj(selectedColor) ? (
+                            getColorObj(selectedColor).stock <= 0 ? (
+                                <p className="text-red-600">This item is currently out of stock.</p>
+                            ) : getColorObj(selectedColor).stock < 10 ? (
+                                <p className="text-orange-600">Only {getColorObj(selectedColor).stock} left in stock - order soon.</p>
+                            ) : (
+                                <p className="text-green-600">In stock and ready to ship.</p>
+                            )
+                        ) : (
+                            <p className="text-gray-600">Stock information unavailable.</p>
+                        )}
                     </div>
                 </div>
             </div>

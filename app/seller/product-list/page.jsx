@@ -18,16 +18,29 @@ const ProductList = () => {
 
   const fetchSellerProduct = async () => {
     try {
+      console.log("Fetching seller products...");
       const token = await getToken();
-      const { data } = await axios.get('/api/product/seller-list', { headers: { Authorization: `Bearer ${token}` } });
+      console.log("Got auth token, making API request...");
+
+      const { data } = await axios.get('/api/product/seller-list', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
       if (data.success) {
+        console.log(`Received ${data.products?.length || 0} products`);
         setProducts(data.products)
         setLoading(false)
       } else {
-        toast.error(data.message)
+        console.error("API returned error:", data.message);
+        toast.error(data.message || "Failed to load products");
       }
     } catch (error) {
-      toast.error(error.message)
+      console.error("Error fetching products:", error);
+      const errorMessage = error.response?.data?.message || error.message || "Unknown error";
+      toast.error(`Error: ${errorMessage}`);
+    } finally {
+      // Ensure loading is set to false even if there's an error
+      setLoading(false);
     }
   }
 
