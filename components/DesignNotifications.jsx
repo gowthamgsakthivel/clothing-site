@@ -13,7 +13,7 @@ const DesignNotifications = () => {
     const [showNotifications, setShowNotifications] = useState(false);
 
     // Fetch user's design requests to check for notifications
-    const fetchDesignRequests = async () => {
+    const fetchDesignRequests = async (retryCount = 0) => {
         if (!user) return;
 
         try {
@@ -22,11 +22,21 @@ const DesignNotifications = () => {
 
             console.log("Fetching design requests with token...");
 
+            // Set timeout for the request (reduced from 10s to 6s to handle slow APIs better)
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 6000); // 6 second timeout
+
             // Robust error handling with detailed logging
             const response = await axios.get('/api/custom-design/list', {
-                headers: { Authorization: `Bearer ${token}` }
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Cache-Control': 'no-cache'
+                },
+                timeout: 5000, // 5 second timeout (reduced from 8s)
+                signal: controller.signal
             });
 
+            clearTimeout(timeoutId);
             console.log("API response received:", response.status);
             const { data } = response;
 
@@ -42,28 +52,66 @@ const DesignNotifications = () => {
                 console.error('API returned error:', data.message);
                 // Set empty array to avoid undefined errors
                 setDesignRequests([]);
+
+                // Show error toast only on first attempt
+                if (retryCount === 0) {
+                    toast.error(data.message || 'Failed to fetch design requests');
+                }
             }
         } catch (error) {
             console.error('Error fetching design notifications:', error);
 
-            // Log specific error details for debugging
-            if (error.response) {
+            // Handle different error types
+            let errorMessage = 'Unknown error occurred';
+            let shouldRetry = false;
+
+            if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+                errorMessage = 'Request timeout - server took too long to respond';
+                shouldRetry = true;
+            } else if (error.response) {
                 // Server responded with error
                 console.error('Response data:', error.response.data);
                 console.error('Response status:', error.response.status);
-                console.error('Response headers:', error.response.headers);
+
+                if (error.response.status >= 500) {
+                    errorMessage = 'Server error - please try again';
+                    shouldRetry = true;
+                } else if (error.response.status === 401) {
+                    errorMessage = 'Authentication required - please sign in again';
+                } else {
+                    errorMessage = error.response.data?.message || 'Server error occurred';
+                }
             } else if (error.request) {
                 // Request was made but no response
                 console.error('No response received:', error.request);
+                errorMessage = 'Network error - unable to connect to server';
+                shouldRetry = true;
             } else {
                 // Error in setting up the request
                 console.error('Error setting up request:', error.message);
+                errorMessage = error.message;
+            }
+
+            // Retry logic for network errors
+            if (shouldRetry && retryCount < 2) {
+                console.log(`Retrying request (attempt ${retryCount + 1})`);
+                setTimeout(() => {
+                    fetchDesignRequests(retryCount + 1);
+                }, 2000 * (retryCount + 1)); // Exponential backoff
+            } else {
+                // Show error toast only if all retries failed
+                if (retryCount === 0 || !shouldRetry) {
+                    toast.error(errorMessage);
+                }
             }
 
             // Set empty array to avoid undefined errors
             setDesignRequests([]);
         } finally {
-            setLoading(false);
+            // Only set loading to false if this is not a retry
+            if (retryCount === 0) {
+                setLoading(false);
+            }
         }
     };
 
@@ -157,11 +205,19 @@ const DesignNotifications = () => {
     };
 
     useEffect(() => {
-        fetchDesignRequests();
-
-        // Check for notifications every minute
-        const interval = setInterval(() => {
+        if (user) {
             fetchDesignRequests();
+        } else {
+            // Clear data if user is not logged in
+            setDesignRequests([]);
+            setHasUnreadNotifications(false);
+        }
+
+        // Check for notifications every minute (only if user is logged in)
+        const interval = setInterval(() => {
+            if (user && !loading) {
+                fetchDesignRequests();
+            }
         }, 60000);
 
         return () => clearInterval(interval);

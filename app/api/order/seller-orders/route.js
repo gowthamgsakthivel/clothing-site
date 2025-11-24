@@ -42,16 +42,26 @@ export async function GET(request) {
         // Make sure models are loaded
         Address.length;
 
-        console.log("🔍 Finding all orders for seller view");
+        console.log("🔍 Finding orders related to this seller");
 
         try {
-            // First, find all orders without populating the product field
-            let orders = await Order.find({})
-                .populate("address")
+            // Step 1: Find all products that belong to this seller
+            const sellerProducts = await Product.find({ userId: userId })
+                .select('_id')
+                .lean();
+
+            const sellerProductIds = sellerProducts.map(p => p._id.toString());
+            console.log(`Found ${sellerProductIds.length} products belonging to seller ${userId}`);
+
+            // Step 2: For seller dashboard, show only regular product orders (not custom designs)
+            // Custom designs are handled separately in the custom-designs section
+            let orders = await Order.find({
+                "items.isCustomDesign": { $ne: true } // Exclude custom design orders
+            })
                 .sort({ date: -1 })
                 .lean();
 
-            console.log(`Found ${orders.length} orders, processing product references...`);
+            console.log(`Found ${orders.length} regular product orders for seller dashboard`);
 
             // Get all product IDs that need to be populated (filtering out string products)
             const productIds = [];
@@ -87,37 +97,56 @@ export async function GET(request) {
             }
 
             // Process orders and manually populate products
-            orders = orders.map(order => {
+            const processedOrders = await Promise.all(orders.map(async (order) => {
                 try {
-                    // Check and normalize the date field
+                    // Check and normalize the date field to Unix timestamp in seconds
                     if (order.date) {
-                        // Make sure date is always a Unix timestamp in seconds
                         if (typeof order.date === 'number') {
-                            console.log(`Order ${order._id}: Date is already a number:`, order.date);
-                            // Ensure it's in seconds, not milliseconds (timestamps over year 2001 are likely in milliseconds)
-                            if (order.date > 4000000000) {
+                            // If it's a large number (> year 2001), it's likely in milliseconds
+                            if (order.date > 1000000000000) {
                                 order.date = Math.floor(order.date / 1000);
-                                console.log(`Order ${order._id}: Converted date from ms to seconds:`, order.date);
                             }
+                            // If it's already in seconds, keep it as is
                         } else {
-                            // Try to convert to a timestamp
+                            // Try to convert string date to timestamp
                             try {
                                 const dateObj = new Date(order.date);
-                                order.date = Math.floor(dateObj.getTime() / 1000);
-                                console.log(`Order ${order._id}: Converted string date to seconds:`, order.date);
+                                if (!isNaN(dateObj.getTime())) {
+                                    order.date = Math.floor(dateObj.getTime() / 1000);
+                                } else {
+                                    order.date = Math.floor(Date.now() / 1000); // Use current time as fallback
+                                }
                             } catch (dateErr) {
-                                console.error(`Order ${order._id}: Invalid date format:`, order.date);
                                 order.date = Math.floor(Date.now() / 1000); // Use current time as fallback
                             }
                         }
                     } else {
-                        console.log(`Order ${order._id}: No date field, using current time`);
                         order.date = Math.floor(Date.now() / 1000);
                     }
 
-                    // If address wasn't populated (just ID string), handle gracefully
-                    if (!order.address || typeof order.address === 'string') {
-                        console.log(`⚠️ Address not populated for order ${order._id}. Using placeholder.`);
+                    // Handle address - fetch separately if needed
+                    if (order.address && typeof order.address === 'string') {
+                        try {
+                            const addressDoc = await Address.findById(order.address).lean();
+                            order.address = addressDoc || {
+                                fullName: "Customer",
+                                area: "Address not available",
+                                city: "",
+                                state: "",
+                                phoneNumber: ""
+                            };
+                        } catch (addressErr) {
+                            console.log(`⚠️ Could not fetch address ${order.address}:`, addressErr.message);
+                            order.address = {
+                                fullName: "Customer",
+                                area: "Address not available",
+                                city: "",
+                                state: "",
+                                phoneNumber: ""
+                            };
+                        }
+                    } else if (!order.address) {
+                        console.log(`⚠️ No address for order ${order._id}. Using placeholder.`);
                         order.address = {
                             fullName: "Customer",
                             area: "Address to be confirmed",
@@ -171,10 +200,20 @@ export async function GET(request) {
                     console.error(`Error processing order ${order?._id}:`, err);
                     return order; // Return order unchanged if there's an error
                 }
+            }));
+
+            console.log(`✅ Successfully processed ${processedOrders.length} orders for seller view`);
+
+            // Sort orders by date in descending order (newest first) after processing
+            processedOrders.sort((a, b) => {
+                const dateA = typeof a.date === 'number' ? a.date : 0;
+                const dateB = typeof b.date === 'number' ? b.date : 0;
+                return dateB - dateA; // Descending order (newest first)
             });
 
-            console.log(`✅ Successfully processed ${orders.length} orders for seller view`);
-            return NextResponse.json({ success: true, orders });
+            console.log(`Orders sorted by date. Newest order: ${new Date(processedOrders[0]?.date * 1000).toISOString()}`);
+
+            return NextResponse.json({ success: true, orders: processedOrders });
         } catch (orderError) {
             console.error("❌ Error finding or processing orders:", orderError);
             return NextResponse.json({

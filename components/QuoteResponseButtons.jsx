@@ -17,8 +17,6 @@ const QuoteResponseButtons = ({ design, getToken, onQuoteResponded }) => {
         try {
             setIsSubmitting(true);
             console.log(`Responding to quote for design ${design._id} with response: ${response}`);
-            const token = await getToken();
-
             const payload = {
                 designId: design._id,
                 response: response,
@@ -28,8 +26,7 @@ const QuoteResponseButtons = ({ design, getToken, onQuoteResponded }) => {
             console.log("Sending API request with payload:", payload);
             const { data } = await axios.post(
                 '/api/custom-design/respond-to-quote',
-                payload,
-                { headers: { Authorization: `Bearer ${token}` } }
+                payload
             );
             console.log("API response:", data);
 
@@ -97,8 +94,6 @@ const QuoteResponseButtons = ({ design, getToken, onQuoteResponded }) => {
         try {
             setIsSubmitting(true);
             console.log(`Sending counter offer of ₹${offerAmount} for design ${design._id}`);
-            const token = await getToken();
-
             // Ensure all data is valid and in the correct format
             const payload = {
                 designId: design._id,
@@ -110,8 +105,7 @@ const QuoteResponseButtons = ({ design, getToken, onQuoteResponded }) => {
             console.log("Sending negotiation API request with payload:", payload);
             const { data } = await axios.post(
                 '/api/custom-design/respond-to-quote',
-                payload,
-                { headers: { Authorization: `Bearer ${token}` } }
+                payload
             );
 
             if (data.success) {

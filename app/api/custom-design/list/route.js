@@ -22,16 +22,22 @@ export async function GET(request) {
             }, { status: 401 });
         }
 
-        // Connect to the database
+        // Connect to the database with timeout
         console.log("🔌 Connecting to database...");
         try {
-            await connectDB();
+            // Set a timeout for database connection
+            const dbTimeout = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('Database connection timeout')), 5000)
+            );
+
+            await Promise.race([connectDB(), dbTimeout]);
             console.log("✅ Connected to database");
         } catch (dbError) {
             console.error("❌ Database connection failed:", dbError);
             return NextResponse.json({
                 success: false,
-                message: 'Database connection failed: ' + dbError.message
+                message: 'Database connection failed: ' + dbError.message,
+                designRequests: []
             }, { status: 500 });
         }
 
@@ -61,7 +67,7 @@ export async function GET(request) {
         try {
             const collections = await mongoose.connection.db.listCollections().toArray();
             const collectionNames = collections.map(c => c.name);
-            console.log("Available collections:", collectionNames);
+            //console.log("Available collections:", collectionNames);
 
             // Check if customdesign collection exists (lowercase)
             const customDesignExists = collectionNames.includes('customdesigns');
@@ -80,26 +86,42 @@ export async function GET(request) {
         }
 
         // Get custom design requests for this user
-        console.log("🔍 Finding design requests for user:", userId);
-        let designRequests;
+        //console.log("🔍 Finding design requests for user:", userId);
+        let designRequests = [];
         try {
             // Verify the model exists and schema is correct
-            console.log("CustomDesign model exists:", !!CustomDesign);
-            console.log("CustomDesign schema paths:", Object.keys(CustomDesign.schema.paths));
+            //console.log("CustomDesign model exists:", !!CustomDesign);
+            //console.log("CustomDesign schema paths:", Object.keys(CustomDesign.schema.paths));
 
-            // Try the query
+            // Try the query with additional error handling
             designRequests = await CustomDesign.find({ user: userId })
                 .sort({ createdAt: -1 })
-                .lean();
+                .lean()
+                .maxTimeMS(10000); // 10 second timeout for the query
 
-            console.log(`✅ Found ${designRequests.length} design requests`);
+            //console.log(`✅ Found ${designRequests.length} design requests`);
+
+            // Ensure designRequests is always an array
+            if (!Array.isArray(designRequests)) {
+                console.warn("⚠️ designRequests is not an array, converting...");
+                designRequests = [];
+            }
+
         } catch (designError) {
             console.error("❌ Error finding design requests:", designError);
-            return NextResponse.json({
-                success: false,
-                message: 'Error finding design requests: ' + designError.message,
-                designRequests: []
-            }, { status: 500 });
+
+            // If it's a timeout error, return partial success
+            if (designError.name === 'MongooseError' && designError.message.includes('timeout')) {
+                console.log("Query timeout, returning empty array");
+                designRequests = [];
+            } else {
+                // For other errors, return error response
+                return NextResponse.json({
+                    success: false,
+                    message: 'Error finding design requests: ' + designError.message,
+                    designRequests: []
+                }, { status: 500 });
+            }
         }
 
         return NextResponse.json({

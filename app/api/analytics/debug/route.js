@@ -16,7 +16,7 @@ export async function GET(request) {
         try {
             const auth = getAuth(request);
             userId = auth?.userId;
-            console.log("👤 Auth result:", { userId: userId || "undefined" });
+            //console.log("👤 Auth result:", { userId: userId || "undefined" });
 
             if (userId) {
                 try {

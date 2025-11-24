@@ -117,6 +117,22 @@ const MyOrders = () => {
                         };
                     }));
 
+                    // Debug: Check for custom design pricing
+                    ordersArray.forEach(order => {
+                        if (order.items && order.items.some(item => item.isCustomDesign)) {
+                            console.log(`Order ${order._id} custom design items:`,
+                                order.items.filter(item => item.isCustomDesign).map(item => ({
+                                    designName: item.designName,
+                                    customDesignId: item.customDesignId,
+                                    price: item.price,
+                                    hasPrice: !!item.price,
+                                    priceType: typeof item.price,
+                                    quantity: item.quantity
+                                }))
+                            );
+                        }
+                    });
+
                     setAllOrders(ordersArray);
                     setOrders(ordersArray);
                     setActiveFilter('all');
@@ -432,6 +448,17 @@ const MyOrders = () => {
                                                 <div className="grid gap-3">
                                                     {Array.isArray(order.items) && order.items.map((item, idx) => {
                                                         try {
+                                                            // Debug custom design items
+                                                            if (item.isCustomDesign) {
+                                                                console.log(`Custom design item ${idx} in order ${order._id}:`, {
+                                                                    isCustomDesign: item.isCustomDesign,
+                                                                    customDesignId: item.customDesignId,
+                                                                    designName: item.designName,
+                                                                    price: item.price,
+                                                                    quantity: item.quantity,
+                                                                    hasPrice: !!item.price
+                                                                });
+                                                            }
                                                             return (
                                                                 <div key={idx} className="flex items-center gap-3 bg-gray-50 rounded-lg p-3">
                                                                     {/* Image section with safe rendering */}
@@ -526,7 +553,17 @@ const MyOrders = () => {
                                                                                     if (item.price) {
                                                                                         return item.price;
                                                                                     } else if (item.isCustomDesign && item.customDesignId) {
-                                                                                        return 11000; // Default price for custom designs
+                                                                                        console.warn(`Custom design order item missing price field: ${item.customDesignId}`);
+                                                                                        // For legacy orders, try to calculate from order total
+                                                                                        // This is a temporary fallback - new orders should have item.price
+                                                                                        if (order.items && order.items.length > 0) {
+                                                                                            // Simple fallback: divide order amount by total quantity
+                                                                                            const totalQuantity = order.items.reduce((sum, orderItem) => sum + (orderItem.quantity || 1), 0);
+                                                                                            const estimatedUnitPrice = (order.amount || 0) / totalQuantity;
+                                                                                            console.log(`Using estimated price for legacy order: ₹${estimatedUnitPrice}`);
+                                                                                            return estimatedUnitPrice;
+                                                                                        }
+                                                                                        return 0; // Fallback to 0 if calculation fails
                                                                                     } else if (item.product && typeof item.product === 'object') {
                                                                                         return item.product.offerPrice || item.product.price || 0;
                                                                                     } else {
@@ -570,10 +607,21 @@ const MyOrders = () => {
                                                                                 // Calculate total price based on product type
                                                                                 let unitPrice = 0;
                                                                                 if (item.price) {
+                                                                                    // Use the stored price from order (preferred method)
                                                                                     unitPrice = item.price;
                                                                                 } else if (item.isCustomDesign && item.customDesignId) {
-                                                                                    unitPrice = 11000; // Default price for custom designs
+                                                                                    // For legacy custom design orders without stored price
+                                                                                    console.warn(`Custom design order item missing price field: ${item.customDesignId}`);
+                                                                                    // Try to estimate from order total for legacy orders
+                                                                                    if (order.items && order.items.length > 0) {
+                                                                                        const totalQuantity = order.items.reduce((sum, orderItem) => sum + (orderItem.quantity || 1), 0);
+                                                                                        unitPrice = (order.amount || 0) / totalQuantity;
+                                                                                        console.log(`Using estimated price for legacy order total: ₹${unitPrice}`);
+                                                                                    } else {
+                                                                                        unitPrice = 0; // Fallback to 0 if calculation fails
+                                                                                    }
                                                                                 } else if (item.product && typeof item.product === 'object') {
+                                                                                    // For populated product objects
                                                                                     unitPrice = item.product.offerPrice || item.product.price || 0;
                                                                                 }
                                                                                 return (unitPrice * (item.quantity || 1)).toFixed(2);
@@ -625,7 +673,35 @@ const MyOrders = () => {
                                                 {/* Order total */}
                                                 <div className="md:text-right">
                                                     <h4 className="text-xs font-semibold uppercase text-gray-500 mb-1">Order Total</h4>
-                                                    <div className="text-xl font-bold text-orange-600">{currency}{order.amount || 0}</div>
+                                                    {(() => {
+                                                        const calculatedTotal = order.items?.reduce((sum, item) => {
+                                                            let itemPrice = 0;
+                                                            if (item.price) {
+                                                                itemPrice = item.price * (item.quantity || 1);
+                                                            } else if (item.isCustomDesign && order.items.length > 0) {
+                                                                // Use estimation for legacy orders
+                                                                const totalQuantity = order.items.reduce((s, i) => s + (i.quantity || 1), 0);
+                                                                const estimatedUnitPrice = (order.amount || 0) / totalQuantity;
+                                                                itemPrice = estimatedUnitPrice * (item.quantity || 1);
+                                                            } else if (item.product && typeof item.product === 'object') {
+                                                                itemPrice = (item.product.offerPrice || item.product.price || 0) * (item.quantity || 1);
+                                                            }
+                                                            return sum + itemPrice;
+                                                        }, 0) || 0;
+
+                                                        const storedTotal = order.amount || 0;
+                                                        const difference = Math.abs(storedTotal - calculatedTotal);
+
+                                                        // If there's a significant difference, use calculated total
+                                                        const displayTotal = (difference > storedTotal * 0.1) ? calculatedTotal : storedTotal;
+                                                        const isUsingCalculated = (difference > storedTotal * 0.1);
+
+                                                        return (
+                                                            <div className="text-xl font-bold text-orange-600">
+                                                                {currency}{displayTotal.toFixed(2)}
+                                                            </div>
+                                                        );
+                                                    })()}
                                                     <p className="text-xs text-gray-500 mt-1">
                                                         Includes taxes, delivery charges
                                                     </p>

@@ -39,8 +39,7 @@ const OrderSummary = () => {
   const fetchUserAddresses = async () => {
     try {
       setLoadingStates(prev => ({ ...prev, addressFetching: true }));
-      const token = await getToken();
-      const { data } = await axios.get('/api/user/get-address', { headers: { Authorization: `Bearer ${token}` } });
+      const { data } = await axios.get('/api/user/get-address');
 
       if (data.success) {
         setUserAddresses(data.addresses);
@@ -75,12 +74,9 @@ const OrderSummary = () => {
 
       setLoadingStates(prev => ({ ...prev, orderPlacement: true }));
 
-      const token = await getToken();
       const { data } = await axios.post('/api/order/create', {
         address: selectedAddress._id,
         items: cartItemsArray
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
       });
 
       if (data.success) {
@@ -118,13 +114,10 @@ const OrderSummary = () => {
         return;
       }
 
-      const token = await getToken();
       // Create Razorpay order on backend
       const { data } = await axios.post('/api/razorpay/order', {
         amount: totalAmount,
         currency: 'INR',
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
       });
 
       if (!data.success) {
@@ -161,9 +154,7 @@ const OrderSummary = () => {
               };
 
               // Place order in DB with Razorpay payment info
-              const orderRes = await axios.post('/api/order/create', orderPayload, {
-                headers: { Authorization: `Bearer ${token}` }
-              });
+              const orderRes = await axios.post('/api/order/create', orderPayload);
 
               if (orderRes.data.success) {
                 toast.success('Payment successful! Order placed.');

@@ -105,8 +105,7 @@ const CustomDesignPaymentModal = ({ design, onClose, onPaymentComplete }) => {
         try {
             setIsLoading(true);
             console.log('Starting COD payment process for design:', design._id);
-            const token = await getToken();
-            console.log('Got auth token, sending API request');
+            console.log('Sending API request for COD payment');
 
             const { data } = await axios.post(
                 '/api/custom-design/convert-to-order',
@@ -114,8 +113,7 @@ const CustomDesignPaymentModal = ({ design, onClose, onPaymentComplete }) => {
                     designId: design._id,
                     paymentMethod: 'COD',
                     paymentStatus: 'Pending'
-                },
-                { headers: { Authorization: `Bearer ${token}` } }
+                }
             );
 
             console.log('API response:', data);
@@ -169,18 +167,16 @@ const CustomDesignPaymentModal = ({ design, onClose, onPaymentComplete }) => {
                 return;
             }
 
-            const token = await getToken();
-            console.log('Got auth token, creating Razorpay order');
+            console.log('Creating Razorpay order');
 
-            // First create the Razorpay order
+            // First create the Razorpay order (amount must be in paisa, so multiply by 100)
             const orderResponse = await axios.post(
                 '/api/razorpay/order',
                 {
-                    amount: design.quote.amount,
+                    amount: design.quote.amount * 100,
                     currency: 'INR',
                     receipt: `custom_design_${design._id}`
-                },
-                { headers: { Authorization: `Bearer ${token}` } }
+                }
             );
 
             console.log('Razorpay order API response:', orderResponse.data);
@@ -212,8 +208,7 @@ const CustomDesignPaymentModal = ({ design, onClose, onPaymentComplete }) => {
                                 razorpay_order_id: response.razorpay_order_id,
                                 razorpay_payment_id: response.razorpay_payment_id,
                                 razorpay_signature: response.razorpay_signature
-                            },
-                            { headers: { Authorization: `Bearer ${token}` } }
+                            }
                         );
 
                         console.log('Payment verification response:', verifyResponse.data);
@@ -232,8 +227,7 @@ const CustomDesignPaymentModal = ({ design, onClose, onPaymentComplete }) => {
                                         paymentId: response.razorpay_payment_id,
                                         signature: response.razorpay_signature
                                     }
-                                },
-                                { headers: { Authorization: `Bearer ${token}` } }
+                                }
                             );
 
                             console.log('Convert to order API response:', orderResult.data);
@@ -382,7 +376,7 @@ const CustomDesignPaymentModal = ({ design, onClose, onPaymentComplete }) => {
 
                                 {/* Price */}
                                 <div className="text-right">
-                                    <p className="font-semibold text-orange-600">₹{(design.quote && design.quote.amount / 100) || '--'}</p>
+                                    <p className="font-semibold text-orange-600">₹{(design.quote && design.quote.amount) || '--'}</p>
                                     <p className="text-xs text-gray-500">Incl. taxes</p>
                                 </div>
                             </div>
@@ -434,7 +428,7 @@ const CustomDesignPaymentModal = ({ design, onClose, onPaymentComplete }) => {
                             <div>
                                 <div className="flex justify-between items-center font-medium mb-4">
                                     <span className="text-gray-900">Total Amount:</span>
-                                    <span className="text-xl text-orange-600">₹{(design.quote && design.quote.amount / 100) || '--'}</span>
+                                    <span className="text-xl text-orange-600">₹{(design.quote && design.quote.amount) || '--'}</span>
                                 </div>
 
                                 <button

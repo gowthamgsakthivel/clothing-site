@@ -11,12 +11,42 @@ const productSchema = new mongoose.Schema({
     category: { type: String, required: true },
     genderCategory: { type: String, enum: ["Men", "Women", "Kids", "Girls", "Boys", "Unisex"], default: "Unisex" },
     brand: { type: String, required: true },
-    color: [{
-        color: { type: String, required: true },
-        stock: { type: Number, required: true }
+
+    // Enhanced inventory system
+    inventory: [{
+        color: {
+            name: { type: String, required: true },    // "Red", "Blue", etc.
+            code: { type: String, required: true },    // "#FF0000", "#0000FF"
+            image: { type: String }                    // Optional: color-specific image
+        },
+        sizeStock: [{
+            size: { type: String, required: true },        // "XS", "S", "M", "L", "XL", "XXL"
+            quantity: { type: Number, default: 0 },        // Available stock
+            lowStockThreshold: { type: Number, default: 5 }, // Alert threshold
+            lastRestocked: { type: Date, default: Date.now }
+        }]
     }],
-    sizes: { type: [String], required: true },
-    stock: { type: Number, required: true },
+
+    // Backward compatibility (computed from inventory)
+    color: [{
+        color: { type: String },
+        stock: { type: Number }
+    }],
+    sizes: { type: [String] },
+    stock: { type: Number, default: 0 },
+
+    // Computed fields for quick access
+    totalStock: { type: Number, default: 0 },
+    availableSizes: { type: [String], default: [] },
+    availableColors: [{ type: String }],
+
+    // Stock settings
+    stockSettings: {
+        trackInventory: { type: Boolean, default: true },
+        allowBackorders: { type: Boolean, default: false },
+        globalLowStockThreshold: { type: Number, default: 10 }
+    },
+
     date: { type: Number, required: true }
 })
 const Product = mongoose.models.product || mongoose.model('product', productSchema)

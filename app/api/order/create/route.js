@@ -14,23 +14,18 @@ export async function POST(request) {
     try {
         await connectDB();
 
-        // Debug authentication data
-        console.log('Request headers:', Object.fromEntries(request.headers.entries()));
-
         const auth = getAuth(request);
-        console.log('Auth object:', JSON.stringify({
-            userId: auth.userId,
-            sessionId: auth.sessionId,
-            session: auth.session ? 'present' : 'missing',
-            user: auth.user ? 'present' : 'missing'
-        }));
-
         const userId = auth.userId;
 
         if (!userId) {
-            console.error('No userId found in auth context:', auth);
-            return NextResponse.json({ success: false, message: 'Authentication failed - no user ID found' });
+            console.error('Authentication failed - no userId found');
+            return NextResponse.json({
+                success: false,
+                message: 'Authentication required. Please make sure you are logged in.'
+            }, { status: 401 });
         }
+
+        console.log('Order creation request for user:', userId);
 
         const { address, items, paymentMethod, paymentStatus } = await request.json();
         console.log('Order Create Debug:', { userId, paymentMethod, paymentStatus });
@@ -67,12 +62,19 @@ export async function POST(request) {
                     const customDesign = user.customDesigns[designId];
                     console.log('Found custom design in user data:', customDesign);
 
-                    // Calculate price from the quote amount (in paisa)
-                    const price = customDesign.quote && customDesign.quote.amount
-                        ? customDesign.quote.amount / 100
-                        : 11000; // Default price
+                    // Calculate price from the quote amount (already in rupees)
+                    if (!customDesign.quote || !customDesign.quote.amount) {
+                        return NextResponse.json({
+                            success: false,
+                            message: `Custom design "${customDesign.designName || designId}" does not have a valid quote. Please get a quote from the seller before placing an order.`
+                        }, { status: 400 });
+                    }
 
-                    amount += price * item.quantity;
+                    const price = customDesign.quote.amount;
+                    const itemTotal = price * item.quantity;
+                    amount += itemTotal;
+
+                    console.log(`Custom design pricing: ${price} × ${item.quantity} = ${itemTotal}, Running total: ${amount}`);
 
                     // Add to order items with custom design flag
                     // Include 'product' field which is required by the schema
@@ -83,26 +85,19 @@ export async function POST(request) {
                         designName: customDesign.designName || 'Custom Design',
                         customDesignImage: customDesign.designImage || '', // Renamed to match schema
                         quantity: item.quantity,
+                        price: price, // Store the unit price for this item
                         color: customDesign.color || 'As specified',
                         size: customDesign.size || 'M'
                     });
 
                     console.log(`Added custom design to order with price: ${price}`);
                 } else {
-                    // Try to get the design from localStorage via sessionStorage
-                    // This is handled client-side, but we still need to handle the order creation
+                    // Custom design not found - this should not happen
                     console.error(`Custom design ${designId} not found in user data`);
-                    // Use fallback price
-                    amount += 11000 * item.quantity; // Use default price
-                    orderItems.push({
-                        product: designId, // Using designId as the product field to satisfy schema validation
-                        isCustomDesign: true,
-                        customDesignId: designId, // Renamed from designId to match schema
-                        designName: 'Custom Design',
-                        quantity: item.quantity,
-                        color: 'As specified',
-                        size: 'M'
-                    });
+                    return NextResponse.json({
+                        success: false,
+                        message: `Custom design ${designId} not found. Please refresh the page and try again.`
+                    }, { status: 400 });
                 }
             } else {
                 // Regular product item processing
@@ -127,7 +122,9 @@ export async function POST(request) {
                 }
                 const product = await Product.findById(productId);
                 if (product) {
-                    amount += product.offerPrice * item.quantity;
+                    const productTotal = product.offerPrice * item.quantity;
+                    amount += productTotal;
+                    console.log(`Regular product pricing: ${product.offerPrice} × ${item.quantity} = ${productTotal}, Running total: ${amount}`);
                     // Reduce stock for color if present
                     if (color && Array.isArray(product.color)) {
                         const colorObj = product.color.find(c => c.color === (color.startsWith('#') ? color : `#${color}`));
@@ -138,7 +135,13 @@ export async function POST(request) {
                     // Reduce total stock
                     product.stock = Math.max(0, (product.stock || 0) - item.quantity);
                     await product.save();
-                    orderItems.push({ product: productId, quantity: item.quantity, color, size });
+                    orderItems.push({
+                        product: productId,
+                        quantity: item.quantity,
+                        price: product.offerPrice,
+                        color,
+                        size
+                    });
                 } else {
                     console.error(`Product ${productId} not found`);
                 }
@@ -158,12 +161,17 @@ export async function POST(request) {
             });
         }
 
+        const taxAmount = Math.floor(amount * 0.02);
+        const finalAmount = amount + taxAmount;
+
+        console.log(`Order amount calculation: Base: ₹${amount}, Tax (2%): ₹${taxAmount}, Final: ₹${finalAmount}`);
+
         try {
             const orderData = {
                 userId: userId.toString(), // Ensure it's a string
                 address,
                 items: orderItems,
-                amount: amount + Math.floor(amount * 0.02),
+                amount: finalAmount,
                 paymentMethod: paymentMethod || 'COD',
                 paymentStatus: paymentStatus || 'Pending',
                 date: Math.floor(Date.now() / 1000) // Convert milliseconds to seconds for Unix timestamp
@@ -207,10 +215,8 @@ export async function POST(request) {
         // Return more detailed error information
         return NextResponse.json({
             success: false,
-            message: error.message,
-            stack: error.stack,
-            name: error.name,
+            message: error.message || 'An unexpected error occurred during order creation',
             details: error.errors ? JSON.stringify(error.errors) : null
-        });
+        }, { status: 500 });
     }
 }

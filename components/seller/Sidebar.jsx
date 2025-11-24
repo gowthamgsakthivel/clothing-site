@@ -10,6 +10,7 @@ const SideBar = () => {
         { name: 'Dashboard', path: '/seller/dashboard', icon: assets.redirect_icon },
         { name: 'Add Product', path: '/seller/add-product', icon: assets.add_icon },
         { name: 'Product List', path: '/seller/product-list', icon: assets.product_list_icon },
+        { name: 'Manage Stock', path: '/admin/products/manage-stock', icon: assets.box_icon },
         { name: 'Orders', path: '/seller/orders', icon: assets.order_icon },
         { name: 'Custom Designs', path: '/seller/custom-designs', icon: assets.upload_area },
     ];

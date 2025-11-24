@@ -5,14 +5,19 @@ import mongoose from "mongoose";
 const orderSchema = new mongoose.Schema({
     userId: { type: String, required: true, ref: 'user' },
     items: [{
-        product: { type: String, required: true, ref: 'product' },
+        product: {
+            type: mongoose.Schema.Types.Mixed, // Can be ObjectId (for regular products) or String (for custom designs)
+            required: true
+        },
         quantity: { type: Number, required: true },
+        price: { type: Number, required: true }, // Unit price for this item
         color: { type: String },
         size: { type: String },
         // Fields for custom design orders
         isCustomDesign: { type: Boolean, default: false },
         customDesignId: { type: mongoose.Schema.Types.ObjectId, ref: 'customdesign' },
-        customDesignImage: { type: String }
+        customDesignImage: { type: String },
+        designName: { type: String } // Name of the custom design
     }],
     amount: { type: Number, required: true },
     address: { type: String, ref: 'address', required: true },

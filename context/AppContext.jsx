@@ -293,10 +293,11 @@ export const AppContextProvider = (props) => {
                     const designData = userData.customDesigns[designId];
                     // Price is stored in amount field as cents/paisa
                     if (designData.quote && designData.quote.amount) {
-                        totalAmount += (designData.quote.amount / 100) * cartItems[key];
+                        totalAmount += designData.quote.amount * cartItems[key];
                     } else {
-                        // Default price if quote not found
-                        totalAmount += 11000 * cartItems[key]; // Default price of ₹11000
+                        // Skip items without quotes - don't add anything to total
+                        console.warn(`Custom design ${key} has no quote, skipping from total calculation`);
+                        // Don't add anything - let the item exist in cart but don't count toward total
                     }
                 } else {
                     // Fallback to localStorage for backward compatibility
@@ -306,19 +307,21 @@ export const AppContextProvider = (props) => {
                             const designData = JSON.parse(storedDesign);
                             // Price is stored in amount field as cents/paisa
                             if (designData.quote && designData.quote.amount) {
-                                totalAmount += (designData.quote.amount / 100) * cartItems[key];
+                                totalAmount += designData.quote.amount * cartItems[key];
                             } else {
-                                // Default price if quote not found
-                                totalAmount += 11000 * cartItems[key]; // Default price of ₹11000
+                                // Skip items without quotes - don't add anything to total
+                                console.warn(`Custom design ${key} localStorage data has no quote, skipping from total calculation`);
+                                // Don't add anything - let the item exist in cart but don't count toward total
                             }
                         } else {
-                            // Default price if design data not found
-                            totalAmount += 11000 * cartItems[key];
+                            // Skip items without design data - don't add anything to total
+                            console.warn(`Custom design ${key} not found, skipping from total calculation`);
+                            // Don't add anything - let the item exist in cart but don't count toward total
                         }
                     } catch (err) {
                         console.error("Error calculating custom design price:", err);
-                        // Default price if there's an error
-                        totalAmount += 11000 * cartItems[key];
+                        // Skip items with errors - don't add anything to total
+                        // Don't add anything - let the item exist in cart but don't count toward total
                     }
                 }
             } else {

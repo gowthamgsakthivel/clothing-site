@@ -46,16 +46,16 @@ export default function AboutPage() {
                         />
                     ))}
                 </div>
-                <div className="relative z-10 w-full max-w-4xl mx-auto py-32 px-8 rounded-3xl shadow-2xl bg-white/80 backdrop-blur-2xl border border-white/40">
+                <div className="relative z-10 w-full max-w-5xl mx-auto py-32 px-8 rounded-3xl shadow-2xl bg-white/80 backdrop-blur-2xl border border-white/40">
                     <h1 className="text-5xl font-extrabold mb-8 text-gray-900 text-center drop-shadow-lg tracking-tight">About Sparrow Sports</h1>
-                    <p className="text-2xl text-gray-700 mb-8 text-center font-medium">
-                        Sparrow Sports is your one-stop destination for the latest and greatest in sportswear and lifestyle products. We are passionate about delivering quality, variety, and a seamless shopping experience to our customers.
+                    <p className="text-xl text-gray-700 mb-8 text-center font-medium leading-relaxed">
+                        Sparrow Sports is your trusted destination for premium sportswear, activewear, lifestyle products, and innovative gadgets. We are committed to delivering top-quality gear, trending styles, and a smooth shopping experience—whether you're hitting the gym, exploring the outdoors, or upgrading your everyday essentials.
                     </p>
-                    <p className="text-lg text-gray-600 mb-4 text-center">
-                        Our mission is to empower you to live your best life—whether you’re hitting the gym, exploring the outdoors, or upgrading your tech. We carefully curate our collection to bring you top brands, trending styles, and innovative gadgets.
+                    <p className="text-lg text-gray-600 mb-8 text-center leading-relaxed">
+                        Along with our curated collection of leading brands, we also specialize in custom T-shirt printing, team jerseys, and bulk apparel orders for colleges, events, startups, and sports teams. Our custom solutions offer high-quality fabrics, sharp printing, and reliable delivery—perfect for anyone looking to create personalized or branded merchandise.
                     </p>
-                    <p className="text-lg text-gray-600 text-center">
-                        Thank you for choosing Sparrow Sports. We’re here to help you look good, feel great, and stay ahead of the game!
+                    <p className="text-lg text-gray-600 text-center leading-relaxed">
+                        At Sparrow Sports, our mission is simple: to help you look good, feel confident, and stay ahead of the game. Thank you for choosing us as your partner in performance, style, and creativity.
                     </p>
                 </div>
             </div>

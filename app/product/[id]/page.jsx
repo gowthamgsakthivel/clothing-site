@@ -36,15 +36,34 @@ const Product = () => {
                 setSelectedColor(null);
                 setSelectedSize(null);
 
-                // Set default color if available
-                if (Array.isArray(product.color) && product.color.length > 0) {
+                // Set default color if available - use a temporary function to avoid dependency issues
+                const getColorsFromProduct = (prod) => {
+                    // Try new inventory format first
+                    if (Array.isArray(prod.inventory) && prod.inventory.length > 0) {
+                        return prod.inventory.map(item => ({
+                            color: item.color.name,
+                            stock: item.sizeStock.reduce((sum, sizeStock) => sum + (sizeStock.quantity || 0), 0),
+                            _id: item._id || item.color.name
+                        }));
+                    }
+
+                    // Fallback to old format
+                    if (Array.isArray(prod.color)) {
+                        return prod.color;
+                    }
+
+                    return [];
+                };
+
+                const availableColors = getColorsFromProduct(product);
+                if (availableColors.length > 0) {
                     // Find first color that has stock
-                    const inStockColor = product.color.find(c => c.stock > 0);
+                    const inStockColor = availableColors.find(c => c.stock > 0);
                     if (inStockColor) {
                         setSelectedColor(inStockColor.color);
                     } else {
                         // If all colors are out of stock, just select the first one
-                        setSelectedColor(product.color[0].color);
+                        setSelectedColor(availableColors[0].color);
                     }
                 }
             }
@@ -148,8 +167,103 @@ const Product = () => {
         }
     };
 
-    // Helper: get color object by value
-    const getColorObj = (color) => (productData?.color || []).find(c => c.color === color);
+    // Helper: get color object by value - handles both old and new inventory formats
+    const getColorObj = (color) => {
+        if (!productData) return null;
+
+        // Try new inventory format first
+        if (Array.isArray(productData.inventory) && productData.inventory.length > 0) {
+            const inventoryItem = productData.inventory.find(item => item.color.name === color || item.color.code === color);
+            if (inventoryItem) {
+                // Calculate total stock for this color
+                const totalStock = inventoryItem.sizeStock.reduce((sum, sizeStock) => sum + (sizeStock.quantity || 0), 0);
+                return {
+                    color: inventoryItem.color.name,
+                    stock: totalStock,
+                    _id: inventoryItem._id || inventoryItem.color.name
+                };
+            }
+        }
+
+        // Fallback to old format
+        if (Array.isArray(productData.color)) {
+            return productData.color.find(c => c.color === color);
+        }
+
+        return null;
+    };
+
+    // Helper: get available colors - handles both formats
+    const getAvailableColors = () => {
+        if (!productData) return [];
+
+        // Try new inventory format first
+        if (Array.isArray(productData.inventory) && productData.inventory.length > 0) {
+            return productData.inventory.map(item => ({
+                color: item.color.name,
+                stock: item.sizeStock.reduce((sum, sizeStock) => sum + (sizeStock.quantity || 0), 0),
+                _id: item._id || item.color.name
+            }));
+        }
+
+        // Fallback to old format
+        if (Array.isArray(productData.color)) {
+            return productData.color;
+        }
+
+        return [];
+    };
+
+    // Helper: get available sizes - handles both formats
+    const getAvailableSizes = () => {
+        if (!productData) return [];
+
+        // Try new inventory format first
+        if (Array.isArray(productData.inventory) && productData.inventory.length > 0) {
+            const allSizes = new Set();
+            productData.inventory.forEach(item => {
+                item.sizeStock.forEach(sizeStock => {
+                    if (sizeStock.quantity > 0) {
+                        allSizes.add(sizeStock.size);
+                    }
+                });
+            });
+            return Array.from(allSizes);
+        }
+
+        // Fallback to old format
+        if (Array.isArray(productData.sizes)) {
+            return productData.sizes;
+        }
+
+        return [];
+    };
+
+    // Helper: get specific color-size combination stock
+    const getColorSizeStock = (color, size) => {
+        if (!productData || !color || !size) return 0;
+
+        // Try new inventory format first
+        if (Array.isArray(productData.inventory) && productData.inventory.length > 0) {
+            const inventoryItem = productData.inventory.find(item =>
+                item.color.name === color || item.color.code === color
+            );
+            if (inventoryItem) {
+                const sizeStock = inventoryItem.sizeStock.find(ss => ss.size === size);
+                return sizeStock ? sizeStock.quantity || 0 : 0;
+            }
+        }
+
+        // Fallback to old format (assumes all sizes available if color has stock)
+        if (Array.isArray(productData.color)) {
+            const colorObj = productData.color.find(c => c.color === color);
+            if (colorObj && colorObj.stock > 0) {
+                return Math.floor(colorObj.stock / (productData.sizes?.length || 1));
+            }
+        }
+
+        return 0;
+    };
 
     return productData ? (<>
         <SEOMetadata
@@ -169,9 +283,19 @@ const Product = () => {
                 offerPrice: productData.offerPrice,
                 new_price: productData.offerPrice,
                 price: productData.price,
-                stock: Array.isArray(productData.color) && productData.color.length > 0
-                    ? productData.color.reduce((total, color) => total + color.stock, 0)
-                    : 10, // default to 10 if no color stock data
+                stock: (() => {
+                    // Calculate total stock from new inventory format
+                    if (Array.isArray(productData.inventory) && productData.inventory.length > 0) {
+                        return productData.inventory.reduce((total, item) => {
+                            return total + item.sizeStock.reduce((subtotal, sizeStock) => subtotal + (sizeStock.quantity || 0), 0);
+                        }, 0);
+                    }
+                    // Fallback to old format
+                    if (Array.isArray(productData.color) && productData.color.length > 0) {
+                        return productData.color.reduce((total, color) => total + (color.stock || 0), 0);
+                    }
+                    return 10; // default fallback
+                })(),
                 ratings: productData.ratings || []
             }}
         />
@@ -256,29 +380,32 @@ const Product = () => {
                                     <td className="text-gray-600 font-medium">Color</td>
                                     <td className="text-gray-800/50 ">
                                         <div className="flex gap-2 flex-wrap">
-                                            {Array.isArray(productData.color) && productData.color.length > 0 ? (
-                                                productData.color.map((c, idx) => (
-                                                    <div key={c._id || idx} className="relative">
-                                                        <button
-                                                            type="button"
-                                                            className={`w-6 h-6 rounded-full border-2 ${c.stock < 1 ? 'opacity-50' : ''} ${selectedColor === c.color ? 'border-orange-500 ring-2 ring-orange-300' : 'border-gray-300'} focus:outline-none`}
-                                                            style={{ backgroundColor: c.color }}
-                                                            onClick={() => c.stock >= 1 && setSelectedColor(c.color)}
-                                                            aria-label={`Select color ${c.color}`}
-                                                            title={c.stock < 1 ? 'Out of stock' : `${c.stock} in stock`}
-                                                        >
-                                                            {selectedColor === c.color && <span className="block w-full h-full rounded-full border-2 border-white"></span>}
-                                                        </button>
-                                                        {c.stock < 1 && (
-                                                            <div className="absolute inset-0 flex items-center justify-center">
-                                                                <div className="w-8 h-0.5 bg-red-500 transform rotate-45"></div>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                ))
-                                            ) : (
-                                                <span>-</span>
-                                            )}
+                                            {(() => {
+                                                const availableColors = getAvailableColors();
+                                                return availableColors.length > 0 ? (
+                                                    availableColors.map((c, idx) => (
+                                                        <div key={c._id || idx} className="relative">
+                                                            <button
+                                                                type="button"
+                                                                className={`w-6 h-6 rounded-full border-2 ${c.stock < 1 ? 'opacity-50' : ''} ${selectedColor === c.color ? 'border-orange-500 ring-2 ring-orange-300' : 'border-gray-300'} focus:outline-none`}
+                                                                style={{ backgroundColor: c.color }}
+                                                                onClick={() => c.stock >= 1 && setSelectedColor(c.color)}
+                                                                aria-label={`Select color ${c.color}`}
+                                                                title={c.stock < 1 ? 'Out of stock' : `${c.stock} in stock`}
+                                                            >
+                                                                {selectedColor === c.color && <span className="block w-full h-full rounded-full border-2 border-white"></span>}
+                                                            </button>
+                                                            {c.stock < 1 && (
+                                                                <div className="absolute inset-0 flex items-center justify-center">
+                                                                    <div className="w-8 h-0.5 bg-red-500 transform rotate-45"></div>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    ))
+                                                ) : (
+                                                    <span>-</span>
+                                                );
+                                            })()}
                                         </div>
                                     </td>
                                 </tr>
@@ -286,30 +413,45 @@ const Product = () => {
                                     <td className="text-gray-600 font-medium">Size</td>
                                     <td className="text-gray-800/50 ">
                                         <div className="flex gap-2 flex-wrap">
-                                            {Array.isArray(productData.sizes) && productData.sizes.length > 0 ? (
-                                                productData.sizes.map((size, idx) => (
-                                                    <button
-                                                        key={size}
-                                                        type="button"
-                                                        className={`px-2 py-1 rounded border text-xs font-medium ${selectedColor && getColorObj(selectedColor)?.stock <= 0
-                                                            ? 'bg-gray-100 text-gray-400 opacity-50 cursor-not-allowed'
-                                                            : selectedSize === size
-                                                                ? 'bg-orange-500 text-white border-orange-500'
-                                                                : 'bg-gray-100 text-gray-700 border-gray-300'
-                                                            }`}
-                                                        onClick={() => {
-                                                            if (selectedColor && getColorObj(selectedColor)?.stock > 0) {
-                                                                setSelectedSize(size);
-                                                            }
-                                                        }}
-                                                        disabled={selectedColor && getColorObj(selectedColor)?.stock <= 0}
-                                                    >
-                                                        {size}
-                                                    </button>
-                                                ))
-                                            ) : (
-                                                <span>-</span>
-                                            )}
+                                            {(() => {
+                                                const availableSizes = getAvailableSizes();
+                                                return availableSizes.length > 0 ? (
+                                                    availableSizes.map((size, idx) => {
+                                                        const sizeStock = getColorSizeStock(selectedColor, size);
+                                                        const isOutOfStock = selectedColor && sizeStock <= 0;
+                                                        const isDisabled = !selectedColor || isOutOfStock;
+
+                                                        return (
+                                                            <button
+                                                                key={size}
+                                                                type="button"
+                                                                className={`px-2 py-1 rounded border text-xs font-medium relative ${isDisabled
+                                                                    ? 'bg-gray-100 text-gray-400 opacity-50 cursor-not-allowed border-gray-200'
+                                                                    : selectedSize === size
+                                                                        ? 'bg-orange-500 text-white border-orange-500'
+                                                                        : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200'
+                                                                    }`}
+                                                                onClick={() => {
+                                                                    if (!isDisabled) {
+                                                                        setSelectedSize(size);
+                                                                    }
+                                                                }}
+                                                                disabled={isDisabled}
+                                                                title={isOutOfStock ? `${size} is out of stock in ${selectedColor}` :
+                                                                    selectedColor ? `${sizeStock} ${size} available in ${selectedColor}` :
+                                                                        'Please select a color first'}
+                                                            >
+                                                                {size}
+                                                                {isOutOfStock && (
+                                                                    <span className="ml-1 text-red-400">✕</span>
+                                                                )}
+                                                            </button>
+                                                        );
+                                                    })
+                                                ) : (
+                                                    <span>-</span>
+                                                );
+                                            })()}
                                         </div>
                                     </td>
                                 </tr>
@@ -324,56 +466,61 @@ const Product = () => {
                     </div>
 
                     <div className="flex items-center mt-10 gap-4">
-                        {/* Check if selected color is out of stock or not selected yet */}
-                        {selectedColor && getColorObj(selectedColor) && getColorObj(selectedColor).stock <= 0 ? (
-                            <button
-                                onClick={subscribeToStockNotifications}
-                                className={`w-full py-3.5 ${isNotifying ? 'bg-gray-200 cursor-wait' : notifySuccess ? 'bg-green-500 text-white' : 'bg-blue-500 text-white hover:bg-blue-600'} transition`}
-                                disabled={isNotifying || notifySuccess || !(selectedColor && selectedSize)}
-                            >
-                                {isNotifying ? 'Processing...' : notifySuccess ? 'You will be notified!' : 'Notify When In Stock'}
-                            </button>
-                        ) : (
-                            <>
-                                <button
-                                    onClick={() => selectedColor && selectedSize && addToCart(productData._id, { color: selectedColor, size: selectedSize })}
-                                    className={`w-full py-3.5 ${(selectedColor && selectedSize) ? 'bg-gray-100 text-gray-800/80 hover:bg-gray-200' : 'bg-gray-200 text-gray-400 cursor-not-allowed'} transition`}
-                                    disabled={!(selectedColor && selectedSize)}
-                                >
-                                    Add to Cart
-                                </button>
-                                <button
-                                    onClick={() => {
-                                        if (selectedColor && selectedSize) {
-                                            addToCart(productData._id, { color: selectedColor, size: selectedSize });
-                                            router.push('/cart');
-                                        }
-                                    }}
-                                    className={`w-full py-3.5 ${(selectedColor && selectedSize) ? 'bg-orange-500 text-white hover:bg-orange-600' : 'bg-orange-200 text-gray-400 cursor-not-allowed'} transition`}
-                                    disabled={!(selectedColor && selectedSize)}
-                                >
-                                    Buy now
-                                </button>
-                            </>
-                        )}
+                        {/* Check if selected color-size combination is out of stock */}
+                        {(() => {
+                            const colorSizeStock = getColorSizeStock(selectedColor, selectedSize);
+                            const isOutOfStock = selectedColor && selectedSize && colorSizeStock <= 0;
+                            const canAddToCart = selectedColor && selectedSize && !isOutOfStock;
+
+                            if (isOutOfStock) {
+                                return (
+                                    <button
+                                        onClick={subscribeToStockNotifications}
+                                        className={`w-full py-3.5 ${isNotifying ? 'bg-gray-200 cursor-wait' :
+                                            notifySuccess ? 'bg-green-500 text-white' :
+                                                'bg-blue-500 text-white hover:bg-blue-600'
+                                            } transition`}
+                                        disabled={isNotifying || notifySuccess}
+                                    >
+                                        {isNotifying ? 'Processing...' :
+                                            notifySuccess ? 'You will be notified!' :
+                                                'Notify When In Stock'}
+                                    </button>
+                                );
+                            }
+
+                            return (
+                                <>
+                                    <button
+                                        onClick={() => canAddToCart && addToCart(productData._id, { color: selectedColor, size: selectedSize })}
+                                        className={`w-full py-3.5 ${canAddToCart ?
+                                            'bg-gray-100 text-gray-800/80 hover:bg-gray-200' :
+                                            'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                            } transition`}
+                                        disabled={!canAddToCart}
+                                    >
+                                        Add to Cart
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            if (canAddToCart) {
+                                                addToCart(productData._id, { color: selectedColor, size: selectedSize });
+                                                router.push('/cart');
+                                            }
+                                        }}
+                                        className={`w-full py-3.5 ${canAddToCart ?
+                                            'bg-orange-500 text-white hover:bg-orange-600' :
+                                            'bg-orange-200 text-gray-400 cursor-not-allowed'
+                                            } transition`}
+                                        disabled={!canAddToCart}
+                                    >
+                                        Buy now
+                                    </button>
+                                </>
+                            );
+                        })()}
                     </div>
 
-                    {/* Show message about stock status */}
-                    <div className="mt-2 text-sm">
-                        {!selectedColor ? (
-                            <p className="text-gray-600">Please select a color to see availability.</p>
-                        ) : selectedColor && getColorObj(selectedColor) ? (
-                            getColorObj(selectedColor).stock <= 0 ? (
-                                <p className="text-red-600">This item is currently out of stock.</p>
-                            ) : getColorObj(selectedColor).stock < 10 ? (
-                                <p className="text-orange-600">Only {getColorObj(selectedColor).stock} left in stock - order soon.</p>
-                            ) : (
-                                <p className="text-green-600">In stock and ready to ship.</p>
-                            )
-                        ) : (
-                            <p className="text-gray-600">Stock information unavailable.</p>
-                        )}
-                    </div>
                 </div>
             </div>
             <div className="flex flex-col items-center">
