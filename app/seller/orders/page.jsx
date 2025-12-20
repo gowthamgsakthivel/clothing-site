@@ -141,7 +141,7 @@ const Orders = () => {
         }
         // Keep loading state while user is being fetched
     }, [user, getToken]); return (
-        <div className="flex-1 h-screen overflow-scroll flex flex-col justify-between text-sm bg-gray-50">
+        <div className="w-full h-screen overflow-auto flex flex-col justify-between text-sm bg-gray-50">
             {!user ? (
                 <div className="md:p-10 p-4">
                     <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-yellow-700">

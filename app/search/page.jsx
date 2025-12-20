@@ -9,6 +9,16 @@ import SearchBar from '@/components/SearchBar';
 import Footer from '@/components/Footer';
 import SEOMetadata from '@/components/SEOMetadata';
 
+// Utility to highlight search terms in text
+const highlightText = (text, query) => {
+    if (!query || !text) return text;
+    const regex = new RegExp(`(${query})`, 'gi');
+    const parts = text.split(regex);
+    return parts.map((part, i) =>
+        regex.test(part) ? <mark key={i} className="bg-yellow-200 px-0.5">{part}</mark> : part
+    );
+};
+
 // Filter component
 const FilterSection = ({ title, options, selected, onChange }) => (
     <div className="mb-6">

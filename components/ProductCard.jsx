@@ -39,13 +39,19 @@ const ProductCard = ({ product }) => {
                 ) : product.stock !== undefined && product.stock > 0 && product.stock < 10 && (
                     <span className="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded z-10">Only few left</span>
                 )}
-                <Image
-                    src={product.image[0]}
-                    alt={product.name}
-                    className="group-hover:scale-105 transition object-cover w-4/5 h-4/5 md:w-full md:h-full"
-                    width={800}
-                    height={800}
-                />
+                {product.image?.[0] ? (
+                    <Image
+                        src={product.image[0]}
+                        alt={product.name}
+                        className="group-hover:scale-105 transition object-cover w-4/5 h-4/5 md:w-full md:h-full"
+                        width={800}
+                        height={800}
+                    />
+                ) : (
+                    <div className="flex items-center justify-center w-full h-full text-gray-400">
+                        <span>No Image</span>
+                    </div>
+                )}
                 <button
                     className={`absolute top-2 right-2 bg-white p-2 rounded-full shadow-md ${isFavorite ? 'text-orange-600' : ''}`}
                     onClick={handleFavoriteClick}

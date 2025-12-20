@@ -36,6 +36,9 @@ const Footer = () => {
                 <a className="hover:text-gray-900 transition" href="/contact">Contact Us</a>
               </li>
               <li>
+                <a className="hover:text-gray-900 transition" href="/profile">My Account</a>
+              </li>
+              <li>
                 <a className="hover:text-gray-900 transition" href="/privacy-policy">Privacy Policy</a>
               </li>
             </ul>

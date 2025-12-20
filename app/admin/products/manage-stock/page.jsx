@@ -18,8 +18,22 @@ const ManageStock = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const [showAddColorModal, setShowAddColorModal] = useState(false);
+    const [newColorData, setNewColorData] = useState({
+        name: '',
+        code: '#000000',
+        quantities: {
+            XS: 0,
+            S: 0,
+            M: 0,
+            L: 0,
+            XL: 0,
+            XXL: 0
+        }
+    });
+    const availableSizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
 
-    // Fetch seller's products
+    //  // Fetch seller's products
     const fetchProducts = async () => {
         if (!user) return;
 
@@ -85,6 +99,60 @@ const ManageStock = () => {
         } catch (error) {
             console.error('Error updating stock:', error);
             toast.error('Failed to update stock');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    // Add new color to existing product
+    const addNewColor = async () => {
+        if (!selectedProduct) {
+            toast.error('Please select a product first');
+            return;
+        }
+
+        if (!newColorData.name.trim()) {
+            toast.error('Please enter a color name');
+            return;
+        }
+
+        try {
+            setIsSaving(true);
+            const token = await getToken();
+
+            const response = await axios.post('/api/admin/products/add-color', {
+                productId: selectedProduct._id,
+                colorName: newColorData.name.trim(),
+                colorCode: newColorData.code,
+                quantities: newColorData.quantities
+            }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            if (response.data.success) {
+                toast.success(`Color "${newColorData.name}" added successfully!`);
+                // Reset form
+                setNewColorData({
+                    name: '',
+                    code: '#000000',
+                    quantities: {
+                        XS: 0,
+                        S: 0,
+                        M: 0,
+                        L: 0,
+                        XL: 0,
+                        XXL: 0
+                    }
+                });
+                setShowAddColorModal(false);
+                // Refresh stock data
+                await fetchStockData(selectedProduct._id);
+            } else {
+                toast.error(response.data.message || 'Failed to add color');
+            }
+        } catch (error) {
+            console.error('Error adding color:', error);
+            toast.error(error.response?.data?.message || 'Failed to add color');
         } finally {
             setIsSaving(false);
         }
@@ -211,63 +279,70 @@ const ManageStock = () => {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     {/* Products List */}
                     <div className="lg:col-span-1">
-                        <div className="bg-white rounded-lg shadow-md">
-                            <div className="p-4 border-b">
-                                <h2 className="text-lg font-semibold text-gray-800">Your Products</h2>
+                        <div className="bg-white rounded-xl shadow-lg border border-gray-200 h-full flex flex-col">
+                            <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-orange-50 to-orange-100">
+                                <h2 className="text-xl font-bold text-gray-900">📦 Your Products</h2>
                             </div>
-                            <div className="max-h-96 overflow-y-auto">
+                            <div className="flex-1 overflow-y-auto">
                                 {isLoading ? (
-                                    <div className="p-8 text-center">
+                                    <div className="p-12 text-center">
                                         <Loading />
                                     </div>
                                 ) : filteredProducts.length === 0 ? (
-                                    <div className="p-8 text-center text-gray-500">
-                                        {searchTerm ? 'No products match your search' : 'No products found'}
+                                    <div className="p-12 text-center text-gray-500">
+                                        <p className="text-lg">📭 {searchTerm ? 'No products match your search' : 'No products found'}</p>
                                     </div>
                                 ) : (
-                                    filteredProducts.map(product => (
-                                        <div
-                                            key={product._id}
-                                            id={`product-${product._id}`}
-                                            onClick={() => setSelectedProduct(product)}
-                                            className={`p-4 border-b cursor-pointer hover:bg-gray-50 transition-colors ${selectedProduct?._id === product._id ? 'bg-orange-50 border-l-4 border-l-orange-500' : ''
-                                                }`}
-                                        >
-                                            <div className="flex items-center gap-3">
-                                                <Image
-                                                    src={product.image[0]}
-                                                    alt={product.name}
-                                                    width={50}
-                                                    height={50}
-                                                    className="w-12 h-12 object-cover rounded-md"
-                                                />
+                                    <div className="space-y-2 p-3">
+                                        {filteredProducts.map(product => (
+                                            <div
+                                                key={product._id}
+                                                id={`product-${product._id}`}
+                                                onClick={() => setSelectedProduct(product)}
+                                                className={`flex items-center gap-3 px-4 py-3 rounded-lg cursor-pointer transition-all duration-200 border-2 ${selectedProduct?._id === product._id
+                                                    ? 'bg-orange-100 border-orange-500 shadow-md'
+                                                    : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                                                    }`}
+                                            >
+                                                <div className="flex-shrink-0">
+                                                    {product.image?.[0] ? (
+                                                        <Image
+                                                            src={product.image[0]}
+                                                            alt={product.name}
+                                                            width={50}
+                                                            height={50}
+                                                            className="w-12 h-12 object-cover rounded-md shadow-sm"
+                                                        />
+                                                    ) : (
+                                                        <div className="w-12 h-12 bg-gradient-to-br from-gray-300 to-gray-400 rounded-md flex items-center justify-center text-gray-600 text-xs font-semibold">
+                                                            No Image
+                                                        </div>
+                                                    )}
+                                                </div>
                                                 <div className="flex-1 min-w-0">
-                                                    <h3 className="font-medium text-gray-800 truncate">{product.name}</h3>
-                                                    <p className="text-sm text-gray-500">{product.category}</p>
-                                                    <div className="flex items-center gap-2 mt-1">
-                                                        <span className="text-sm text-blue-600">
-                                                            Total Stock: {product.totalStock || 0}
-                                                        </span>
-                                                        {product.totalStock <= (product.stockSettings?.globalLowStockThreshold || 10) && (
-                                                            <span className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded">
-                                                                Low Stock
-                                                            </span>
-                                                        )}
-                                                    </div>
+                                                    <h3 className="font-bold text-gray-900 text-sm truncate">{product.name}</h3>
+                                                    <p className="text-xs text-gray-500 truncate">{product.category}</p>
+                                                </div>
+                                                <div className="flex-shrink-0 text-right">
+                                                    <div className="font-bold text-blue-600 text-lg">{product.totalStock || 0}</div>
+                                                    <div className="text-xs text-gray-500">units</div>
+                                                    {product.totalStock <= (product.stockSettings?.globalLowStockThreshold || 10) && (
+                                                        <div className="text-xs text-red-600 font-semibold mt-1">⚠️ Low</div>
+                                                    )}
                                                 </div>
                                             </div>
-                                        </div>
-                                    ))
+                                        ))}
+                                    </div>
                                 )}
                             </div>
                         </div>
                     </div>
 
                     {/* Stock Details */}
-                    <div className="lg:col-span-2">
+                    <div className="lg:col-span-1">
                         {selectedProduct ? (
                             <div className="space-y-6">
                                 {/* Auto-selection indicator */}
@@ -285,13 +360,19 @@ const ManageStock = () => {
                                 {/* Product Header */}
                                 <div className="bg-white rounded-lg shadow-md p-6">
                                     <div className="flex items-start gap-4">
-                                        <Image
-                                            src={selectedProduct.image[0]}
-                                            alt={selectedProduct.name}
-                                            width={100}
-                                            height={100}
-                                            className="w-20 h-20 object-cover rounded-md"
-                                        />
+                                        {selectedProduct.image?.[0] ? (
+                                            <Image
+                                                src={selectedProduct.image[0]}
+                                                alt={selectedProduct.name}
+                                                width={100}
+                                                height={100}
+                                                className="w-20 h-20 object-cover rounded-md"
+                                            />
+                                        ) : (
+                                            <div className="w-20 h-20 bg-gray-200 rounded-md flex items-center justify-center text-gray-400 text-xs">
+                                                No Image
+                                            </div>
+                                        )}
                                         <div className="flex-1">
                                             <h2 className="text-xl font-semibold text-gray-800">{selectedProduct.name}</h2>
                                             <p className="text-gray-600 mt-1">{selectedProduct.category} • {selectedProduct.brand}</p>
@@ -306,6 +387,15 @@ const ManageStock = () => {
                                         </div>
                                     </div>
                                 </div>
+
+                                {/* Add Color Button */}
+                                <button
+                                    onClick={() => setShowAddColorModal(true)}
+                                    className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
+                                >
+                                    <span className="text-xl">🎨</span>
+                                    Add New Color
+                                </button>
 
                                 {/* Low Stock Alerts */}
                                 {stockData && getLowStockItems().length > 0 && (
@@ -352,6 +442,18 @@ const ManageStock = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Add Color Modal */}
+            <AddColorModal
+                isOpen={showAddColorModal}
+                onClose={() => setShowAddColorModal(false)}
+                onSubmit={addNewColor}
+                newColorData={newColorData}
+                setNewColorData={setNewColorData}
+                isSaving={isSaving}
+                availableSizes={availableSizes}
+            />
+
             <Footer />
         </>
     );
@@ -478,6 +580,123 @@ const StockManagementGrid = ({ inventory, onUpdateStock, isSaving }) => {
                     </button>
                 </div>
             )}
+        </div>
+    );
+};
+
+// Add Color Modal Component
+const AddColorModal = ({ isOpen, onClose, onSubmit, newColorData, setNewColorData, isSaving, availableSizes }) => {
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-96 overflow-y-auto">
+                {/* Header */}
+                <div className="bg-gradient-to-r from-green-500 to-emerald-600 p-6 sticky top-0">
+                    <div className="flex items-center justify-between">
+                        <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                            <span className="text-2xl">🎨</span>
+                            Add New Color
+                        </h3>
+                        <button
+                            onClick={onClose}
+                            className="text-white hover:text-gray-200 text-2xl"
+                            disabled={isSaving}
+                        >
+                            ✕
+                        </button>
+                    </div>
+                </div>
+
+                {/* Body */}
+                <div className="p-6 space-y-4">
+                    {/* Color Name */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Color Name
+                        </label>
+                        <input
+                            type="text"
+                            placeholder="e.g., Red, Blue, Black"
+                            value={newColorData.name}
+                            onChange={(e) => setNewColorData({ ...newColorData, name: e.target.value })}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                            disabled={isSaving}
+                        />
+                    </div>
+
+                    {/* Color Code Picker */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Color Code
+                        </label>
+                        <div className="flex gap-3">
+                            <input
+                                type="color"
+                                value={newColorData.code}
+                                onChange={(e) => setNewColorData({ ...newColorData, code: e.target.value })}
+                                className="w-16 h-12 border border-gray-300 rounded-lg cursor-pointer"
+                                disabled={isSaving}
+                            />
+                            <input
+                                type="text"
+                                placeholder="#000000"
+                                value={newColorData.code}
+                                onChange={(e) => setNewColorData({ ...newColorData, code: e.target.value })}
+                                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 font-mono text-sm"
+                                disabled={isSaving}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Initial Stock Quantities */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Initial Stock by Size
+                        </label>
+                        <div className="grid grid-cols-2 gap-3">
+                            {availableSizes.map(size => (
+                                <div key={size} className="flex flex-col">
+                                    <label className="text-xs text-gray-600 mb-1">{size}</label>
+                                    <input
+                                        type="number"
+                                        placeholder="0"
+                                        value={newColorData.quantities[size] || 0}
+                                        onChange={(e) => setNewColorData({
+                                            ...newColorData,
+                                            quantities: {
+                                                ...newColorData.quantities,
+                                                [size]: parseInt(e.target.value) || 0
+                                            }
+                                        })}
+                                        min="0"
+                                        className="px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-green-500 text-sm"
+                                        disabled={isSaving}
+                                    />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Footer */}
+                <div className="border-t bg-gray-50 p-4 flex gap-3 sticky bottom-0">
+                    <button
+                        onClick={onClose}
+                        className="flex-1 px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors"
+                        disabled={isSaving}
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        onClick={onSubmit}
+                        className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors font-medium"
+                        disabled={isSaving}
+                    >
+                        {isSaving ? 'Adding...' : 'Add Color'}
+                    </button>
+                </div>
+            </div>
         </div>
     );
 };

@@ -67,7 +67,7 @@ const ProductList = () => {
   };
 
   return (
-    <div className="flex-1 min-h-screen flex flex-col justify-between">
+    <div className="w-full min-h-screen flex flex-col justify-between">
       {loading ? <Loading /> : (
         <div className="w-full md:p-10 p-4">
           {/* Header */}
@@ -108,14 +108,14 @@ const ProductList = () => {
           {/* Products Table */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full min-w-[800px]">
                 <thead className="bg-gray-50 text-gray-900 text-sm text-left">
                   <tr>
                     <th className="px-4 py-3 font-medium">Product</th>
-                    <th className="px-4 py-3 font-medium max-sm:hidden">Category</th>
-                    <th className="px-4 py-3 font-medium max-sm:hidden">Brand</th>
+                    <th className="px-4 py-3 font-medium max-md:hidden">Category</th>
+                    <th className="px-4 py-3 font-medium max-md:hidden">Brand</th>
                     <th className="px-4 py-3 font-medium">Price</th>
-                    <th className="px-4 py-3 font-medium">Stock Status</th>
+                    <th className="px-4 py-3 font-medium">Stock</th>
                     <th className="px-4 py-3 font-medium">Actions</th>
                   </tr>
                 </thead>
@@ -126,27 +126,39 @@ const ProductList = () => {
                         <td className="px-4 py-4">
                           <div className="flex items-center space-x-3">
                             <div className="bg-gray-100 rounded-lg p-2 flex-shrink-0">
-                              <Image
-                                src={product.image[0]}
-                                alt={product.name}
-                                className="w-12 h-12 object-cover rounded"
-                                width={48}
-                                height={48}
-                              />
+                              {product.image?.[0] ? (
+                                <Image
+                                  src={product.image[0]}
+                                  alt={product.name}
+                                  className="w-10 h-10 md:w-12 md:h-12 object-cover rounded"
+                                  width={48}
+                                  height={48}
+                                />
+                              ) : (
+                                <div className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center text-gray-400 text-xs">
+                                  No Image
+                                </div>
+                              )}
                             </div>
-                            <div className="min-w-0 flex-1">
-                              <p className="font-medium text-gray-900 truncate">{product.name}</p>
-                              <p className="text-xs text-gray-500 truncate">{product.description?.substring(0, 50)}...</p>
+                            <div className="min-w-0 flex-1 overflow-hidden">
+                              <p className="font-medium text-gray-900 truncate max-w-full" title={product.name}>
+                                {product.name}
+                              </p>
+                              <p className="text-xs text-gray-500 truncate max-md:hidden">
+                                {product.description?.substring(0, 40)}...
+                              </p>
                             </div>
                           </div>
                         </td>
-                        <td className="px-4 py-4 max-sm:hidden">
-                          <span className="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded">{product.category}</span>
+                        <td className="px-4 py-4 max-md:hidden">
+                          <span className="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded truncate block">
+                            {product.category}
+                          </span>
                         </td>
-                        <td className="px-4 py-4 max-sm:hidden">{product.brand}</td>
+                        <td className="px-4 py-4 max-md:hidden truncate">{product.brand}</td>
                         <td className="px-4 py-4">
-                          <div className="flex flex-col">
-                            <span className="font-medium text-gray-900">₹{product.offerPrice}</span>
+                          <div className="flex flex-col whitespace-nowrap">
+                            <span className="font-medium text-gray-900 text-sm">₹{product.offerPrice}</span>
                             {product.price !== product.offerPrice && (
                               <span className="text-xs text-gray-500 line-through">₹{product.price}</span>
                             )}
@@ -155,21 +167,21 @@ const ProductList = () => {
                         <td className="px-4 py-4">
                           <div className="flex flex-col gap-1">
                             {getStockStatusBadge(product.totalStock || product.stock, product.stockSettings?.globalLowStockThreshold)}
-                            <span className="text-xs text-gray-500">
+                            <span className="text-xs text-gray-500 whitespace-nowrap">
                               {product.totalStock || product.stock || 0} units
                             </span>
                             {product.inventory?.length > 0 && (
-                              <span className="text-xs text-blue-600">
+                              <span className="text-xs text-blue-600 whitespace-nowrap">
                                 {product.inventory.length} colors
                               </span>
                             )}
                           </div>
                         </td>
                         <td className="px-4 py-4">
-                          <div className="flex gap-2">
+                          <div className="flex gap-2 flex-wrap">
                             <button
                               onClick={() => router.push(`/product/${product._id}`)}
-                              className="flex items-center gap-1 px-3 py-1.5 bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors text-xs"
+                              className="flex items-center gap-1 px-2 md:px-3 py-1.5 bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors text-xs whitespace-nowrap"
                               title="View Product"
                             >
                               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -181,7 +193,7 @@ const ProductList = () => {
 
                             <button
                               onClick={() => router.push(`/admin/products/manage-stock?product=${product._id}`)}
-                              className="flex items-center gap-1 px-3 py-1.5 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors text-xs"
+                              className="flex items-center gap-1 px-2 md:px-3 py-1.5 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors text-xs whitespace-nowrap"
                               title="Manage Stock"
                             >
                               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">

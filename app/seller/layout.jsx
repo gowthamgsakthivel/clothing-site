@@ -29,11 +29,13 @@ const Layout = ({ children }) => {
   }
 
   return (
-    <div>
+    <div className="min-h-screen bg-gray-50">
       <Navbar />
-      <div className='flex w-full'>
+      <div className='flex w-full max-w-[100vw] overflow-x-hidden'>
         <Sidebar />
-        {children}
+        <main className="flex-1 min-w-0 overflow-x-auto">
+          {children}
+        </main>
       </div>
     </div>
   )

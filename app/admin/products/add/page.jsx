@@ -433,8 +433,8 @@ const AddProduct = () => {
                                 <button
                                     onClick={() => setActiveTab('add')}
                                     className={`px-6 py-3 text-sm font-medium rounded-lg transition-colors ${activeTab === 'add'
-                                            ? 'bg-orange-500 text-white'
-                                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                        ? 'bg-orange-500 text-white'
+                                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                         }`}
                                 >
                                     Add New Product
@@ -445,8 +445,8 @@ const AddProduct = () => {
                                         if (products.length === 0) fetchProducts();
                                     }}
                                     className={`px-6 py-3 text-sm font-medium rounded-lg transition-colors ${activeTab === 'manage'
-                                            ? 'bg-orange-500 text-white'
-                                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                        ? 'bg-orange-500 text-white'
+                                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                         }`}
                                 >
                                     Manage Stock
@@ -717,81 +717,99 @@ const ManageStockSection = ({
     getLowStockItems
 }) => {
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Products List */}
             <div className="lg:col-span-1">
-                <div className="bg-gray-50 rounded-lg">
-                    <div className="p-4 border-b">
-                        <h2 className="text-lg font-semibold text-gray-800 mb-3">Your Products</h2>
+                <div className="bg-white rounded-xl shadow-lg border border-gray-200 h-full flex flex-col">
+                    <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-orange-50 to-orange-100">
+                        <h2 className="text-xl font-bold text-gray-900 mb-4">📦 Your Products</h2>
                         <input
                             type="text"
-                            placeholder="Search products..."
+                            placeholder="🔍 Search products by name..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
                         />
                     </div>
-                    <div className="max-h-96 overflow-y-auto">
+                    <div className="flex-1 overflow-y-auto">
                         {isLoading ? (
-                            <div className="p-8 text-center">
+                            <div className="p-12 text-center">
                                 <Loading />
                             </div>
                         ) : products.length === 0 ? (
-                            <div className="p-8 text-center text-gray-500">
-                                {searchTerm ? 'No products match your search' : 'No products found'}
+                            <div className="p-12 text-center text-gray-500">
+                                <p className="text-lg">📭 {searchTerm ? 'No products match your search' : 'No products found'}</p>
                             </div>
                         ) : (
-                            products.map(product => (
-                                <div
-                                    key={product._id}
-                                    onClick={() => setSelectedProduct(product)}
-                                    className={`p-4 border-b cursor-pointer hover:bg-gray-50 transition-colors ${selectedProduct?._id === product._id ? 'bg-orange-50 border-l-4 border-l-orange-500' : ''
-                                        }`}
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <Image
-                                            src={product.image[0]}
-                                            alt={product.name}
-                                            width={50}
-                                            height={50}
-                                            className="w-12 h-12 object-cover rounded-md"
-                                        />
-                                        <div className="flex-1 min-w-0">
-                                            <h3 className="font-medium text-gray-800 truncate">{product.name}</h3>
-                                            <p className="text-sm text-gray-500">{product.category}</p>
-                                            <div className="flex items-center gap-2 mt-1">
-                                                <span className="text-sm text-blue-600">
-                                                    Total Stock: {product.totalStock || 0}
-                                                </span>
-                                                {product.totalStock <= (product.stockSettings?.globalLowStockThreshold || 10) && (
-                                                    <span className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded">
-                                                        Low Stock
-                                                    </span>
+                            <div className="grid grid-cols-1 gap-3 p-4">
+                                {products.map(product => (
+                                    <div
+                                        key={product._id}
+                                        onClick={() => setSelectedProduct(product)}
+                                        className={`p-4 rounded-lg cursor-pointer transition-all duration-200 transform hover:scale-105 hover:shadow-lg border-2 ${selectedProduct?._id === product._id
+                                                ? 'bg-gradient-to-r from-orange-100 to-orange-50 border-orange-500 shadow-md'
+                                                : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                                            }`}
+                                    >
+                                        <div className="flex items-center gap-4">
+                                            <div className="flex-shrink-0">
+                                                {product.image?.[0] ? (
+                                                    <Image
+                                                        src={product.image[0]}
+                                                        alt={product.name}
+                                                        width={60}
+                                                        height={60}
+                                                        className="w-16 h-16 object-cover rounded-lg shadow-sm"
+                                                    />
+                                                ) : (
+                                                    <div className="w-16 h-16 bg-gradient-to-br from-gray-300 to-gray-400 rounded-lg flex items-center justify-center text-gray-600 text-xs font-semibold">
+                                                        No Image
+                                                    </div>
                                                 )}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <h3 className="font-bold text-gray-900 text-base truncate">{product.name}</h3>
+                                                <p className="text-xs text-gray-500 mb-2 truncate">{product.category}</p>
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <span className="text-sm font-semibold text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
+                                                        📊 {product.totalStock || 0} units
+                                                    </span>
+                                                    {product.totalStock <= (product.stockSettings?.globalLowStockThreshold || 10) && (
+                                                        <span className="text-xs bg-red-100 text-red-700 px-3 py-1 rounded-full font-semibold">
+                                                            ⚠️ Low Stock
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-                            ))
+                                ))}
+                            </div>
                         )}
                     </div>
                 </div>
             </div>
 
             {/* Stock Details */}
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-1">
                 {selectedProduct ? (
                     <div className="space-y-6">
                         {/* Product Header */}
                         <div className="bg-gray-50 rounded-lg p-6">
                             <div className="flex items-start gap-4">
-                                <Image
-                                    src={selectedProduct.image[0]}
-                                    alt={selectedProduct.name}
-                                    width={100}
-                                    height={100}
-                                    className="w-20 h-20 object-cover rounded-md"
-                                />
+                                {selectedProduct.image?.[0] ? (
+                                    <Image
+                                        src={selectedProduct.image[0]}
+                                        alt={selectedProduct.name}
+                                        width={100}
+                                        height={100}
+                                        className="w-20 h-20 object-cover rounded-md"
+                                    />
+                                ) : (
+                                    <div className="w-20 h-20 bg-gray-200 rounded-md flex items-center justify-center text-gray-400 text-xs">
+                                        No Image
+                                    </div>
+                                )}
                                 <div className="flex-1">
                                     <h2 className="text-xl font-semibold text-gray-800">{selectedProduct.name}</h2>
                                     <p className="text-gray-600 mt-1">{selectedProduct.category} • {selectedProduct.brand}</p>
@@ -919,8 +937,7 @@ const ColorInventoryCard = ({
                                         type="number"
                                         value={sizeData.quantity}
                                         onChange={(e) => onUpdateSizeStock(colorIndex, sizeIndex, 'quantity', e.target.value)}
-                                        className={`w-full px-2 py-1 border rounded text-center text-sm focus:outline-none focus:ring-1 focus:ring-orange-500 ${isLowStock ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                                            }`}
+                                        className={`w-full px-2 py-1 border rounded text-center text-sm focus:outline-none focus:ring-1 focus:ring-orange-500 ${isLowStock ? 'border-red-300 bg-red-50' : 'border-gray-300'}`}
                                         min="0"
                                     />
                                 </div>
