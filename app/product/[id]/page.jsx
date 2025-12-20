@@ -9,6 +9,13 @@ import { useParams } from "next/navigation";
 import Loading from "@/components/Loading";
 import { useAppContext } from "@/context/AppContext";
 import SEOMetadata from "@/components/SEOMetadata";
+import ProductReviews from "@/components/ProductReviews";
+import RecentlyViewed from "@/components/RecentlyViewed";
+import { addToRecentlyViewed } from "@/lib/recentlyViewed";
+import SizeGuideModal from "@/components/SizeGuideModal";
+import SizeRecommendation from "@/components/SizeRecommendation";
+import { getSizeChart } from "@/lib/sizeGuideData";
+import ShareButton from "@/components/ShareButton";
 import React from "react";
 import toast from "react-hot-toast";
 
@@ -22,8 +29,12 @@ const Product = () => {
     const [productData, setProductData] = useState(null);
     const [selectedColor, setSelectedColor] = useState(null);
     const [selectedSize, setSelectedSize] = useState(null);
+    const [quantity, setQuantity] = useState(1);
     const [isNotifying, setIsNotifying] = useState(false);
     const [notifySuccess, setNotifySuccess] = useState(false);
+    const [showSizeGuide, setShowSizeGuide] = useState(false);
+    const [showSizeRecommendation, setShowSizeRecommendation] = useState(false);
+    const [sizeChart, setSizeChart] = useState(null);
 
     const fetchProductData = async () => {
         // Safely find product and handle if products array is undefined
@@ -72,7 +83,16 @@ const Product = () => {
 
     useEffect(() => {
         fetchProductData();
-    }, [id, products]);
+        // Track product view
+        if (id) {
+            addToRecentlyViewed(id);
+        }
+        // Load size chart based on product category
+        if (productData) {
+            const chart = getSizeChart(productData.category, productData.subCategory);
+            setSizeChart(chart);
+        }
+    }, [id, products, productData?.category, productData?.subCategory]);
 
     // Check URL parameters for notify flag
     useEffect(() => {
@@ -310,13 +330,19 @@ const Product = () => {
                                 Only few left
                             </span>
                         )}
-                        <Image
-                            src={mainImage || productData.image[0]}
-                            alt="alt"
-                            className="w-full h-auto object-cover mix-blend-multiply"
-                            width={1280}
-                            height={720}
-                        />
+                        {(mainImage || productData.image?.[0]) ? (
+                            <Image
+                                src={mainImage || productData.image[0]}
+                                alt="alt"
+                                className="w-full h-auto object-cover mix-blend-multiply"
+                                width={1280}
+                                height={720}
+                            />
+                        ) : (
+                            <div className="w-full h-96 flex items-center justify-center bg-gray-200 text-gray-400">
+                                No Image Available
+                            </div>
+                        )}
                     </div>
 
                     <div className="grid grid-cols-4 gap-4">
@@ -342,9 +368,17 @@ const Product = () => {
                 </div>
 
                 <div className="flex flex-col">
-                    <h1 className="text-3xl font-medium text-gray-800/90 mb-4">
-                        {productData.name}
-                    </h1>
+                    <div className="flex items-start justify-between gap-4 mb-4">
+                        <h1 className="text-3xl font-medium text-gray-800/90 flex-1">
+                            {productData.name}
+                        </h1>
+                        <ShareButton 
+                            product={productData}
+                            title={productData.name}
+                            description={productData.description}
+                            image={productData.image[0]}
+                        />
+                    </div>
                     <div className="flex items-center gap-2">
                         <div className="flex items-center gap-0.5">
                             <Image className="h-4 w-4" src={assets.star_icon} alt="star_icon" />
@@ -389,7 +423,12 @@ const Product = () => {
                                                                 type="button"
                                                                 className={`w-6 h-6 rounded-full border-2 ${c.stock < 1 ? 'opacity-50' : ''} ${selectedColor === c.color ? 'border-orange-500 ring-2 ring-orange-300' : 'border-gray-300'} focus:outline-none`}
                                                                 style={{ backgroundColor: c.color }}
-                                                                onClick={() => c.stock >= 1 && setSelectedColor(c.color)}
+                                                                onClick={() => {
+                                                                    if (c.stock >= 1) {
+                                                                        setSelectedColor(c.color);
+                                                                        setQuantity(1); // Reset quantity when color changes
+                                                                    }
+                                                                }}
                                                                 aria-label={`Select color ${c.color}`}
                                                                 title={c.stock < 1 ? 'Out of stock' : `${c.stock} in stock`}
                                                             >
@@ -412,6 +451,26 @@ const Product = () => {
                                 <tr>
                                     <td className="text-gray-600 font-medium">Size</td>
                                     <td className="text-gray-800/50 ">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <button
+                                                onClick={() => setShowSizeGuide(true)}
+                                                className="text-sm text-orange-600 hover:text-orange-700 font-medium flex items-center gap-1"
+                                            >
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                </svg>
+                                                Size Guide
+                                            </button>
+                                            <button
+                                                onClick={() => setShowSizeRecommendation(!showSizeRecommendation)}
+                                                className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+                                            >
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                                                </svg>
+                                                Find My Size
+                                            </button>
+                                        </div>
                                         <div className="flex gap-2 flex-wrap">
                                             {(() => {
                                                 const availableSizes = getAvailableSizes();
@@ -434,6 +493,7 @@ const Product = () => {
                                                                 onClick={() => {
                                                                     if (!isDisabled) {
                                                                         setSelectedSize(size);
+                                                                        setQuantity(1); // Reset quantity when size changes
                                                                     }
                                                                 }}
                                                                 disabled={isDisabled}
@@ -465,6 +525,50 @@ const Product = () => {
                         </table>
                     </div>
 
+                    {/* Size Recommendation Tool */}
+                    {showSizeRecommendation && sizeChart && (
+                        <div className="mt-6">
+                            <SizeRecommendation sizeChart={sizeChart} />
+                        </div>
+                    )}
+
+                    {/* Quantity Selector */}
+                    <div className="mt-6">
+                        <label className="block text-gray-600 font-medium mb-2">Quantity</label>
+                        <div className="flex items-center gap-3">
+                            <button
+                                type="button"
+                                onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                                className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-100 transition"
+                                disabled={quantity <= 1}
+                            >
+                                <Image src={assets.decrease_arrow} alt="decrease" width={12} height={12} />
+                            </button>
+                            <span className="min-w-[50px] text-center font-medium text-lg">{quantity}</span>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    const maxStock = getColorSizeStock(selectedColor, selectedSize);
+                                    if (maxStock > 0 && quantity < maxStock) {
+                                        setQuantity(quantity + 1);
+                                    }
+                                }}
+                                className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-100 transition"
+                                disabled={(() => {
+                                    const maxStock = getColorSizeStock(selectedColor, selectedSize);
+                                    return !selectedColor || !selectedSize || quantity >= maxStock;
+                                })()}
+                            >
+                                <Image src={assets.increase_arrow} alt="increase" width={12} height={12} />
+                            </button>
+                            {selectedColor && selectedSize && (
+                                <span className="text-sm text-gray-500 ml-2">
+                                    ({Math.max(0, getColorSizeStock(selectedColor, selectedSize) - quantity)} remaining after adding {quantity})
+                                </span>
+                            )}
+                        </div>
+                    </div>
+
                     <div className="flex items-center mt-10 gap-4">
                         {/* Check if selected color-size combination is out of stock */}
                         {(() => {
@@ -492,7 +596,14 @@ const Product = () => {
                             return (
                                 <>
                                     <button
-                                        onClick={() => canAddToCart && addToCart(productData._id, { color: selectedColor, size: selectedSize })}
+                                        onClick={() => {
+                                            if (canAddToCart) {
+                                                // Add items based on selected quantity
+                                                for (let i = 0; i < quantity; i++) {
+                                                    addToCart(productData._id, { color: selectedColor, size: selectedSize });
+                                                }
+                                            }
+                                        }}
                                         className={`w-full py-3.5 ${canAddToCart ?
                                             'bg-gray-100 text-gray-800/80 hover:bg-gray-200' :
                                             'bg-gray-200 text-gray-400 cursor-not-allowed'
@@ -504,7 +615,10 @@ const Product = () => {
                                     <button
                                         onClick={() => {
                                             if (canAddToCart) {
-                                                addToCart(productData._id, { color: selectedColor, size: selectedSize });
+                                                // Add items based on selected quantity
+                                                for (let i = 0; i < quantity; i++) {
+                                                    addToCart(productData._id, { color: selectedColor, size: selectedSize });
+                                                }
                                                 router.push('/cart');
                                             }
                                         }}
@@ -523,6 +637,17 @@ const Product = () => {
 
                 </div>
             </div>
+
+            {/* Reviews Section */}
+            <div className="px-6 md:px-16 lg:px-32 py-12">
+                <ProductReviews productId={id} />
+            </div>
+
+            {/* Recently Viewed Products */}
+            <div className="px-6 md:px-16 lg:px-32 py-12">
+                <RecentlyViewed currentProductId={id} />
+            </div>
+
             <div className="flex flex-col items-center">
                 <div className="flex flex-col items-center mb-4 mt-16">
                     <p className="text-3xl font-medium">Featured <span className="font-medium text-orange-600">Products</span></p>
@@ -537,6 +662,17 @@ const Product = () => {
             </div>
         </div>
         <Footer />
+
+        {/* Size Guide Modal */}
+        {sizeChart && (
+            <SizeGuideModal
+                isOpen={showSizeGuide}
+                onClose={() => setShowSizeGuide(false)}
+                sizeChart={sizeChart}
+                productName={productData?.name}
+                fitType={productData?.fitType || 'regular'}
+            />
+        )}
     </>
     ) : <Loading />
 };

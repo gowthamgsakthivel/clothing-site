@@ -171,12 +171,18 @@ const MyDesignsPage = () => {
                                         {/* Design Image */}
                                         <div className="md:w-1/4 p-4 flex items-center justify-center bg-gray-50">
                                             <div className="relative h-40 w-40">
-                                                <Image
-                                                    src={request.designImage}
-                                                    alt="Design"
-                                                    fill
-                                                    className="object-contain"
-                                                />
+                                                {request.designImage ? (
+                                                    <Image
+                                                        src={request.designImage}
+                                                        alt="Design"
+                                                        fill
+                                                        className="object-contain"
+                                                    />
+                                                ) : (
+                                                    <div className="w-full h-full flex items-center justify-center bg-gray-200 rounded text-gray-400">
+                                                        No Image
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
 
@@ -362,12 +368,18 @@ const MyDesignsPage = () => {
                                 {/* Left column - Design image */}
                                 <div className="md:w-1/2 mb-6 md:mb-0">
                                     <div className="relative h-72 w-full rounded-lg overflow-hidden bg-gray-100 border">
-                                        <Image
-                                            src={activeRequest.designImage}
-                                            alt="Design"
-                                            fill
-                                            className="object-contain"
-                                        />
+                                        {activeRequest.designImage ? (
+                                            <Image
+                                                src={activeRequest.designImage}
+                                                alt="Design"
+                                                fill
+                                                className="object-contain"
+                                            />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center text-gray-400">
+                                                No Image Available
+                                            </div>
+                                        )}
                                     </div>
 
                                     <div className="mt-4 p-4 bg-gray-50 rounded-lg">

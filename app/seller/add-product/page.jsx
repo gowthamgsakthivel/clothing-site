@@ -80,11 +80,29 @@ const AddProduct = () => {
     // Handle image upload
     const handleImageChange = (e) => {
         const files = Array.from(e.target.files);
+        console.log('Selected files:', files.length); // Debug log
+
+        if (files.length === 0) return;
+
         setImages(files);
 
         // Create previews
         const previews = files.map(file => URL.createObjectURL(file));
         setImagePreviews(previews);
+
+        console.log('Image previews created:', previews.length); // Debug log
+    };
+
+    // Remove individual image
+    const removeImage = (indexToRemove) => {
+        const newImages = images.filter((_, index) => index !== indexToRemove);
+        const newPreviews = imagePreviews.filter((_, index) => index !== indexToRemove);
+
+        // Revoke the URL for the removed preview to prevent memory leaks
+        URL.revokeObjectURL(imagePreviews[indexToRemove]);
+
+        setImages(newImages);
+        setImagePreviews(newPreviews);
     };
 
     // Calculate total stock
@@ -213,7 +231,7 @@ const AddProduct = () => {
 
     if (!user) {
         return (
-            <div className="flex-1 flex items-center justify-center">
+            <div className="w-full flex items-center justify-center">
                 <div className="text-center">
                     <h2 className="text-2xl font-semibold text-gray-700 mb-4">Access Denied</h2>
                     <p className="text-gray-500">Please sign in to add products.</p>
@@ -223,7 +241,7 @@ const AddProduct = () => {
     }
 
     return (
-        <div className="flex-1 p-4 md:p-8 bg-gray-50">
+        <div className="w-full p-4 md:p-8 bg-gray-50">
             <div className="max-w-6xl mx-auto">
                 <div className="bg-white rounded-lg shadow-lg p-6 md:p-8">
                     <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-8">Add New Product</h1>
@@ -343,7 +361,7 @@ const AddProduct = () => {
                             </label>
                             <input
                                 type="file"
-                                multiple
+                                multiple={true}
                                 accept="image/*"
                                 onChange={handleImageChange}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
@@ -353,7 +371,7 @@ const AddProduct = () => {
                             {imagePreviews.length > 0 && (
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
                                     {imagePreviews.map((preview, index) => (
-                                        <div key={index} className="relative">
+                                        <div key={index} className="relative group">
                                             <Image
                                                 src={preview}
                                                 alt={`Preview ${index + 1}`}
@@ -361,10 +379,27 @@ const AddProduct = () => {
                                                 height={200}
                                                 className="w-full h-32 object-cover rounded-md border"
                                             />
+                                            <button
+                                                type="button"
+                                                onClick={() => removeImage(index)}
+                                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                                            >
+                                                ×
+                                            </button>
+                                            <div className="absolute bottom-1 left-1 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
+                                                {index + 1}
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
                             )}
+
+                            {/* File Upload Instructions */}
+                            <div className="mt-2 text-sm text-gray-500">
+                                <p>• Select multiple images by holding Ctrl/Cmd while clicking</p>
+                                <p>• Supported formats: JPG, PNG, GIF (Max 5MB each)</p>
+                                <p>• Recommended: 800x800px or higher resolution</p>
+                            </div>
                         </div>
 
                         {/* Inventory Management */}

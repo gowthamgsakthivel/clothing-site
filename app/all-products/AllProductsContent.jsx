@@ -28,8 +28,15 @@ function AllProductsContent() {
 
     const [selectedGender, setSelectedGender] = useState('All');
     const [selectedCategories, setSelectedCategories] = useState([]);
+    const [selectedBrands, setSelectedBrands] = useState([]);
+    const [selectedColors, setSelectedColors] = useState([]);
+    const [priceRange, setPriceRange] = useState([0, 10000]);
+    const [sortBy, setSortBy] = useState('newest');
     const [searchTerm, setSearchTerm] = useState("");
     const [showFavorites, setShowFavorites] = useState(false);
+    const [availableBrands, setAvailableBrands] = useState([]);
+    const [availableColors, setAvailableColors] = useState([]);
+    const [showMobileFilters, setShowMobileFilters] = useState(false);
 
     const searchParams = useSearchParams();
 
@@ -47,6 +54,22 @@ function AllProductsContent() {
             if (data.success) {
                 setProducts(data.products);
                 setPagination(data.pagination);
+
+                // Extract unique brands and colors from products
+                const brands = [...new Set(data.products.map(p => p.brand).filter(Boolean))].sort();
+                const colors = [...new Set(data.products.flatMap(p => {
+                    // Handle both old and new inventory formats
+                    if (p.inventory && p.inventory.length > 0) {
+                        return p.inventory.map(inv => inv.color?.name).filter(Boolean);
+                    }
+                    if (p.color && p.color.length > 0) {
+                        return p.color.map(c => c.color).filter(Boolean);
+                    }
+                    return [];
+                }))].sort();
+
+                setAvailableBrands(brands);
+                setAvailableColors(colors);
             }
         } catch (error) {
             console.error("Failed to fetch products:", error);
@@ -82,7 +105,35 @@ function AllProductsContent() {
         );
     };
 
+    const handleBrandChange = (brand) => {
+        setSelectedBrands(prev =>
+            prev.includes(brand)
+                ? prev.filter(b => b !== brand)
+                : [...prev, brand]
+        );
+    };
+
+    const handleColorChange = (color) => {
+        setSelectedColors(prev =>
+            prev.includes(color)
+                ? prev.filter(c => c !== color)
+                : [...prev, color]
+        );
+    };
+
+    const clearAllFilters = () => {
+        setSelectedGender('All');
+        setSelectedCategories([]);
+        setSelectedBrands([]);
+        setSelectedColors([]);
+        setPriceRange([0, 10000]);
+        setSortBy('newest');
+        setShowFavorites(false);
+    };
+
     let filteredProducts = products;
+
+    // Apply search filter
     if (searchTerm.trim()) {
         const q = searchTerm.trim().toLowerCase();
         filteredProducts = filteredProducts.filter(
@@ -93,23 +144,73 @@ function AllProductsContent() {
         );
     }
 
+    // Apply gender filter
     if (selectedGender !== 'All') {
         filteredProducts = filteredProducts.filter(
             (product) => product.genderCategory === selectedGender
         );
     }
 
+    // Apply category filter
     if (selectedCategories.length > 0) {
         filteredProducts = filteredProducts.filter(
             (product) => selectedCategories.includes(product.category)
         );
     }
 
+    // Apply brand filter
+    if (selectedBrands.length > 0) {
+        filteredProducts = filteredProducts.filter(
+            (product) => selectedBrands.includes(product.brand)
+        );
+    }
+
+    // Apply color filter
+    if (selectedColors.length > 0) {
+        filteredProducts = filteredProducts.filter((product) => {
+            // Handle both old and new inventory formats
+            let productColors = [];
+            if (product.inventory && product.inventory.length > 0) {
+                productColors = product.inventory.map(inv => inv.color?.name).filter(Boolean);
+            } else if (product.color && product.color.length > 0) {
+                productColors = product.color.map(c => c.color).filter(Boolean);
+            }
+            return selectedColors.some(color => productColors.includes(color));
+        });
+    }
+
+    // Apply price filter
+    filteredProducts = filteredProducts.filter(
+        (product) =>
+            product.offerPrice >= priceRange[0] &&
+            product.offerPrice <= priceRange[1]
+    );
+
+    // Apply favorites filter
     if (showFavorites && user) {
         filteredProducts = filteredProducts.filter(
             (product) => favorites.includes(product._id)
         );
     }
+
+    // Apply sorting
+    filteredProducts.sort((a, b) => {
+        switch (sortBy) {
+            case 'price-low':
+                return a.offerPrice - b.offerPrice;
+            case 'price-high':
+                return b.offerPrice - a.offerPrice;
+            case 'name-asc':
+                return a.name.localeCompare(b.name);
+            case 'name-desc':
+                return b.name.localeCompare(a.name);
+            case 'brand':
+                return a.brand.localeCompare(b.brand);
+            case 'newest':
+            default:
+                return new Date(b.date || 0) - new Date(a.date || 0);
+        }
+    });
 
     // Determine dynamic SEO metadata title and description based on active filters
     const getSeoTitle = () => {
@@ -169,22 +270,122 @@ function AllProductsContent() {
                 url={`/all-products${searchParams.toString() ? `?${searchParams.toString()}` : ''}`}
             />
             <div className="flex flex-row w-full px-6 md:px-16 lg:px-32">
-                {/* Sidebar: Category checkboxes */}
-                <aside className="hidden md:block w-56 pt-16 pr-8">
-                    <div className="bg-white rounded-xl shadow p-4 border border-gray-100">
-                        <h3 className="font-semibold text-lg mb-3 text-gray-900">Categories</h3>
-                        <div className="flex flex-col gap-2">
-                            {allCategories.map((cat) => (
-                                <label key={cat} className="flex items-center gap-2 text-gray-700 text-sm cursor-pointer">
+                {/* Sidebar: Comprehensive filters */}
+                <aside className="hidden md:block w-72 pt-16 pr-8 max-h-screen overflow-y-auto">
+                    <div className="bg-white rounded-xl shadow p-6 border border-gray-100 space-y-6">
+                        {/* Filter Header */}
+                        <div className="flex items-center justify-between">
+                            <h3 className="font-semibold text-lg text-gray-900">Filters</h3>
+                            <button
+                                onClick={clearAllFilters}
+                                className="text-sm text-orange-600 hover:text-orange-700 underline"
+                            >
+                                Clear All
+                            </button>
+                        </div>
+
+                        {/* Categories */}
+                        <div>
+                            <h4 className="font-medium text-gray-900 mb-3">Categories</h4>
+                            <div className="space-y-2 max-h-40 overflow-y-auto">
+                                {allCategories.map((cat) => (
+                                    <label key={cat} className="flex items-center gap-2 text-gray-700 text-sm cursor-pointer hover:bg-gray-50 p-1 rounded">
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedCategories.includes(cat)}
+                                            onChange={() => handleCategoryChange(cat)}
+                                            className="accent-orange-600"
+                                        />
+                                        <span className="flex-1">{cat}</span>
+                                        <span className="text-xs text-gray-400">
+                                            {products.filter(p => p.category === cat).length}
+                                        </span>
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Brands */}
+                        {availableBrands.length > 0 && (
+                            <div>
+                                <h4 className="font-medium text-gray-900 mb-3">Brands</h4>
+                                <div className="space-y-2 max-h-40 overflow-y-auto">
+                                    {availableBrands.map((brand) => (
+                                        <label key={brand} className="flex items-center gap-2 text-gray-700 text-sm cursor-pointer hover:bg-gray-50 p-1 rounded">
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedBrands.includes(brand)}
+                                                onChange={() => handleBrandChange(brand)}
+                                                className="accent-orange-600"
+                                            />
+                                            <span className="flex-1">{brand}</span>
+                                            <span className="text-xs text-gray-400">
+                                                {products.filter(p => p.brand === brand).length}
+                                            </span>
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Colors */}
+                        {availableColors.length > 0 && (
+                            <div>
+                                <h4 className="font-medium text-gray-900 mb-3">Colors</h4>
+                                <div className="grid grid-cols-3 gap-2 max-h-40 overflow-y-auto">
+                                    {availableColors.map((color) => (
+                                        <label key={color} className="flex items-center gap-1 text-gray-700 text-xs cursor-pointer hover:bg-gray-50 p-1 rounded">
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedColors.includes(color)}
+                                                onChange={() => handleColorChange(color)}
+                                                className="accent-orange-600 scale-75"
+                                            />
+                                            <span className="flex-1 truncate">{color}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Price Range */}
+                        <div>
+                            <h4 className="font-medium text-gray-900 mb-3">Price Range</h4>
+                            <div className="space-y-3">
+                                <div className="flex items-center gap-2">
                                     <input
-                                        type="checkbox"
-                                        checked={selectedCategories.includes(cat)}
-                                        onChange={() => handleCategoryChange(cat)}
-                                        className="accent-orange-600"
+                                        type="number"
+                                        placeholder="Min"
+                                        value={priceRange[0]}
+                                        onChange={(e) => setPriceRange([parseInt(e.target.value) || 0, priceRange[1]])}
+                                        className="w-full p-2 border border-gray-300 rounded text-sm"
+                                        min="0"
+                                        max="10000"
                                     />
-                                    {cat}
-                                </label>
-                            ))}
+                                    <span className="text-gray-400">-</span>
+                                    <input
+                                        type="number"
+                                        placeholder="Max"
+                                        value={priceRange[1]}
+                                        onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value) || 10000])}
+                                        className="w-full p-2 border border-gray-300 rounded text-sm"
+                                        min="0"
+                                        max="10000"
+                                    />
+                                </div>
+                                <input
+                                    type="range"
+                                    min="0"
+                                    max="10000"
+                                    value={priceRange[1]}
+                                    onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value)])}
+                                    className="w-full accent-orange-600"
+                                />
+                                <div className="flex justify-between text-xs text-gray-500">
+                                    <span>₹0</span>
+                                    <span>₹10,000+</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </aside>
@@ -194,7 +395,192 @@ function AllProductsContent() {
                         <p className="text-2xl font-medium">All products</p>
                         <div className="w-16 h-0.5 bg-orange-600 rounded-full mb-6"></div>
                     </div>
-                    {/* Gender/Age Filter UI */}
+
+                    {/* Sort and Results Info */}
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 w-full">
+                        <div className="text-sm text-gray-600">
+                            Showing {filteredProducts.length} of {products.length} products
+                        </div>
+                        <div className="flex items-center gap-4">
+                            <label className="text-sm text-gray-600">Sort by:</label>
+                            <select
+                                value={sortBy}
+                                onChange={(e) => setSortBy(e.target.value)}
+                                className="border border-gray-300 rounded px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                            >
+                                <option value="newest">Newest First</option>
+                                <option value="price-low">Price: Low to High</option>
+                                <option value="price-high">Price: High to Low</option>
+                                <option value="name-asc">Name: A to Z</option>
+                                <option value="name-desc">Name: Z to A</option>
+                                <option value="brand">Brand</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    {/* Active Filters */}
+                    <div className="flex flex-wrap gap-2 mb-4 w-full">
+                        {selectedGender !== 'All' && (
+                            <span className="inline-flex items-center gap-1 bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded-full">
+                                {selectedGender}
+                                <button onClick={() => setSelectedGender('All')} className="hover:text-orange-900">×</button>
+                            </span>
+                        )}
+                        {selectedCategories.map(cat => (
+                            <span key={cat} className="inline-flex items-center gap-1 bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded-full">
+                                {cat}
+                                <button onClick={() => handleCategoryChange(cat)} className="hover:text-orange-900">×</button>
+                            </span>
+                        ))}
+                        {selectedBrands.map(brand => (
+                            <span key={brand} className="inline-flex items-center gap-1 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
+                                {brand}
+                                <button onClick={() => handleBrandChange(brand)} className="hover:text-blue-900">×</button>
+                            </span>
+                        ))}
+                        {selectedColors.map(color => (
+                            <span key={color} className="inline-flex items-center gap-1 bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
+                                {color}
+                                <button onClick={() => handleColorChange(color)} className="hover:text-green-900">×</button>
+                            </span>
+                        ))}
+                        {(priceRange[0] > 0 || priceRange[1] < 10000) && (
+                            <span className="inline-flex items-center gap-1 bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full">
+                                ₹{priceRange[0]} - ₹{priceRange[1]}
+                                <button onClick={() => setPriceRange([0, 10000])} className="hover:text-purple-900">×</button>
+                            </span>
+                        )}
+                        {showFavorites && (
+                            <span className="inline-flex items-center gap-1 bg-pink-100 text-pink-800 text-xs px-2 py-1 rounded-full">
+                                Favorites Only
+                                <button onClick={() => setShowFavorites(false)} className="hover:text-pink-900">×</button>
+                            </span>
+                        )}
+                    </div>
+                    {/* Mobile Filter Button */}
+                    <div className="md:hidden flex justify-between items-center w-full mb-4">
+                        <button
+                            onClick={() => setShowMobileFilters(true)}
+                            className="flex items-center gap-2 bg-orange-600 text-white px-4 py-2 rounded-lg"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.414A1 1 0 013 6.707V4z" />
+                            </svg>
+                            Filters
+                        </button>
+                        <select
+                            value={sortBy}
+                            onChange={(e) => setSortBy(e.target.value)}
+                            className="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        >
+                            <option value="newest">Newest</option>
+                            <option value="price-low">Price ↑</option>
+                            <option value="price-high">Price ↓</option>
+                            <option value="name-asc">A-Z</option>
+                            <option value="name-desc">Z-A</option>
+                            <option value="brand">Brand</option>
+                        </select>
+                    </div>
+
+                    {/* Mobile Filter Modal */}
+                    {showMobileFilters && (
+                        <div className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-50">
+                            <div className="bg-white h-full w-full overflow-y-auto">
+                                <div className="p-4 border-b flex justify-between items-center">
+                                    <h3 className="text-lg font-semibold">Filters</h3>
+                                    <button
+                                        onClick={() => setShowMobileFilters(false)}
+                                        className="p-2 hover:bg-gray-100 rounded-full"
+                                    >
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                </div>
+                                <div className="p-4 space-y-6">
+                                    {/* Same filter content as sidebar but for mobile */}
+                                    <div className="flex justify-between">
+                                        <button
+                                            onClick={clearAllFilters}
+                                            className="text-sm text-orange-600 hover:text-orange-700 underline"
+                                        >
+                                            Clear All Filters
+                                        </button>
+                                    </div>
+
+                                    {/* Mobile Categories */}
+                                    <div>
+                                        <h4 className="font-medium text-gray-900 mb-3">Categories</h4>
+                                        <div className="space-y-2">
+                                            {allCategories.map((cat) => (
+                                                <label key={cat} className="flex items-center gap-2 text-gray-700 text-sm cursor-pointer p-2 hover:bg-gray-50 rounded">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedCategories.includes(cat)}
+                                                        onChange={() => handleCategoryChange(cat)}
+                                                        className="accent-orange-600"
+                                                    />
+                                                    <span className="flex-1">{cat}</span>
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Mobile Brands */}
+                                    {availableBrands.length > 0 && (
+                                        <div>
+                                            <h4 className="font-medium text-gray-900 mb-3">Brands</h4>
+                                            <div className="space-y-2">
+                                                {availableBrands.map((brand) => (
+                                                    <label key={brand} className="flex items-center gap-2 text-gray-700 text-sm cursor-pointer p-2 hover:bg-gray-50 rounded">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={selectedBrands.includes(brand)}
+                                                            onChange={() => handleBrandChange(brand)}
+                                                            className="accent-orange-600"
+                                                        />
+                                                        <span className="flex-1">{brand}</span>
+                                                    </label>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Mobile Price Range */}
+                                    <div>
+                                        <h4 className="font-medium text-gray-900 mb-3">Price Range</h4>
+                                        <div className="space-y-3">
+                                            <div className="flex items-center gap-2">
+                                                <input
+                                                    type="number"
+                                                    placeholder="Min"
+                                                    value={priceRange[0]}
+                                                    onChange={(e) => setPriceRange([parseInt(e.target.value) || 0, priceRange[1]])}
+                                                    className="w-full p-2 border border-gray-300 rounded text-sm"
+                                                />
+                                                <span>-</span>
+                                                <input
+                                                    type="number"
+                                                    placeholder="Max"
+                                                    value={priceRange[1]}
+                                                    onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value) || 10000])}
+                                                    className="w-full p-2 border border-gray-300 rounded text-sm"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="p-4 border-t">
+                                    <button
+                                        onClick={() => setShowMobileFilters(false)}
+                                        className="w-full bg-orange-600 text-white py-3 rounded-lg font-medium"
+                                    >
+                                        Apply Filters
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                     <div className="flex flex-wrap gap-3 mb-8 w-full justify-end">
                         {genderCategories.map((cat) => (
                             <button

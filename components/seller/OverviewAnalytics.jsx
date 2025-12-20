@@ -366,15 +366,15 @@ const OverviewAnalytics = ({ getToken }) => {
     };
 
     return (
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-            <div className="flex flex-col sm:flex-row justify-between items-center mb-4">
-                <h2 className="text-xl font-bold text-gray-800 mb-2 sm:mb-0">Sales Analytics</h2>
+        <div className="bg-white rounded-lg shadow-md p-4 md:p-6 mb-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
+                <h2 className="text-lg md:text-xl font-bold text-gray-800">Sales Analytics</h2>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 w-full sm:w-auto">
                     <select
                         value={timeFrame}
                         onChange={(e) => setTimeFrame(e.target.value)}
-                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-orange-500 focus:border-orange-500 p-2"
+                        className="flex-1 sm:flex-none bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-orange-500 focus:border-orange-500 p-2"
                     >
                         <option value="all">All Time</option>
                         <option value="last7days">Last 7 Days</option>
@@ -384,7 +384,7 @@ const OverviewAnalytics = ({ getToken }) => {
 
                     <button
                         onClick={handleRefresh}
-                        className="text-blue-600 hover:text-blue-800 flex items-center p-2"
+                        className="text-blue-600 hover:text-blue-800 flex items-center p-2 hover:bg-blue-50 rounded-lg transition-colors"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
@@ -394,36 +394,36 @@ const OverviewAnalytics = ({ getToken }) => {
             </div>
 
             {/* Key Metrics */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                <div className="bg-blue-50 rounded-lg p-4 border border-blue-100">
-                    <div className="text-blue-600 text-xs font-medium uppercase tracking-wider mb-1">Total Orders</div>
-                    <div className="text-2xl font-bold">{summary.totalOrders}</div>
-                    <div className="text-sm text-gray-500 mt-1">
-                        {summary.totalRegularOrders} regular + {summary.totalCustomDesigns} custom
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3 mb-6">
+                <div className="bg-blue-50 rounded-lg p-3 md:p-4 border border-blue-100 h-24 md:h-28 flex flex-col justify-center">
+                    <div className="text-blue-600 text-xs font-medium uppercase tracking-wider mb-1">Orders</div>
+                    <div className="text-xl md:text-2xl font-bold">{summary.totalOrders}</div>
+                    <div className="text-xs text-gray-500 mt-1">
+                        {summary.totalRegularOrders} + {summary.totalCustomDesigns}
                     </div>
                 </div>
 
-                <div className="bg-green-50 rounded-lg p-4 border border-green-100">
-                    <div className="text-green-600 text-xs font-medium uppercase tracking-wider mb-1">Total Revenue</div>
-                    <div className="text-2xl font-bold">{formatCurrency(summary.totalRevenue)}</div>
-                    <div className="text-sm text-gray-500 mt-1">
-                        From all orders and custom designs
+                <div className="bg-green-50 rounded-lg p-3 md:p-4 border border-green-100 h-24 md:h-28 flex flex-col justify-center">
+                    <div className="text-green-600 text-xs font-medium uppercase tracking-wider mb-1">Revenue</div>
+                    <div className="text-xl md:text-2xl font-bold">{formatCurrency(summary.totalRevenue)}</div>
+                    <div className="text-xs text-gray-500 mt-1">
+                        Total
                     </div>
                 </div>
 
-                <div className="bg-orange-50 rounded-lg p-4 border border-orange-100">
-                    <div className="text-orange-600 text-xs font-medium uppercase tracking-wider mb-1">Regular Orders Revenue</div>
-                    <div className="text-2xl font-bold">{formatCurrency(summary.totalRegularRevenue)}</div>
-                    <div className="text-sm text-gray-500 mt-1">
-                        {formatPercentage(summary.percentageRegular)} of total orders
+                <div className="bg-orange-50 rounded-lg p-3 md:p-4 border border-orange-100 h-24 md:h-28 flex flex-col justify-center">
+                    <div className="text-orange-600 text-xs font-medium uppercase tracking-wider mb-1">Regular</div>
+                    <div className="text-xl md:text-2xl font-bold">{formatCurrency(summary.totalRegularRevenue)}</div>
+                    <div className="text-xs text-gray-500 mt-1">
+                        {formatPercentage(summary.percentageRegular)}
                     </div>
                 </div>
 
-                <div className="bg-purple-50 rounded-lg p-4 border border-purple-100">
-                    <div className="text-purple-600 text-xs font-medium uppercase tracking-wider mb-1">Custom Design Revenue</div>
-                    <div className="text-2xl font-bold">{formatCurrency(summary.totalCustomRevenue)}</div>
-                    <div className="text-sm text-gray-500 mt-1">
-                        {formatPercentage(summary.percentageCustom)} of total orders
+                <div className="bg-purple-50 rounded-lg p-3 md:p-4 border border-purple-100 h-24 md:h-28 flex flex-col justify-center">
+                    <div className="text-purple-600 text-xs font-medium uppercase tracking-wider mb-1">Custom</div>
+                    <div className="text-xl md:text-2xl font-bold">{formatCurrency(summary.totalCustomRevenue)}</div>
+                    <div className="text-xs text-gray-500 mt-1">
+                        {formatPercentage(summary.percentageCustom)}
                     </div>
                 </div>
             </div>

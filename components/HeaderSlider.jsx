@@ -74,11 +74,17 @@ const HeaderSlider = () => {
               </div>
             </div>
             <div className="flex items-center flex-1 justify-center">
-              <Image
-                className="md:w-72 w-48"
-                src={slide.imgSrc}
-                alt={`Slide ${index + 1}`}
-              />
+              {slide.imgSrc ? (
+                <Image
+                  className="md:w-72 w-48"
+                  src={slide.imgSrc}
+                  alt={`Slide ${index + 1}`}
+                />
+              ) : (
+                <div className="md:w-72 w-48 h-48 bg-gray-200 rounded flex items-center justify-center text-gray-400">
+                  No Image
+                </div>
+              )}
             </div>
           </div>
         ))}
