@@ -11,26 +11,54 @@ import axios from "axios";
 import toast from "react-hot-toast";
 import { formatDistance } from 'date-fns';
 import { motion } from "framer-motion";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 const MyOrders = () => {
 
+    const router = useRouter();
     const { currency, getToken, user } = useAppContext();
 
     const [allOrders, setAllOrders] = useState([]);
     const [orders, setOrders] = useState([]);
     const [activeFilter, setActiveFilter] = useState('all');
     const [loading, setLoading] = useState(true);
+    const [lastUpdated, setLastUpdated] = useState(null);
+    const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(true);
+    const [error, setError] = useState(null);
 
     const fetchOrders = async () => {
         try {
             setLoading(true);
             setError(null); // Reset error state
 
-            console.log("Fetching orders...");
-            const token = await getToken();
+            console.log("🔍 Checking authentication status...");
+            console.log("👤 User object:", user);
 
+            if (!user) {
+                console.error("❌ User not authenticated");
+                setLoading(false);
+                setError("Please log in to view your orders");
+                return;
+            }
+
+            console.log("🔑 Getting auth token...");
+            const token = await getToken();
+            console.log("📝 Token received:", token ? `${token.substring(0, 20)}...` : "null");
+
+            if (!token) {
+                console.error("❌ No authentication token available");
+                setError("Authentication failed. Please log in again.");
+                setLoading(false);
+                return;
+            }
+
+            console.log("📤 Sending request to /api/order/list...");
             const { data } = await axios.get('/api/order/list', {
-                headers: { Authorization: `Bearer ${token}` },
+                withCredentials: true,  // IMPORTANT: Send cookies with request
+                headers: {
+                    'Content-Type': 'application/json'
+                },
                 timeout: 10000 // 10 second timeout
             });
 
@@ -136,6 +164,8 @@ const MyOrders = () => {
                     setAllOrders(ordersArray);
                     setOrders(ordersArray);
                     setActiveFilter('all');
+                    setLastUpdated(new Date());
+                    setError(null);
                 } else {
                     console.warn("Orders data is not an array:", data.orders);
                     setOrders([]);
@@ -147,6 +177,19 @@ const MyOrders = () => {
             }
         } catch (error) {
             console.error("Error fetching orders:", error);
+            console.error("Error response:", error.response?.data);
+
+            // Handle 401 Unauthorized
+            if (error.response?.status === 401) {
+                console.log("🔐 Unauthorized - Token may be invalid or expired");
+                setError("Your session has expired. Please refresh the page or log in again.");
+                toast.error("Session expired. Please refresh and log in again.");
+                // Optionally redirect to home
+                setTimeout(() => router.push("/"), 2000);
+                return;
+            }
+
+            // Handle other HTTP errors
             const errorMessage = error.response?.data?.message || error.message || "Unknown error";
             toast.error(`Error: ${errorMessage}`);
             setError(`Failed to load orders: ${errorMessage}`);
@@ -156,12 +199,38 @@ const MyOrders = () => {
     }
 
     useEffect(() => {
+        // Redirect to home if not authenticated
+        if (user === false) {
+            toast.error("Please log in to view your orders");
+            router.push("/");
+            return;
+        }
+
+        // Fetch orders if user is logged in
         if (user) {
             fetchOrders();
         }
     }, [user]);
 
-    const [error, setError] = useState(null);
+    // Auto-refresh orders every 30 seconds if any are pending/in-transit
+    useEffect(() => {
+        if (!autoRefreshEnabled || allOrders.length === 0) return;
+
+        // Check if any order is in pending/in-transit status
+        const hasActiveOrders = allOrders.some(order => {
+            const status = order.status?.toLowerCase() || '';
+            return ['order placed', 'processing', 'packed', 'shipped', 'in transit', 'out for delivery'].includes(status);
+        });
+
+        if (!hasActiveOrders) return;
+
+        const refreshInterval = setInterval(() => {
+            console.log('🔄 Auto-refreshing orders...');
+            fetchOrders();
+        }, 30000); // Refresh every 30 seconds
+
+        return () => clearInterval(refreshInterval);
+    }, [allOrders, autoRefreshEnabled]);
 
     // Catch any errors during rendering
     const renderOrderSafely = (order, index) => {
@@ -250,108 +319,131 @@ const MyOrders = () => {
                 keywords="my orders, order history, purchase history, track orders, sports equipment orders"
                 url="/my-orders"
             />
-            <div className="flex flex-col justify-between px-3 md:px-8 lg:px-32 py-6 min-h-screen bg-gray-50">
+            <div className="flex flex-col justify-between px-4 sm:px-6 md:px-8 lg:px-32 py-6 pt-20 md:pt-24 min-h-screen bg-gray-50">
                 <div className="space-y-5 max-w-5xl mx-auto w-full">
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
-                        <h2 className="text-2xl font-bold mt-6 mb-4 text-gray-800">My Orders</h2>
+                    {/* Modern Header Section */}
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
+                        <div>
+                            <h1 className="text-4xl font-bold text-gray-900">My Orders</h1>
+                            <p className="text-gray-500 text-sm mt-2">Track and manage your orders</p>
+                            {lastUpdated && (
+                                <p className="text-xs text-green-600 mt-2 flex items-center gap-1">
+                                    <span className="inline-block w-2 h-2 bg-green-600 rounded-full"></span>
+                                    Last updated: {lastUpdated.toLocaleTimeString('en-IN')}
+                                </p>
+                            )}
+                        </div>
                         <button
                             onClick={fetchOrders}
-                            className="flex items-center gap-1 text-sm text-orange-600 hover:text-orange-700"
+                            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition duration-200 font-medium text-sm shadow-sm"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-4 h-4">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                             </svg>
-                            Refresh Orders
+                            Refresh
                         </button>
                     </div>
 
+                    {/* Modern Filter Tabs */}
                     {!loading && allOrders.length > 0 && (
-                        <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-200">
-                            <div className="flex flex-wrap gap-2">
-                                <button
-                                    className={`px-3 py-1.5 rounded-md text-sm font-medium ${activeFilter === 'all' ? 'bg-orange-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-                                    onClick={() => {
-                                        setOrders(allOrders);
-                                        setActiveFilter('all');
-                                    }}
-                                >
-                                    All Orders
-                                </button>
-                                <button
-                                    className={`px-3 py-1.5 rounded-md text-sm font-medium ${activeFilter === 'recent' ? 'bg-orange-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-                                    onClick={() => {
-                                        const recentOrders = allOrders.filter(o => {
-                                            let orderDate;
-                                            if (o.date) {
-                                                // Check if it's a number or numeric string (Unix timestamp)
-                                                if (typeof o.date === 'number' || /^\d+$/.test(o.date)) {
-                                                    orderDate = new Date(parseInt(o.date) * 1000);
-                                                } else {
-                                                    orderDate = new Date(o.date);
-                                                }
-                                            } else if (o.createdAt) {
-                                                orderDate = new Date(o.createdAt);
+                        <div className="flex flex-wrap gap-2 mb-8 pb-4 border-b-2 border-gray-100">
+                            {[
+                                { id: 'all', label: 'All Orders', icon: '📦', count: allOrders.length },
+                                {
+                                    id: 'recent', label: 'Recent (30 days)', icon: '📅', count: allOrders.filter(o => {
+                                        let orderDate;
+                                        if (o.date) {
+                                            if (typeof o.date === 'number' || /^\d+$/.test(o.date)) {
+                                                orderDate = new Date(parseInt(o.date) * 1000);
                                             } else {
-                                                return false;
+                                                orderDate = new Date(o.date);
                                             }
-
-                                            // Check if date is valid
-                                            if (isNaN(orderDate.getTime())) return false;
-
-                                            const thirtyDaysAgo = new Date();
-                                            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-                                            return orderDate > thirtyDaysAgo;
-                                        });
-                                        setOrders(recentOrders);
-                                        setActiveFilter('recent');
-                                    }}
-                                >
-                                    Last 30 Days
-                                </button>
+                                        } else if (o.createdAt) {
+                                            orderDate = new Date(o.createdAt);
+                                        } else {
+                                            return false;
+                                        }
+                                        if (isNaN(orderDate.getTime())) return false;
+                                        const thirtyDaysAgo = new Date();
+                                        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+                                        return orderDate > thirtyDaysAgo;
+                                    }).length
+                                },
+                                { id: 'custom', label: 'Custom Designs', icon: '🎨', count: allOrders.filter(o => o.items && o.items.some(item => item.isCustomDesign)).length },
+                                { id: 'paid', label: 'Paid Orders', icon: '✓', count: allOrders.filter(o => ['paid', 'confirmed', 'delivered', 'completed'].includes((o.paymentStatus || '').toLowerCase())).length },
+                            ].map(filter => (
                                 <button
-                                    className={`px-3 py-1.5 rounded-md text-sm font-medium ${activeFilter === 'custom' ? 'bg-orange-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                                    key={filter.id}
                                     onClick={() => {
-                                        const customDesignOrders = allOrders.filter(o => {
-                                            return o.items && o.items.some(item => item.isCustomDesign);
-                                        });
-                                        setOrders(customDesignOrders);
-                                        setActiveFilter('custom');
+                                        if (filter.id === 'all') {
+                                            setOrders(allOrders);
+                                        } else if (filter.id === 'recent') {
+                                            const recentOrders = allOrders.filter(o => {
+                                                let orderDate;
+                                                if (o.date) {
+                                                    if (typeof o.date === 'number' || /^\d+$/.test(o.date)) {
+                                                        orderDate = new Date(parseInt(o.date) * 1000);
+                                                    } else {
+                                                        orderDate = new Date(o.date);
+                                                    }
+                                                } else if (o.createdAt) {
+                                                    orderDate = new Date(o.createdAt);
+                                                } else {
+                                                    return false;
+                                                }
+                                                if (isNaN(orderDate.getTime())) return false;
+                                                const thirtyDaysAgo = new Date();
+                                                thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+                                                return orderDate > thirtyDaysAgo;
+                                            });
+                                            setOrders(recentOrders);
+                                        } else if (filter.id === 'custom') {
+                                            const customDesignOrders = allOrders.filter(o => {
+                                                return o.items && o.items.some(item => item.isCustomDesign);
+                                            });
+                                            setOrders(customDesignOrders);
+                                        } else if (filter.id === 'paid') {
+                                            const paidOrders = allOrders.filter(o => {
+                                                return ['paid', 'confirmed', 'delivered', 'completed'].includes((o.paymentStatus || '').toLowerCase());
+                                            });
+                                            setOrders(paidOrders);
+                                        }
+                                        setActiveFilter(filter.id);
                                     }}
+                                    className={`px-4 py-2.5 rounded-lg text-sm font-medium transition duration-200 flex items-center gap-2 ${activeFilter === filter.id
+                                            ? 'bg-orange-600 text-white shadow-md'
+                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                        }`}
                                 >
-                                    Custom Designs
+                                    <span className="text-base">{filter.icon}</span>
+                                    {filter.label}
+                                    <span className={`text-xs font-semibold ${activeFilter === filter.id ? 'bg-white text-orange-600' : 'bg-gray-300 text-gray-700'} rounded-full px-2`}>
+                                        {filter.count}
+                                    </span>
                                 </button>
-                                <button
-                                    className={`px-3 py-1.5 rounded-md text-sm font-medium ${activeFilter === 'paid' ? 'bg-orange-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-                                    onClick={() => {
-                                        const paidOrders = allOrders.filter(o => {
-                                            return ['paid', 'confirmed', 'delivered', 'completed'].includes((o.paymentStatus || '').toLowerCase());
-                                        });
-                                        setOrders(paidOrders);
-                                        setActiveFilter('paid');
-                                    }}
-                                >
-                                    Paid Orders
-                                </button>
-                                <div className="ml-auto text-xs text-gray-500 flex items-center">
-                                    {orders.length} of {allOrders.length} orders
-                                </div>
-                            </div>
+                            ))}
                         </div>
                     )}
 
                     {error ? (
-                        <div className="bg-red-50 border border-red-200 rounded-md p-4 text-red-700">
-                            <p className="font-medium">Error loading orders</p>
+                        <motion.div
+                            className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                        >
+                            <p className="font-medium flex items-center gap-2"><span className="text-lg">⚠️</span>Error loading orders</p>
                             <p className="text-sm mt-1">{error}</p>
                             <button
-                                onClick={() => { setError(null); fetchOrders(); }}
-                                className="mt-2 text-sm bg-red-100 hover:bg-red-200 px-3 py-1 rounded"
+                                onClick={() => fetchOrders()}
+                                className="mt-3 text-sm bg-red-100 hover:bg-red-200 px-3 py-1.5 rounded font-medium transition"
                             >
                                 Retry
                             </button>
-                        </div>
-                    ) : loading ? <Loading /> : (
-                        <div className="grid gap-6">
+                        </motion.div>
+                    ) : loading ? (
+                        <Loading />
+                    ) : (
+                        <div className="space-y-4">
                             {orders.length === 0 ? (
                                 <motion.div
                                     className="text-center py-12 bg-white rounded-xl shadow border border-gray-200"
@@ -391,340 +483,195 @@ const MyOrders = () => {
                                         </>
                                     )}
                                 </motion.div>
-                            ) : orders.map((order, index) => {
-                                // Wrap entire order rendering in try-catch for safety
-                                try {
-                                    // Early validation of required order properties
-                                    if (!order) {
-                                        console.error("Invalid order object at index", index);
-                                        return (
-                                            <div key={`error-${index}`} className="rounded-xl shadow bg-white p-6 border border-red-200">
-                                                <p className="text-red-500">There was an error displaying this order.</p>
-                                                <p className="text-xs text-gray-500 mt-2">Invalid order data</p>
-                                            </div>
-                                        );
-                                    }
+                            ) : (
+                                <div className="space-y-4">
+                                    {orders.map((order, index) => {
+                                        try {
+                                            // Determine status color and icon
+                                            const statusLower = (order.status || '').toLowerCase();
+                                            let statusColor = 'gray';
+                                            let statusIcon = '📦';
+                                            let statusBg = 'bg-gray-100 text-gray-800 border-gray-300';
 
-                                    // Get formatted date object
-                                    const dateInfo = formatOrderDate(order.date);
+                                            if (statusLower.includes('delivered') || statusLower.includes('completed')) {
+                                                statusColor = 'green';
+                                                statusIcon = '✅';
+                                                statusBg = 'bg-green-100 text-green-800 border-green-300';
+                                            } else if (statusLower.includes('shipped') || statusLower.includes('transit')) {
+                                                statusColor = 'blue';
+                                                statusIcon = '🚚';
+                                                statusBg = 'bg-blue-100 text-blue-800 border-blue-300';
+                                            } else if (statusLower.includes('packed') || statusLower.includes('processing')) {
+                                                statusColor = 'orange';
+                                                statusIcon = '📋';
+                                                statusBg = 'bg-orange-100 text-orange-800 border-orange-300';
+                                            } else if (statusLower.includes('pending')) {
+                                                statusColor = 'yellow';
+                                                statusIcon = '⏳';
+                                                statusBg = 'bg-yellow-100 text-yellow-800 border-yellow-300';
+                                            }
 
-                                    // Get status classes for payment status
-                                    const paymentStatusClasses = getStatusClasses(order.paymentStatus);
-                                    const orderStatusClasses = getStatusClasses(order.status);
+                                            // Payment status
+                                            const paymentLower = (order.paymentStatus || '').toLowerCase();
+                                            const isPaid = ['paid', 'confirmed', 'delivered', 'completed'].includes(paymentLower);
 
-                                    return (
-                                        <motion.div
-                                            key={order._id || index}
-                                            className="rounded-xl shadow bg-white overflow-hidden border border-gray-200"
-                                            initial={{ opacity: 0, y: 20 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            transition={{ duration: 0.3, delay: index * 0.1 }}
-                                        >
-                                            {/* Order header with status and date */}
-                                            <div className="bg-gray-50 p-4 border-b border-gray-200 flex flex-col md:flex-row justify-between items-start md:items-center">
-                                                <div>
-                                                    <div className="flex items-center gap-2">
-                                                        <h3 className="text-sm font-semibold text-gray-900">Order #{order._id?.substring(order._id.length - 6).toUpperCase() || index}</h3>
-                                                        <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${orderStatusClasses}`}>
-                                                            {order.status || 'Processing'}
-                                                        </span>
-                                                    </div>
-                                                    <p className="text-xs text-gray-500 mt-1">
-                                                        Placed {dateInfo.formatted} <span className="text-gray-400">({dateInfo.relative})</span>
-                                                    </p>
-                                                </div>
-                                                <div className="mt-2 md:mt-0 flex items-center">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className={`px-2 py-1 rounded-md text-xs font-medium border ${paymentStatusClasses}`}>
-                                                            {order.paymentStatus || 'Pending'}
-                                                        </span>
-                                                        <span className="text-xs text-gray-500">{order.paymentMethod || 'COD'}</span>
-                                                    </div>
-                                                </div>
-                                            </div>
+                                            const dateInfo = formatOrderDate(order.date);
 
-                                            {/* Order items section */}
-                                            <div className="p-4">
-                                                <div className="grid gap-3">
-                                                    {Array.isArray(order.items) && order.items.map((item, idx) => {
-                                                        try {
-                                                            // Debug custom design items
-                                                            if (item.isCustomDesign) {
-                                                                console.log(`Custom design item ${idx} in order ${order._id}:`, {
-                                                                    isCustomDesign: item.isCustomDesign,
-                                                                    customDesignId: item.customDesignId,
-                                                                    designName: item.designName,
-                                                                    price: item.price,
-                                                                    quantity: item.quantity,
-                                                                    hasPrice: !!item.price
-                                                                });
-                                                            }
-                                                            return (
-                                                                <div key={idx} className="flex items-center gap-3 bg-gray-50 rounded-lg p-3">
-                                                                    {/* Image section with safe rendering */}
-                                                                    {(() => {
-                                                                        try {
-                                                                            if (item.isCustomDesign && item.customDesignImage) {
-                                                                                return (
-                                                                                    <div className="flex-shrink-0">
-                                                                                        <Image
-                                                                                            src={item.customDesignImage}
-                                                                                            alt="Custom Design"
-                                                                                            width={60}
-                                                                                            height={60}
-                                                                                            className="rounded-md shadow object-cover w-15 h-15"
-                                                                                        />
-                                                                                    </div>
-                                                                                );
-                                                                            } else if (
-                                                                                item.product &&
-                                                                                item.product.image &&
-                                                                                Array.isArray(item.product.image) &&
-                                                                                item.product.image.length > 0
-                                                                            ) {
-                                                                                return (
-                                                                                    <a href={`/product/${item.product._id}`} className="flex-shrink-0">
-                                                                                        <Image
-                                                                                            src={item.product.image[0]}
-                                                                                            alt={item.product.name || "Product"}
-                                                                                            width={60}
-                                                                                            height={60}
-                                                                                            className="rounded-md shadow object-cover w-15 h-15"
-                                                                                        />
-                                                                                    </a>
-                                                                                );
-                                                                            } else {
-                                                                                return (
-                                                                                    <div className="w-15 h-15 bg-gray-300 rounded-md flex items-center justify-center flex-shrink-0">
-                                                                                        <span className="text-xs text-gray-600">No image</span>
-                                                                                    </div>
-                                                                                );
-                                                                            }
-                                                                        } catch (err) {
-                                                                            console.error("Error rendering product image:", err);
-                                                                            return (
-                                                                                <div className="w-15 h-15 bg-gray-300 rounded-md flex items-center justify-center flex-shrink-0">
-                                                                                    <span className="text-xs text-gray-600">Error</span>
-                                                                                </div>
-                                                                            );
-                                                                        }
-                                                                    })()}
+                                            return (
+                                                <motion.div
+                                                    key={order._id}
+                                                    className={`bg-white rounded-xl border-2 transition-all hover:shadow-lg overflow-hidden ${statusColor === 'green' ? 'border-green-200' : statusColor === 'blue' ? 'border-blue-200' : statusColor === 'orange' ? 'border-orange-200' : 'border-gray-200'}`}
+                                                    initial={{ opacity: 0, y: 20 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    transition={{ duration: 0.3, delay: index * 0.08 }}
+                                                >
+                                                    {/* Status Bar */}
+                                                    <div className={`h-1 ${statusColor === 'green' ? 'bg-green-500' : statusColor === 'blue' ? 'bg-blue-500' : statusColor === 'orange' ? 'bg-orange-500' : 'bg-gray-400'}`}></div>
 
-                                                                    <div className="flex-1">
-                                                                        {/* Product name/title section */}
-                                                                        {(() => {
-                                                                            try {
-                                                                                if (item.isCustomDesign) {
-                                                                                    return (
-                                                                                        <div>
-                                                                                            <span className="font-medium text-gray-800">
-                                                                                                {item.designName || (typeof item.product === 'string' ? item.product : 'Custom Design')}
-                                                                                                <span className="ml-2 px-2 py-0.5 rounded bg-blue-100 border border-blue-300 text-xs text-blue-700 font-medium">CUSTOM</span>
-                                                                                            </span>
-                                                                                            {item.customDesignDetails && (
-                                                                                                <p className="text-xs text-gray-500 mt-1">
-                                                                                                    {item.customDesignDetails.description?.substring(0, 50)}
-                                                                                                    {item.customDesignDetails.description?.length > 50 ? '...' : ''}
-                                                                                                </p>
-                                                                                            )}
-                                                                                        </div>
-                                                                                    );
-                                                                                } else if (item.product) {
-                                                                                    return (
-                                                                                        <a href={item.product._id ? `/product/${item.product._id}` : '#'} className="font-medium text-gray-800 hover:text-orange-600 hover:underline">
-                                                                                            {item.product.name || (typeof item.product === 'string' ? item.product : 'Product')}
-                                                                                        </a>
-                                                                                    );
-                                                                                } else {
-                                                                                    return (
-                                                                                        <span className="font-medium text-gray-800">Product</span>
-                                                                                    );
-                                                                                }
-                                                                            } catch (err) {
-                                                                                console.error("Error rendering product name:", err);
-                                                                                return <span className="font-medium text-gray-800">Product</span>;
-                                                                            }
-                                                                        })()}
+                                                    {/* Card Content */}
+                                                    <div className="p-5 sm:p-6">
+                                                        {/* Top Section: Order Info & Status */}
+                                                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-5 pb-5 border-b border-gray-100">
+                                                            <div>
+                                                                <p className="text-xs text-gray-500 font-semibold uppercase tracking-wide mb-1">Order #</p>
+                                                                <h3 className="text-lg sm:text-xl font-bold text-gray-900">{order._id?.substring(order._id.length - 6).toUpperCase() || `Order ${index + 1}`}</h3>
+                                                                <p className="text-sm text-gray-600 mt-2">{dateInfo.formatted} <span className="text-gray-400 text-xs">({dateInfo.relative})</span></p>
+                                                            </div>
+                                                            <div className="flex flex-col gap-2 items-start sm:items-end">
+                                                                <div className={`px-3 py-1.5 rounded-full border font-semibold text-sm flex items-center gap-2 ${statusBg}`}>
+                                                                    <span>{statusIcon}</span>
+                                                                    {order.status || 'Processing'}
+                                                                </div>
+                                                                {isPaid && (
+                                                                    <span className="text-xs font-medium text-green-700 bg-green-50 px-3 py-1 rounded-full border border-green-200">✓ Paid ({order.paymentMethod || 'COD'})</span>
+                                                                )}
+                                                                {!isPaid && (
+                                                                    <span className="text-xs font-medium text-orange-700 bg-orange-50 px-3 py-1 rounded-full border border-orange-200">Pending {order.paymentMethod || 'COD'}</span>
+                                                                )}
+                                                            </div>
+                                                        </div>
 
-                                                                        <div className="flex flex-wrap items-center gap-3 mt-2">
-                                                                            <span className="text-sm text-gray-700">
-                                                                                {currency}{(() => {
-                                                                                    // Calculate unit price based on product type
-                                                                                    if (item.price) {
-                                                                                        return item.price;
-                                                                                    } else if (item.isCustomDesign && item.customDesignId) {
-                                                                                        console.warn(`Custom design order item missing price field: ${item.customDesignId}`);
-                                                                                        // For legacy orders, try to calculate from order total
-                                                                                        // This is a temporary fallback - new orders should have item.price
-                                                                                        if (order.items && order.items.length > 0) {
-                                                                                            // Simple fallback: divide order amount by total quantity
-                                                                                            const totalQuantity = order.items.reduce((sum, orderItem) => sum + (orderItem.quantity || 1), 0);
-                                                                                            const estimatedUnitPrice = (order.amount || 0) / totalQuantity;
-                                                                                            console.log(`Using estimated price for legacy order: ₹${estimatedUnitPrice}`);
-                                                                                            return estimatedUnitPrice;
-                                                                                        }
-                                                                                        return 0; // Fallback to 0 if calculation fails
-                                                                                    } else if (item.product && typeof item.product === 'object') {
-                                                                                        return item.product.offerPrice || item.product.price || 0;
+                                                        {/* Products Section */}
+                                                        <div className="mb-5">
+                                                            <p className="text-xs text-gray-500 font-semibold uppercase tracking-wide mb-3">Items ({Array.isArray(order.items) ? order.items.length : 0})</p>
+                                                            <div className="space-y-2">
+                                                                {Array.isArray(order.items) && order.items.slice(0, 2).map((item, idx) => (
+                                                                    <div key={idx} className="flex gap-3 bg-gray-50 rounded-lg p-3">
+                                                                        {/* Product Image */}
+                                                                        <div className="flex-shrink-0">
+                                                                            {(() => {
+                                                                                try {
+                                                                                    if (item.isCustomDesign && item.customDesignImage) {
+                                                                                        return (
+                                                                                            <Image
+                                                                                                src={item.customDesignImage}
+                                                                                                alt="Custom Design"
+                                                                                                width={56}
+                                                                                                height={56}
+                                                                                                className="rounded-md object-cover w-14 h-14 shadow-sm"
+                                                                                            />
+                                                                                        );
+                                                                                    } else if (item.product?.image?.[0]) {
+                                                                                        return (
+                                                                                            <Image
+                                                                                                src={item.product.image[0]}
+                                                                                                alt={item.product.name || "Product"}
+                                                                                                width={56}
+                                                                                                height={56}
+                                                                                                className="rounded-md object-cover w-14 h-14 shadow-sm"
+                                                                                            />
+                                                                                        );
                                                                                     } else {
-                                                                                        return 0;
+                                                                                        return (
+                                                                                            <div className="w-14 h-14 bg-gray-300 rounded-md flex items-center justify-center text-xs text-gray-600">No image</div>
+                                                                                        );
                                                                                     }
-                                                                                })()} × {item.quantity || 1}
-                                                                            </span>
-
-                                                                            {/* Size badge */}
-                                                                            {item.size && (
-                                                                                <span className="px-2 py-1 rounded bg-orange-100 border border-orange-300 text-xs text-orange-700 font-medium uppercase">
-                                                                                    Size: {item.size}
-                                                                                </span>
-                                                                            )}
-
-                                                                            {/* Color display */}
-                                                                            {item.color && (
-                                                                                <div className="flex items-center gap-1">
-                                                                                    <span className="text-xs text-gray-600">Color:</span>
-                                                                                    {!item.isCustomDesign ? (
-                                                                                        <span style={{
-                                                                                            backgroundColor: item.color,
-                                                                                            border: '1px solid #ccc',
-                                                                                            display: 'inline-block',
-                                                                                            width: 18,
-                                                                                            height: 18,
-                                                                                            borderRadius: '50%'
-                                                                                        }} title={item.color}></span>
-                                                                                    ) : (
-                                                                                        <span className="text-xs text-gray-600">{item.color}</span>
-                                                                                    )}
-                                                                                </div>
-                                                                            )}
-                                                                        </div>
-                                                                    </div>
-
-                                                                    {/* Item subtotal */}
-                                                                    <div className="text-right flex-shrink-0">
-                                                                        <div className="font-medium text-gray-900">
-                                                                            {currency}{(() => {
-                                                                                // Calculate total price based on product type
-                                                                                let unitPrice = 0;
-                                                                                if (item.price) {
-                                                                                    // Use the stored price from order (preferred method)
-                                                                                    unitPrice = item.price;
-                                                                                } else if (item.isCustomDesign && item.customDesignId) {
-                                                                                    // For legacy custom design orders without stored price
-                                                                                    console.warn(`Custom design order item missing price field: ${item.customDesignId}`);
-                                                                                    // Try to estimate from order total for legacy orders
-                                                                                    if (order.items && order.items.length > 0) {
-                                                                                        const totalQuantity = order.items.reduce((sum, orderItem) => sum + (orderItem.quantity || 1), 0);
-                                                                                        unitPrice = (order.amount || 0) / totalQuantity;
-                                                                                        console.log(`Using estimated price for legacy order total: ₹${unitPrice}`);
-                                                                                    } else {
-                                                                                        unitPrice = 0; // Fallback to 0 if calculation fails
-                                                                                    }
-                                                                                } else if (item.product && typeof item.product === 'object') {
-                                                                                    // For populated product objects
-                                                                                    unitPrice = item.product.offerPrice || item.product.price || 0;
+                                                                                } catch (err) {
+                                                                                    return <div className="w-14 h-14 bg-gray-300 rounded-md"></div>;
                                                                                 }
-                                                                                return (unitPrice * (item.quantity || 1)).toFixed(2);
                                                                             })()}
                                                                         </div>
+
+                                                                        {/* Product Details */}
+                                                                        <div className="flex-1 min-w-0">
+                                                                            <p className="font-semibold text-gray-900 text-sm truncate">
+                                                                                {item.isCustomDesign ? (item.designName || 'Custom Design') : (item.product?.name || 'Product')}
+                                                                                {item.isCustomDesign && <span className="ml-2 px-2 py-0.5 rounded bg-blue-100 text-blue-700 text-xs font-medium">CUSTOM</span>}
+                                                                            </p>
+                                                                            <div className="flex flex-wrap gap-2 mt-1.5">
+                                                                                {item.size && <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded border border-orange-200">Size: {item.size}</span>}
+                                                                                {item.quantity && <span className="text-xs text-gray-600">Qty: {item.quantity}</span>}
+                                                                            </div>
+                                                                        </div>
+
+                                                                        {/* Price */}
+                                                                        <div className="text-right flex-shrink-0">
+                                                                            <p className="font-bold text-gray-900">
+                                                                                {currency}{(() => {
+                                                                                    let unitPrice = 0;
+                                                                                    if (item.price) {
+                                                                                        unitPrice = item.price;
+                                                                                    } else if (item.product && typeof item.product === 'object') {
+                                                                                        unitPrice = item.product.offerPrice || item.product.price || 0;
+                                                                                    }
+                                                                                    return (unitPrice * (item.quantity || 1)).toFixed(2);
+                                                                                })()}
+                                                                            </p>
+                                                                        </div>
                                                                     </div>
-                                                                </div>
-                                                            );
-                                                        } catch (err) {
-                                                            console.error(`Error rendering item ${idx} in order ${order._id}:`, err);
-                                                            return (
-                                                                <div key={idx} className="bg-gray-100 rounded-lg px-3 py-2 text-xs text-red-500">
-                                                                    Error displaying item
-                                                                </div>
-                                                            );
-                                                        }
-                                                    })}
-                                                </div>
-                                            </div>
-
-                                            {/* Order footer with summary and address */}
-                                            <div className="bg-gray-50 p-4 border-t border-gray-200 flex flex-col md:flex-row justify-between gap-4">
-                                                {/* Shipping address */}
-                                                <div className="flex-1">
-                                                    <h4 className="text-xs font-semibold uppercase text-gray-500 mb-1">Shipping Address</h4>
-                                                    <p className="text-sm text-gray-700">
-                                                        {(() => {
-                                                            try {
-                                                                if (typeof order.address === 'object' && order.address !== null) {
-                                                                    return (
-                                                                        <>
-                                                                            <span className="font-medium">{order.address.fullName || 'Customer'}</span><br />
-                                                                            {order.address.area || ''}{order.address.area ? ', ' : ''}
-                                                                            {order.address.city || ''}{order.address.city ? ', ' : ''}
-                                                                            {order.address.state || ''}
-                                                                            {order.address.phoneNumber ? <><br />{order.address.phoneNumber}</> : ''}
-                                                                        </>
-                                                                    );
-                                                                }
-                                                                return 'Address details will be confirmed';
-                                                            } catch (err) {
-                                                                console.error("Error formatting address:", err);
-                                                                return 'Address details will be confirmed';
-                                                            }
-                                                        })()}
-                                                    </p>
-                                                </div>
-
-                                                {/* Order total */}
-                                                <div className="md:text-right">
-                                                    <h4 className="text-xs font-semibold uppercase text-gray-500 mb-1">Order Total</h4>
-                                                    {(() => {
-                                                        const calculatedTotal = order.items?.reduce((sum, item) => {
-                                                            let itemPrice = 0;
-                                                            if (item.price) {
-                                                                itemPrice = item.price * (item.quantity || 1);
-                                                            } else if (item.isCustomDesign && order.items.length > 0) {
-                                                                // Use estimation for legacy orders
-                                                                const totalQuantity = order.items.reduce((s, i) => s + (i.quantity || 1), 0);
-                                                                const estimatedUnitPrice = (order.amount || 0) / totalQuantity;
-                                                                itemPrice = estimatedUnitPrice * (item.quantity || 1);
-                                                            } else if (item.product && typeof item.product === 'object') {
-                                                                itemPrice = (item.product.offerPrice || item.product.price || 0) * (item.quantity || 1);
-                                                            }
-                                                            return sum + itemPrice;
-                                                        }, 0) || 0;
-
-                                                        const storedTotal = order.amount || 0;
-                                                        const difference = Math.abs(storedTotal - calculatedTotal);
-
-                                                        // If there's a significant difference, use calculated total
-                                                        const displayTotal = (difference > storedTotal * 0.1) ? calculatedTotal : storedTotal;
-                                                        const isUsingCalculated = (difference > storedTotal * 0.1);
-
-                                                        return (
-                                                            <div className="text-xl font-bold text-orange-600">
-                                                                {currency}{displayTotal.toFixed(2)}
+                                                                ))}
+                                                                {Array.isArray(order.items) && order.items.length > 2 && (
+                                                                    <button
+                                                                        onClick={() => window.location.href = `/track-order?orderId=${order._id}`}
+                                                                        className="text-xs text-orange-600 hover:text-orange-700 font-semibold"
+                                                                    >
+                                                                        + {order.items.length - 2} more item{order.items.length - 2 !== 1 ? 's' : ''}
+                                                                    </button>
+                                                                )}
                                                             </div>
-                                                        );
-                                                    })()}
-                                                    <p className="text-xs text-gray-500 mt-1">
-                                                        Includes taxes, delivery charges
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </motion.div>
-                                    );
-                                } catch (err) {
-                                    console.error(`Failed to render order ${order?._id || index}:`, err);
-                                    return (
-                                        <motion.div
-                                            key={`error-${index}`}
-                                            className="rounded-xl shadow bg-white p-6 border border-red-200"
-                                            initial={{ opacity: 0, y: 20 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            transition={{ duration: 0.3, delay: index * 0.1 }}
-                                        >
-                                            <p className="text-red-500">There was an error displaying this order.</p>
-                                            <p className="text-xs text-gray-500 mt-2">Order ID: {order?._id || 'Unknown'}</p>
-                                        </motion.div>
-                                    );
-                                }
-                            })}
+                                                        </div>
+
+                                                        {/* Footer: Total & Actions */}
+                                                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-5 border-t border-gray-100">
+                                                            <div>
+                                                                <p className="text-xs text-gray-500 font-semibold uppercase mb-1">Order Total</p>
+                                                                <p className="text-2xl font-bold text-orange-600">{currency}{(order.amount || 0).toFixed(2)}</p>
+                                                            </div>
+                                                            <div className="flex gap-3 flex-wrap">
+                                                                <Link
+                                                                    href={`/track-order?orderId=${order._id}`}
+                                                                    className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition font-medium text-sm flex items-center gap-2"
+                                                                >
+                                                                    <span>📍</span>Track Order
+                                                                </Link>
+                                                                <button
+                                                                    onClick={() => window.location.href = `/order-details?id=${order._id}`}
+                                                                    className="px-4 py-2 border-2 border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium text-sm"
+                                                                >
+                                                                    View Details
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </motion.div>
+                                            );
+                                        } catch (err) {
+                                            console.error(`Failed to render order ${order?._id || index}:`, err);
+                                            return (
+                                                <motion.div
+                                                    key={`error-${index}`}
+                                                    className="bg-red-50 rounded-xl border-2 border-red-200 p-6"
+                                                    initial={{ opacity: 0, y: 20 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                >
+                                                    <p className="text-red-700 font-semibold flex items-center gap-2"><span>⚠️</span>Error displaying order</p>
+                                                    <p className="text-xs text-gray-600 mt-2">Order ID: {order?._id || 'Unknown'}</p>
+                                                </motion.div>
+                                            );
+                                        }
+                                    })}
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>

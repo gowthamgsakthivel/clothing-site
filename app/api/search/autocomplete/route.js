@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/config/db';
-import productModel from '@/models/productModel';
+import Product from '@/models/Product';
 
 export async function GET(request) {
     try {
@@ -22,7 +22,7 @@ export async function GET(request) {
         const searchRegex = new RegExp(query, 'i');
 
         // Search for matching products
-        const products = await productModel
+        const products = await Product
             .find({
                 $or: [
                     { name: searchRegex },

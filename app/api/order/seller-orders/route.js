@@ -39,6 +39,13 @@ export async function GET(request) {
         await connectDB();
         console.log("✅ Connected to database");
 
+        // Get filter and sort parameters from query
+        const { searchParams } = new URL(request.url);
+        const statusFilter = searchParams.get('status') || 'all'; // all, pending, shipped, delivered
+        const sortBy = searchParams.get('sortBy') || 'date-desc'; // date-desc, date-asc, status
+
+        console.log(`🔍 Filters - Status: ${statusFilter}, SortBy: ${sortBy}`);
+
         // Make sure models are loaded
         Address.length;
 
@@ -54,14 +61,29 @@ export async function GET(request) {
             console.log(`Found ${sellerProductIds.length} products belonging to seller ${userId}`);
 
             // Step 2: For seller dashboard, show only regular product orders (not custom designs)
-            // Custom designs are handled separately in the custom-designs section
-            let orders = await Order.find({
+            // Build query with status filter
+            let query = {
                 "items.isCustomDesign": { $ne: true } // Exclude custom design orders
-            })
-                .sort({ date: -1 })
-                .lean();
+            };
 
-            console.log(`Found ${orders.length} regular product orders for seller dashboard`);
+            // Apply status filter
+            if (statusFilter !== 'all') {
+                const statusMap = {
+                    'pending': ['Order Placed', 'Processing', 'Pending'],
+                    'shipped': ['Shipped', 'In Transit', 'Out for Delivery'],
+                    'delivered': ['Delivered', 'Completed']
+                };
+
+                const statuses = statusMap[statusFilter.toLowerCase()];
+                if (statuses) {
+                    query.status = { $in: statuses };
+                    console.log(`Applied status filter for: ${statusFilter}`, statuses);
+                }
+            }
+
+            let orders = await Order.find(query).lean();
+
+            console.log(`Found ${orders.length} orders after filtering`);
 
             // Get all product IDs that need to be populated (filtering out string products)
             const productIds = [];
@@ -204,14 +226,35 @@ export async function GET(request) {
 
             console.log(`✅ Successfully processed ${processedOrders.length} orders for seller view`);
 
-            // Sort orders by date in descending order (newest first) after processing
-            processedOrders.sort((a, b) => {
-                const dateA = typeof a.date === 'number' ? a.date : 0;
-                const dateB = typeof b.date === 'number' ? b.date : 0;
-                return dateB - dateA; // Descending order (newest first)
-            });
+            // Apply sorting based on sortBy parameter
+            if (sortBy === 'date-asc') {
+                // Sort ascending (oldest first)
+                processedOrders.sort((a, b) => {
+                    const dateA = typeof a.date === 'number' ? a.date : 0;
+                    const dateB = typeof b.date === 'number' ? b.date : 0;
+                    return dateA - dateB;
+                });
+                console.log(`Sorted by date ascending (oldest first)`);
+            } else if (sortBy === 'status') {
+                // Sort by status
+                const statusOrder = { 'Pending': 0, 'Processing': 0, 'Order Placed': 0, 'Shipped': 1, 'In Transit': 1, 'Out for Delivery': 1, 'Delivered': 2, 'Completed': 2 };
+                processedOrders.sort((a, b) => {
+                    const statusA = statusOrder[a.status] !== undefined ? statusOrder[a.status] : 99;
+                    const statusB = statusOrder[b.status] !== undefined ? statusOrder[b.status] : 99;
+                    return statusA - statusB;
+                });
+                console.log(`Sorted by status`);
+            } else {
+                // Default: Sort by date descending (newest first)
+                processedOrders.sort((a, b) => {
+                    const dateA = typeof a.date === 'number' ? a.date : 0;
+                    const dateB = typeof b.date === 'number' ? b.date : 0;
+                    return dateB - dateA;
+                });
+                console.log(`Sorted by date descending (newest first)`);
+            }
 
-            console.log(`Orders sorted by date. Newest order: ${new Date(processedOrders[0]?.date * 1000).toISOString()}`);
+            console.log(`✅ Orders processed and sorted. Newest order: ${new Date(processedOrders[0]?.date * 1000).toISOString()}`);
 
             return NextResponse.json({ success: true, orders: processedOrders });
         } catch (orderError) {

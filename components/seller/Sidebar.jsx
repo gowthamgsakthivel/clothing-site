@@ -30,7 +30,7 @@ const SideBar = () => {
             {/* Toggle Button */}
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="fixed top-20 left-2 z-50 md:hidden bg-orange-600 text-white p-2 rounded-lg shadow-lg hover:bg-orange-700 transition-colors"
+                className="fixed top-16 left-2 z-50 md:hidden bg-orange-600 text-white p-2 rounded-lg shadow-lg hover:bg-orange-700 transition-colors"
                 aria-label="Toggle Menu"
             >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -46,7 +46,7 @@ const SideBar = () => {
             fixed md:static inset-y-0 left-0 z-40
             w-64 md:w-20 lg:w-64 xl:w-72
             flex-shrink-0 border-r min-h-screen text-base border-gray-300 py-2 flex flex-col bg-white
-            transform transition-transform duration-300 ease-in-out
+            transform transition-transform duration-300 ease-in-out mt-16 md:mt-0
             ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
         `}>
                 {menuItems.map((item) => {

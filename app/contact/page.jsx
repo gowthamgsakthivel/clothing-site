@@ -84,7 +84,7 @@ export default function ContactPage() {
     return (
         <>
             <Navbar />
-            <div className="min-h-screen bg-gradient-to-br from-blue-50 via-pink-50 to-yellow-50 flex flex-col items-center justify-center py-16 px-4">
+            <div className="min-h-screen bg-gradient-to-br from-blue-50 via-pink-50 to-yellow-50 flex flex-col items-center justify-center py-16 px-4 pt-20 md:pt-24">
                 <div className="w-full max-w-xl bg-white/90 rounded-2xl shadow-2xl p-10 backdrop-blur-md border border-white/40">
                     <h1 className="text-4xl font-bold text-center mb-6 text-gray-900">Contact Us</h1>
                     <p className="text-center text-gray-600 mb-8">

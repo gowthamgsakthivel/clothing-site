@@ -13,9 +13,79 @@ const Orders = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [detailsOrder, setDetailsOrder] = useState(null);
+    const [statusFilter, setStatusFilter] = useState('all'); // all, pending, shipped, delivered
+    const [sortBy, setSortBy] = useState('date-desc'); // date-desc, date-asc, status
+    const [statusUpdateModal, setStatusUpdateModal] = useState(null); // { orderId, currentStatus }
+    const [updatingStatus, setUpdatingStatus] = useState(false);
+
+    // Status workflow progression
+    const statusWorkflow = {
+        'Order Placed': 'Packed',
+        'Processing': 'Packed',
+        'Pending': 'Packed',
+        'Packed': 'Shipped',
+        'Shipped': 'In Transit',
+        'In Transit': 'Out for Delivery',
+        'Out for Delivery': 'Delivered',
+        'Delivered': null,
+        'Completed': null
+    };
+
+    // Get the next status in workflow
+    const getNextStatus = (currentStatus) => {
+        return statusWorkflow[currentStatus] || null;
+    };
+
+    // Get status color and badge style
+    const getStatusStyle = (status) => {
+        const styles = {
+            'Order Placed': { bg: 'bg-blue-100', text: 'text-blue-800', badge: 'bg-blue-500' },
+            'Processing': { bg: 'bg-indigo-100', text: 'text-indigo-800', badge: 'bg-indigo-500' },
+            'Pending': { bg: 'bg-blue-100', text: 'text-blue-800', badge: 'bg-blue-500' },
+            'Packed': { bg: 'bg-yellow-100', text: 'text-yellow-800', badge: 'bg-yellow-500' },
+            'Shipped': { bg: 'bg-orange-100', text: 'text-orange-800', badge: 'bg-orange-500' },
+            'In Transit': { bg: 'bg-orange-100', text: 'text-orange-800', badge: 'bg-orange-500' },
+            'Out for Delivery': { bg: 'bg-purple-100', text: 'text-purple-800', badge: 'bg-purple-500' },
+            'Delivered': { bg: 'bg-emerald-100', text: 'text-emerald-800', badge: 'bg-emerald-500' },
+            'Completed': { bg: 'bg-emerald-100', text: 'text-emerald-800', badge: 'bg-emerald-500' }
+        };
+        return styles[status] || styles['Order Placed'];
+    };
+
+    // Update order status
+    const updateOrderStatus = async (orderId, newStatus) => {
+        try {
+            setUpdatingStatus(true);
+            const token = await getToken();
+
+            const response = await axios.post(
+                '/api/order/update-status',
+                { orderId, newStatus },
+                {
+                    headers: { Authorization: `Bearer ${token}` }
+                }
+            );
+
+            if (response.data.success) {
+                // Update local state
+                setOrders(orders.map(order =>
+                    order._id === orderId ? { ...order, status: newStatus } : order
+                ));
+                toast.success(`Order marked as ${newStatus}`);
+                setStatusUpdateModal(null);
+            } else {
+                toast.error(response.data.message || 'Failed to update status');
+            }
+        } catch (error) {
+            console.error('Error updating status:', error);
+            toast.error('Error updating order status');
+        } finally {
+            setUpdatingStatus(false);
+        }
+    };
 
     // Enhanced fetch function with error handling
-    const fetchSellerOrders = async () => {
+    const fetchSellerOrders = async (status = 'all', sort = 'date-desc') => {
         try {
             setLoading(true);
             setError(null);
@@ -45,8 +115,13 @@ const Orders = () => {
                 return;
             }
 
-            console.log("Making API request to /api/order/seller-orders with token:", token?.substring(0, 10) + '...');
-            const response = await axios.get('/api/order/seller-orders', {
+            // Build query string with filters
+            const params = new URLSearchParams();
+            params.append('status', status);
+            params.append('sortBy', sort);
+
+            console.log("Making API request to /api/order/seller-orders with filters:", { status, sort });
+            const response = await axios.get(`/api/order/seller-orders?${params.toString()}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
@@ -131,16 +206,16 @@ const Orders = () => {
         }
     };
 
-    // Fetch orders when user is available
+    // Fetch orders when user is available or filters change
     useEffect(() => {
         if (user?.id) {
-            fetchSellerOrders();
+            fetchSellerOrders(statusFilter, sortBy);
         } else if (user === null) {
             setLoading(false);
             setError("Please sign in to view your seller orders");
         }
         // Keep loading state while user is being fetched
-    }, [user, getToken]); return (
+    }, [user, getToken, statusFilter, sortBy]); return (
         <div className="w-full h-screen overflow-auto flex flex-col justify-between text-sm bg-gray-50">
             {!user ? (
                 <div className="md:p-10 p-4">
@@ -157,7 +232,7 @@ const Orders = () => {
                         <h3 className="text-lg font-medium mb-2">Error Loading Orders</h3>
                         <p className="mb-4">{error}</p>
                         <button
-                            onClick={fetchSellerOrders}
+                            onClick={() => fetchSellerOrders(statusFilter, sortBy)}
                             className="bg-red-100 hover:bg-red-200 text-red-800 px-4 py-2 rounded"
                         >
                             Try Again
@@ -169,12 +244,59 @@ const Orders = () => {
                     <div className="flex justify-between items-center">
                         <h2 className="text-lg font-medium">Orders</h2>
                         <button
-                            onClick={fetchSellerOrders}
+                            onClick={() => fetchSellerOrders(statusFilter, sortBy)}
                             className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded text-sm"
                             disabled={loading}
                         >
                             {loading ? 'Loading...' : 'Refresh Orders'}
                         </button>
+                    </div>
+
+                    {/* Filter Controls */}
+                    <div className="bg-white rounded-md border border-gray-200 p-4 space-y-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {/* Status Filter */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Status</label>
+                                <select
+                                    value={statusFilter}
+                                    onChange={(e) => setStatusFilter(e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                >
+                                    <option value="all">All Orders</option>
+                                    <option value="pending">Pending / Processing</option>
+                                    <option value="shipped">Shipped / In Transit</option>
+                                    <option value="delivered">Delivered</option>
+                                </select>
+                            </div>
+
+                            {/* Sort By */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Sort by</label>
+                                <select
+                                    value={sortBy}
+                                    onChange={(e) => setSortBy(e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                >
+                                    <option value="date-desc">Newest First</option>
+                                    <option value="date-asc">Oldest First</option>
+                                    <option value="status">By Status</option>
+                                </select>
+                            </div>
+
+                            {/* Clear Filters Button */}
+                            <div className="flex items-end">
+                                <button
+                                    onClick={() => {
+                                        setStatusFilter('all');
+                                        setSortBy('date-desc');
+                                    }}
+                                    className="w-full px-3 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-md text-sm font-medium transition-colors"
+                                >
+                                    Clear Filters
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
                     {orders.length === 0 ? (
@@ -270,20 +392,31 @@ const Orders = () => {
                                                         }
                                                     })()}</td>
                                                     <td className="px-4 py-3">
-                                                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${order.paymentStatus === 'Paid' || order.paymentStatus === 'confirmed' ? 'bg-green-100 text-green-700' :
-                                                            order.paymentStatus === 'Pending' || order.paymentStatus === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                                                                order.paymentStatus === 'rejected' ? 'bg-red-100 text-red-700' :
-                                                                    'bg-gray-200 text-gray-700'
-                                                            }`}>{order.paymentStatus || 'Unknown'}</span>
+                                                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusStyle(order.status).bg} ${getStatusStyle(order.status).text}`}>
+                                                            {order.status || 'Unknown'}
+                                                        </span>
                                                     </td>
                                                     <td className="px-4 py-3">{currency}{order.amount || 0}</td>
-                                                    <td className="px-4 py-3">
+                                                    <td className="px-4 py-3 space-x-2 flex flex-wrap gap-2">
                                                         <button
-                                                            className="bg-gray-900 text-white px-4 py-1.5 rounded hover:bg-gray-800"
+                                                            className="bg-gray-900 text-white px-3 py-1.5 rounded text-xs hover:bg-gray-800"
                                                             onClick={() => setDetailsOrder(order)}
                                                         >
-                                                            View Details
+                                                            View
                                                         </button>
+                                                        {getNextStatus(order.status) && (
+                                                            <button
+                                                                className="bg-blue-600 text-white px-3 py-1.5 rounded text-xs hover:bg-blue-700 transition"
+                                                                onClick={() => setStatusUpdateModal({ orderId: order._id, currentStatus: order.status })}
+                                                            >
+                                                                Mark as {getNextStatus(order.status)}
+                                                            </button>
+                                                        )}
+                                                        {!getNextStatus(order.status) && (
+                                                            <span className="text-xs text-gray-500 px-2 py-1.5">
+                                                                ✓ Complete
+                                                            </span>
+                                                        )}
                                                     </td>
                                                 </tr>
                                             );
@@ -420,6 +553,64 @@ const Orders = () => {
                                     )}
                                 </tbody>
                             </table>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Status Update Modal */}
+            {statusUpdateModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+                    <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6 relative">
+                        <button
+                            className="absolute top-2 right-2 text-gray-400 hover:text-gray-700 text-2xl"
+                            onClick={() => setStatusUpdateModal(null)}
+                        >
+                            ×
+                        </button>
+
+                        <h3 className="text-lg font-semibold mb-4">Update Order Status</h3>
+
+                        <div className="space-y-4">
+                            <div className="bg-blue-50 border border-blue-200 rounded p-3">
+                                <p className="text-sm text-gray-600">Current Status:</p>
+                                <p className={`text-base font-semibold ${getStatusStyle(statusUpdateModal.currentStatus).text}`}>
+                                    {statusUpdateModal.currentStatus}
+                                </p>
+                            </div>
+
+                            <div className="border-t border-gray-200 pt-4">
+                                <p className="text-sm text-gray-600 mb-3">Next Status:</p>
+                                <p className={`text-lg font-bold ${getStatusStyle(getNextStatus(statusUpdateModal.currentStatus)).text}`}>
+                                    {getNextStatus(statusUpdateModal.currentStatus)}
+                                </p>
+                            </div>
+
+                            {/* Status progression info */}
+                            <div className="bg-gray-50 p-3 rounded text-xs text-gray-600">
+                                <p className="font-semibold mb-2">📦 Order Workflow:</p>
+                                <div className="space-y-1">
+                                    <p>1️⃣ Order Placed → 2️⃣ Packed → 3️⃣ Shipped →</p>
+                                    <p>4️⃣ In Transit → 5️⃣ Out for Delivery → 6️⃣ Delivered</p>
+                                </div>
+                            </div>
+
+                            <div className="flex gap-3 pt-4">
+                                <button
+                                    className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition text-sm font-medium"
+                                    onClick={() => setStatusUpdateModal(null)}
+                                    disabled={updatingStatus}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition text-sm font-medium disabled:bg-gray-400"
+                                    onClick={() => updateOrderStatus(statusUpdateModal.orderId, getNextStatus(statusUpdateModal.currentStatus))}
+                                    disabled={updatingStatus}
+                                >
+                                    {updatingStatus ? 'Updating...' : 'Confirm Update'}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

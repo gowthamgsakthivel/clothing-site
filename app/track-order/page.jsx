@@ -17,6 +17,8 @@ const OrderTrackingPage = () => {
     const [selectedOrder, setSelectedOrder] = useState(null);
     const [loading, setLoading] = useState(true);
     const [trackingNumber, setTrackingNumber] = useState('');
+    const [lastUpdated, setLastUpdated] = useState(null);
+    const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(true);
 
     useEffect(() => {
         if (!user) {
@@ -26,11 +28,32 @@ const OrderTrackingPage = () => {
         fetchOrders();
     }, [user]);
 
+    // Auto-refresh orders every 30 seconds if any are pending/in-transit
+    useEffect(() => {
+        if (!autoRefreshEnabled || orders.length === 0) return;
+
+        // Check if any order is in pending/in-transit status
+        const hasActiveOrders = orders.some(order => {
+            const status = order.status?.toLowerCase() || '';
+            return ['order placed', 'processing', 'packed', 'shipped', 'in transit', 'out for delivery'].includes(status);
+        });
+
+        if (!hasActiveOrders) return;
+
+        const refreshInterval = setInterval(() => {
+            console.log('🔄 Auto-refreshing orders...');
+            fetchOrders();
+        }, 30000); // Refresh every 30 seconds
+
+        return () => clearInterval(refreshInterval);
+    }, [orders, autoRefreshEnabled]);
+
     const fetchOrders = async () => {
         try {
             const { data } = await axios.get('/api/user/orders');
             if (data.success) {
                 setOrders(data.orders);
+                setLastUpdated(new Date());
 
                 // Auto-select order from URL params
                 const params = new URLSearchParams(window.location.search);
@@ -114,7 +137,7 @@ const OrderTrackingPage = () => {
         <>
             <Navbar />
             <div className="min-h-screen bg-gray-50 py-8">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 md:pt-24">
                     {/* Header */}
                     <div className="mb-8">
                         <h1 className="text-3xl font-bold text-gray-900 mb-2">Track Your Order</h1>
@@ -161,8 +184,8 @@ const OrderTrackingPage = () => {
                                                 key={order._id}
                                                 onClick={() => setSelectedOrder(order)}
                                                 className={`w-full text-left p-4 rounded-lg border-2 transition ${selectedOrder?._id === order._id
-                                                        ? 'border-orange-500 bg-orange-50'
-                                                        : 'border-gray-200 hover:border-orange-300 hover:bg-gray-50'
+                                                    ? 'border-orange-500 bg-orange-50'
+                                                    : 'border-gray-200 hover:border-orange-300 hover:bg-gray-50'
                                                     }`}
                                             >
                                                 <div className="flex justify-between items-start mb-2">
@@ -224,14 +247,28 @@ const OrderTrackingPage = () => {
                                                         minute: '2-digit'
                                                     })}
                                                 </p>
+                                                {lastUpdated && (
+                                                    <p className="text-xs text-gray-500 mt-1">
+                                                        Last updated: {lastUpdated.toLocaleTimeString('en-IN')} 🔄
+                                                    </p>
+                                                )}
                                             </div>
-                                            <span
-                                                className={`px-4 py-2 rounded-full text-sm font-medium ${getStatusColor(
-                                                    selectedOrder.status
-                                                )}`}
-                                            >
-                                                {selectedOrder.status}
-                                            </span>
+                                            <div className="flex flex-col items-end gap-2">
+                                                <span
+                                                    className={`px-4 py-2 rounded-full text-sm font-medium ${getStatusColor(
+                                                        selectedOrder.status
+                                                    )}`}
+                                                >
+                                                    {selectedOrder.status}
+                                                </span>
+                                                <button
+                                                    onClick={() => fetchOrders()}
+                                                    className="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-xs font-medium transition"
+                                                    title="Refresh order status"
+                                                >
+                                                    🔄 Refresh
+                                                </button>
+                                            </div>
                                         </div>
 
                                         {/* Estimated Delivery */}
@@ -344,8 +381,8 @@ const OrderTrackingPage = () => {
                                                 <span>Payment Status</span>
                                                 <span
                                                     className={`font-medium ${selectedOrder.paymentStatus === 'Paid'
-                                                            ? 'text-green-600'
-                                                            : 'text-yellow-600'
+                                                        ? 'text-green-600'
+                                                        : 'text-yellow-600'
                                                         }`}
                                                 >
                                                     {selectedOrder.paymentStatus}

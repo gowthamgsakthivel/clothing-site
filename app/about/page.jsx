@@ -34,7 +34,7 @@ export default function AboutPage() {
     return (
         <>
             <Navbar />
-            <div className="relative overflow-hidden min-h-screen w-full flex items-center justify-center bg-white pt-3">
+            <div className="relative overflow-hidden min-h-screen w-full flex items-center justify-center bg-white pt-20 md:pt-24">
                 {/* Animated gradient background */}
                 <div className="absolute inset-0 -z-10 animate-gradient bg-gradient-to-br from-blue-200 via-pink-100 to-yellow-100 opacity-90"></div>
                 {/* Animated sparkles */}
@@ -46,7 +46,7 @@ export default function AboutPage() {
                         />
                     ))}
                 </div>
-                <div className="relative z-10 w-full max-w-5xl mx-auto py-32 px-8 rounded-3xl shadow-2xl bg-white/80 backdrop-blur-2xl border border-white/40">
+                <div className="relative z-10 w-full max-w-5xl mx-auto py-12 sm:py-20 md:py-32 px-4 sm:px-6 md:px-8 rounded-2xl sm:rounded-3xl shadow-2xl bg-white/80 backdrop-blur-2xl border border-white/40">
                     <h1 className="text-5xl font-extrabold mb-8 text-gray-900 text-center drop-shadow-lg tracking-tight">About Sparrow Sports</h1>
                     <p className="text-xl text-gray-700 mb-8 text-center font-medium leading-relaxed">
                         Sparrow Sports is your trusted destination for premium sportswear, activewear, lifestyle products, and innovative gadgets. We are committed to delivering top-quality gear, trending styles, and a smooth shopping experience—whether you're hitting the gym, exploring the outdoors, or upgrading your everyday essentials.

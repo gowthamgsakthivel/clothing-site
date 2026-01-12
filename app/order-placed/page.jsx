@@ -16,7 +16,7 @@ const OrderPlaced = () => {
   }, [])
 
   return (
-    <div className='h-screen flex flex-col justify-center items-center gap-5'>
+    <div className='min-h-screen flex flex-col justify-center items-center gap-5 pt-20 md:pt-24'>
       <SEOMetadata
         title="Order Placed Successfully | Sparrow Sports"
         description="Your order has been placed successfully. Thank you for shopping with Sparrow Sports!"

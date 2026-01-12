@@ -11,13 +11,13 @@ import CartCounter from "./CartIcon";
 
 const Navbar = () => {
 
-  const { isSeller, router, user } = useAppContext();
+  const { isSeller, isAdmin, router, user } = useAppContext();
   const [showSearch, setShowSearch] = useState(false);
   const { openSignIn } = useClerk();
 
   return (
     <>
-      <nav className="flex items-center justify-between px-6 md:px-16 lg:px-32 py-3 border-b border-gray-300 text-gray-700">
+      <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 sm:px-6 md:px-16 lg:px-32 py-3 border-b border-gray-300 text-gray-700 bg-white">
         <Image
           className="cursor-pointer w-28 md:w-32"
           onClick={() => router.push('/')}
@@ -38,7 +38,8 @@ const Navbar = () => {
             Contact
           </Link>
 
-          {isSeller && <button onClick={() => router.push('/seller')} className="text-xs border px-4 py-1.5 rounded-full">Seller Dashboard</button>}
+          {isAdmin && <Link href="/admin" className="text-xs border px-4 py-1.5 rounded-full hover:bg-gray-100 cursor-pointer inline-block">Admin Dashboard</Link>}
+          {isSeller && <Link href="/seller" className="text-xs border px-4 py-1.5 rounded-full hover:bg-gray-100 cursor-pointer inline-block">Seller Dashboard</Link>}
 
         </div>
 
@@ -60,6 +61,12 @@ const Navbar = () => {
                     <UserButton.MenuItems>
                       <UserButton.Action label="My Profile" labelIcon={<svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" /></svg>} onClick={() => router.push('/profile')} />
                     </UserButton.MenuItems>
+                    {isAdmin && <UserButton.MenuItems>
+                      <UserButton.Action label="Admin Dashboard" labelIcon={<svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M3 13h2v8H3zm4-8h2v16H7zm4-2h2v18h-2zm4 4h2v14h-2zm4-2h2v16h-2z" /></svg>} onClick={() => router.push('/admin')} />
+                    </UserButton.MenuItems>}
+                    {isSeller && <UserButton.MenuItems>
+                      <UserButton.Action label="Seller Dashboard" labelIcon={<svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" /></svg>} onClick={() => router.push('/seller')} />
+                    </UserButton.MenuItems>}
                     <UserButton.MenuItems>
                       <UserButton.Action label="Wishlist" labelIcon={<svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M20.8 4.6c-1.5-1.3-3.7-1.1-5 .3l-.8.8-.8-.8c-1.3-1.4-3.5-1.6-5-.3-1.7 1.5-1.8 4.1-.2 5.7l8 8c.4.4 1 .4 1.4 0l8-8c1.6-1.6 1.5-4.2-.2-5.7z" /></svg>} onClick={() => router.push('/wishlist')} />
                     </UserButton.MenuItems>
@@ -103,7 +110,8 @@ const Navbar = () => {
           >
             <Image className="w-4 h-4" src={assets.search_icon} alt="search icon" />
           </button>
-          {isSeller && <button onClick={() => router.push('/seller')} className="text-xs border px-4 py-1.5 rounded-full">Seller Dashboard</button>}
+          {isAdmin && <Link href="/admin" className="text-xs border px-4 py-1.5 rounded-full cursor-pointer inline-block">Admin</Link>}
+          {isSeller && <Link href="/seller" className="text-xs border px-4 py-1.5 rounded-full cursor-pointer inline-block">Seller</Link>}
           {
             user
               ? <>
@@ -114,6 +122,12 @@ const Navbar = () => {
                     <UserButton.MenuItems>
                       <UserButton.Action label="Home" labelIcon={<HomeIcon />} onClick={() => router.push('/')} />
                     </UserButton.MenuItems>
+                    {isAdmin && <UserButton.MenuItems>
+                      <UserButton.Action label="Admin Dashboard" labelIcon={<svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M3 13h2v8H3zm4-8h2v16H7zm4-2h2v18h-2zm4 4h2v14h-2zm4-2h2v16h-2z" /></svg>} onClick={() => router.push('/admin')} />
+                    </UserButton.MenuItems>}
+                    {isSeller && <UserButton.MenuItems>
+                      <UserButton.Action label="Seller Dashboard" labelIcon={<svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" /></svg>} onClick={() => router.push('/seller')} />
+                    </UserButton.MenuItems>}
                     <UserButton.MenuItems>
                       <UserButton.Action label="Products" labelIcon={<BoxIcon />} onClick={() => router.push('/all-products')} />
                     </UserButton.MenuItems>

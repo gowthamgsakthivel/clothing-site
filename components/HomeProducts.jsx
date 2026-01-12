@@ -26,15 +26,15 @@ const HomeProducts = () => {
   const isLoading = loadingStates.products && displayProducts.length === 0;
 
   return (
-    <div className="flex flex-col items-center pt-14">
-      <p className="text-2xl font-medium text-left w-full">Popular products</p>
+    <div className="flex flex-col items-center pt-8 md:pt-14 px-0">
+      <p className="text-xl md:text-2xl lg:text-3xl font-medium text-left w-full px-4 md:px-0">Popular products</p>
 
       {isLoading ? (
         <div className="w-full py-12 flex justify-center">
           <Loading />
         </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 flex-col items-center gap-6 mt-6 pb-14 w-full">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 md:gap-6 mt-6 pb-8 md:pb-14 w-full">
           {displayProducts.map((product) => (
             <ProductCard key={product._id} product={product} />
           ))}
@@ -43,7 +43,7 @@ const HomeProducts = () => {
 
       <button
         onClick={() => { router.push('/all-products') }}
-        className="px-12 py-2.5 border rounded text-gray-500/70 hover:bg-slate-50/90 transition"
+        className="px-8 md:px-12 py-2 md:py-2.5 border rounded text-gray-500/70 hover:bg-slate-50/90 transition text-sm md:text-base"
       >
         See more
       </button>

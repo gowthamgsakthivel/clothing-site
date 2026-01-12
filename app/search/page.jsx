@@ -1,5 +1,5 @@
 'use client'
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useAppContext } from '@/context/AppContext';
 import Navbar from '@/components/Navbar';
@@ -193,7 +193,7 @@ const SearchResults = () => {
                 ].join(', ')}
                 url={`/search?q=${encodeURIComponent(query)}`}
             />
-            <div className="container mx-auto px-4 py-8">
+            <div className="container mx-auto px-4 sm:px-6 md:px-8 lg:px-32 py-6 md:py-8 pt-20 md:pt-24">
                 <div className="mb-6">
                     <h1 className="text-2xl font-medium mb-2">
                         Search Results for "{query}"
@@ -204,9 +204,9 @@ const SearchResults = () => {
                     />
                 </div>
 
-                <div className="flex flex-col md:flex-row gap-6">
+                <div className="flex flex-col lg:flex-row gap-4 md:gap-6">
                     {/* Filters sidebar */}
-                    <div className="md:w-64 w-full">
+                    <div className="lg:w-64 w-full">
                         <div className="sticky top-24 bg-white p-4 border rounded-lg shadow-sm">
                             <h3 className="text-lg font-medium mb-4 border-b pb-2">Filters</h3>
 
@@ -308,7 +308,7 @@ const SearchResults = () => {
                         ) : (
                             <>
                                 {/* Products grid */}
-                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+                                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
                                     {results.map(product => (
                                         <ProductCard key={product._id} product={product} />
                                     ))}
@@ -381,4 +381,10 @@ const SearchResults = () => {
     );
 };
 
-export default SearchResults;
+export default function SearchPage() {
+    return (
+        <Suspense fallback={<Loading />}>
+            <SearchResults />
+        </Suspense>
+    );
+}

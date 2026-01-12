@@ -9,8 +9,16 @@ import { NextResponse } from "next/server";
 export async function GET(request) {
     console.log("⭐ Starting order list API route");
     try {
-        const { userId } = getAuth(request);
-        console.log("👤 Auth result:", { userId: userId || "undefined" });
+        // Try to get userId from Clerk auth (from cookies/session)
+        let userId = null;
+
+        try {
+            const auth = await getAuth(request);
+            userId = auth.userId;
+            console.log("👤 Auth from Clerk:", { userId: userId || "undefined" });
+        } catch (authError) {
+            console.warn("⚠️ Clerk auth failed:", authError.message);
+        }
 
         if (!userId) {
             console.log("❌ No userId found in auth");

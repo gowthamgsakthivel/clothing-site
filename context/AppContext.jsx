@@ -23,6 +23,7 @@ export const AppContextProvider = (props) => {
     const [products, setProducts] = useState([])
     const [userData, setUserData] = useState(false)
     const [isSeller, setIsSeller] = useState(false)
+    const [isAdmin, setIsAdmin] = useState(false)
     const [cartItems, setCartItems] = useState({})
     const [favorites, setFavorites] = useState([])
 
@@ -73,9 +74,10 @@ export const AppContextProvider = (props) => {
         try {
             setLoadingStates(prev => ({ ...prev, userData: true }));
 
-            if (user?.publicMetadata?.role === "seller") {
-                setIsSeller(true);
-            }
+            // Check role and set flags accordingly (reset to false if not matching)
+            const userRole = user?.publicMetadata?.role;
+            setIsSeller(userRole === "seller");
+            setIsAdmin(userRole === "admin");
 
             const token = await getToken();
             const { data } = await axios.get('/api/user/data', {
@@ -388,6 +390,7 @@ export const AppContextProvider = (props) => {
         user, getToken,
         currency, router,
         isSeller, setIsSeller,
+        isAdmin, setIsAdmin,
         userData, fetchUserData,
         products, fetchProductData,
         searchProducts, // Add the search function

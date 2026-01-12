@@ -30,6 +30,14 @@ export async function POST(request) {
         const { address, items, paymentMethod, paymentStatus } = await request.json();
         console.log('Order Create Debug:', { userId, paymentMethod, paymentStatus });
 
+        // Reject COD orders - only Razorpay allowed
+        if (paymentMethod && paymentMethod.toLowerCase() === 'cod') {
+            return NextResponse.json({
+                success: false,
+                message: 'Cash on Delivery is no longer available. Please use online payment (Razorpay).'
+            }, { status: 400 });
+        }
+
         if (!address || items.length === 0) {
             return NextResponse.json({ success: false, message: 'Invalid data' });
         }

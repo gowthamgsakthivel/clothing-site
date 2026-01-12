@@ -4,7 +4,6 @@ import { getAuth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import connectDB from "@/config/db";
 import { getCachedResponse } from "@/lib/apiCache";
-import { measureApiPerformance } from "@/lib/apiMonitoring";
 
 // Wrap the handler with performance monitoring
 const handler = async (request) => {
@@ -84,5 +83,5 @@ const handler = async (request) => {
     }
 };
 
-// Export the monitored handler
-export const GET = measureApiPerformance('/api/product/seller-list', handler);
+// Export handler
+export const GET = handler;

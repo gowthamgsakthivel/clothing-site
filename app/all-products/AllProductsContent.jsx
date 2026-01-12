@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useAppContext } from "@/context/AppContext";
 import { useSearchParams, useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
@@ -269,9 +269,9 @@ function AllProductsContent() {
                 ].join(', ')}
                 url={`/all-products${searchParams.toString() ? `?${searchParams.toString()}` : ''}`}
             />
-            <div className="flex flex-row w-full px-6 md:px-16 lg:px-32">
+            <div className="flex flex-col lg:flex-row w-full px-4 sm:px-6 md:px-16 lg:px-32 gap-4 lg:gap-0 pt-20 md:pt-24">
                 {/* Sidebar: Comprehensive filters */}
-                <aside className="hidden md:block w-72 pt-16 pr-8 max-h-screen overflow-y-auto">
+                <aside className="hidden lg:block w-72 pt-12 pr-8 max-h-screen overflow-y-auto">
                     <div className="bg-white rounded-xl shadow p-6 border border-gray-100 space-y-6">
                         {/* Filter Header */}
                         <div className="flex items-center justify-between">
@@ -458,7 +458,7 @@ function AllProductsContent() {
                         )}
                     </div>
                     {/* Mobile Filter Button */}
-                    <div className="md:hidden flex justify-between items-center w-full mb-4">
+                    <div className="lg:hidden flex justify-between items-center w-full mb-4 gap-3">
                         <button
                             onClick={() => setShowMobileFilters(true)}
                             className="flex items-center gap-2 bg-orange-600 text-white px-4 py-2 rounded-lg"
@@ -484,7 +484,7 @@ function AllProductsContent() {
 
                     {/* Mobile Filter Modal */}
                     {showMobileFilters && (
-                        <div className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-50">
+                        <div className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-50">
                             <div className="bg-white h-full w-full overflow-y-auto">
                                 <div className="p-4 border-b flex justify-between items-center">
                                     <h3 className="text-lg font-semibold">Filters</h3>
@@ -610,7 +610,7 @@ function AllProductsContent() {
                             <Loading />
                         </div>
                     ) : filteredProducts.length > 0 ? (
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 flex-col items-center gap-6 pb-6 w-full">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 md:gap-6 pb-6 w-full">
                             {filteredProducts.map((product, index) => <ProductCard key={product._id || index} product={product} />)}
                         </div>
                     ) : (
@@ -684,4 +684,12 @@ function AllProductsContent() {
     );
 }
 
-export default AllProductsContent;
+function AllProductsPage() {
+    return (
+        <Suspense fallback={null}>
+            <AllProductsContent />
+        </Suspense>
+    );
+}
+
+export default AllProductsPage;

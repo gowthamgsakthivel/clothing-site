@@ -99,7 +99,7 @@ const Notifications = () => {
                 url="/notifications"
             />
             <Navbar />
-            <div className="px-6 md:px-16 lg:px-32 pt-14 pb-16 min-h-[calc(100vh-200px)]">
+            <div className="px-4 sm:px-6 md:px-16 lg:px-32 pt-20 md:pt-24 pb-12 md:pb-16 min-h-[calc(100vh-200px)]">
                 <h1 className="text-3xl font-medium mb-8">My Stock Notifications</h1>
 
                 {loading ? (
@@ -121,7 +121,7 @@ const Notifications = () => {
                     <div className="space-y-6">
                         <p className="text-gray-600">You will receive a notification when these products are back in stock.</p>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                             {notifications.map((notification, index) => (
                                 <div key={index} className="border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition">
                                     <div className="flex items-center p-4 bg-gray-50">

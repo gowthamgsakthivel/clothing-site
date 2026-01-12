@@ -40,7 +40,7 @@ const AddAddress = () => {
     return (
         <>
             <Navbar />
-            <div className="px-6 md:px-16 lg:px-32 py-16 flex flex-col md:flex-row justify-between">
+            <div className="px-4 sm:px-6 md:px-16 lg:px-32 py-8 md:py-16 pt-20 md:pt-24 flex flex-col md:flex-row justify-between">
                 <form onSubmit={onSubmitHandler} className="w-full">
                     <p className="text-2xl md:text-3xl text-gray-500">
                         Add Shipping <span className="font-semibold text-orange-600">Address</span>

@@ -260,7 +260,7 @@ const ReturnsPage = () => {
         <>
             <Navbar />
             <div className="min-h-screen bg-gray-50 py-8">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 md:pt-24">
                     {/* Header */}
                     <div className="mb-8">
                         <h1 className="text-3xl font-bold text-gray-900 mb-2">Returns & Refunds</h1>
@@ -279,8 +279,8 @@ const ReturnsPage = () => {
                                 <button
                                     onClick={() => setActiveTab('orders')}
                                     className={`px-6 py-4 text-sm font-medium border-b-2 transition ${activeTab === 'orders'
-                                            ? 'border-orange-500 text-orange-600'
-                                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                        ? 'border-orange-500 text-orange-600'
+                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                                         }`}
                                 >
                                     Eligible Orders ({orders.length})
@@ -288,8 +288,8 @@ const ReturnsPage = () => {
                                 <button
                                     onClick={() => setActiveTab('returns')}
                                     className={`px-6 py-4 text-sm font-medium border-b-2 transition ${activeTab === 'returns'
-                                            ? 'border-orange-500 text-orange-600'
-                                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                        ? 'border-orange-500 text-orange-600'
+                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                                         }`}
                                 >
                                     My Returns ({returnRequests.length})
@@ -410,8 +410,8 @@ const ReturnsPage = () => {
                                                     <label
                                                         key={idx}
                                                         className={`flex items-center gap-4 p-4 border-2 rounded-lg cursor-pointer transition ${isSelected
-                                                                ? 'border-orange-500 bg-orange-50'
-                                                                : 'border-gray-200 hover:border-orange-300'
+                                                            ? 'border-orange-500 bg-orange-50'
+                                                            : 'border-gray-200 hover:border-orange-300'
                                                             }`}
                                                     >
                                                         <input

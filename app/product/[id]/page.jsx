@@ -320,9 +320,9 @@ const Product = () => {
             }}
         />
         <Navbar />
-        <div className="px-6 md:px-16 lg:px-32 pt-14 space-y-10">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
-                <div className="px-5 lg:px-16 xl:px-20">
+        <div className="px-4 sm:px-6 md:px-16 lg:px-32 pt-20 md:pt-24 space-y-8 md:space-y-10">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-12 lg:gap-16">
+                <div className="px-0 sm:px-2 lg:px-4 xl:px-6">
                     <div className="rounded-lg overflow-hidden bg-gray-500/10 mb-4 relative">
                         {/* Show badge only if selected color has less than 10 units */}
                         {selectedColor && getColorObj(selectedColor) && getColorObj(selectedColor).stock < 10 && (
@@ -368,11 +368,11 @@ const Product = () => {
                 </div>
 
                 <div className="flex flex-col">
-                    <div className="flex items-start justify-between gap-4 mb-4">
-                        <h1 className="text-3xl font-medium text-gray-800/90 flex-1">
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4 mb-4">
+                        <h1 className="text-2xl sm:text-3xl font-medium text-gray-800/90 flex-1">
                             {productData.name}
                         </h1>
-                        <ShareButton 
+                        <ShareButton
                             product={productData}
                             title={productData.name}
                             description={productData.description}
@@ -391,20 +391,20 @@ const Product = () => {
                                 alt="star_dull_icon"
                             />
                         </div>
-                        <p>(4.5)</p>
+                        <p className="text-sm">(4.5)</p>
                     </div>
-                    <p className="text-gray-600 mt-3">
+                    <p className="text-gray-600 mt-2 sm:mt-3 text-sm sm:text-base">
                         {productData.description}
                     </p>
-                    <p className="text-3xl font-medium mt-6">
+                    <p className="text-2xl sm:text-3xl font-medium mt-4 sm:mt-6">
                         ₹{productData.offerPrice}
-                        <span className="text-base font-normal text-gray-800/60 line-through ml-2">
+                        <span className="text-xs sm:text-base font-normal text-gray-800/60 line-through ml-2">
                             ₹{productData.price}
                         </span>
                     </p>
-                    <hr className="bg-gray-600 my-6" />
-                    <div className="overflow-x-auto">
-                        <table className="table-auto border-collapse w-full max-w-72">
+                    <hr className="bg-gray-600 my-4 sm:my-6" />
+                    <div className="overflow-x-auto w-full">
+                        <table className="table-auto border-collapse w-full min-w-fit text-sm md:text-base">
                             <tbody>
                                 <tr>
                                     <td className="text-gray-600 font-medium">Brand</td>
@@ -451,10 +451,10 @@ const Product = () => {
                                 <tr>
                                     <td className="text-gray-600 font-medium">Size</td>
                                     <td className="text-gray-800/50 ">
-                                        <div className="flex items-center justify-between mb-2">
+                                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-3 mb-2">
                                             <button
                                                 onClick={() => setShowSizeGuide(true)}
-                                                className="text-sm text-orange-600 hover:text-orange-700 font-medium flex items-center gap-1"
+                                                className="text-xs sm:text-sm text-orange-600 hover:text-orange-700 font-medium flex items-center gap-1"
                                             >
                                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -463,7 +463,7 @@ const Product = () => {
                                             </button>
                                             <button
                                                 onClick={() => setShowSizeRecommendation(!showSizeRecommendation)}
-                                                className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+                                                className="text-xs sm:text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
                                             >
                                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
@@ -533,9 +533,9 @@ const Product = () => {
                     )}
 
                     {/* Quantity Selector */}
-                    <div className="mt-6">
-                        <label className="block text-gray-600 font-medium mb-2">Quantity</label>
-                        <div className="flex items-center gap-3">
+                    <div className="mt-4 sm:mt-6">
+                        <label className="block text-gray-600 font-medium mb-2 text-sm sm:text-base">Quantity</label>
+                        <div className="flex items-center gap-2 sm:gap-3">
                             <button
                                 type="button"
                                 onClick={() => setQuantity(Math.max(1, quantity - 1))}
@@ -569,7 +569,7 @@ const Product = () => {
                         </div>
                     </div>
 
-                    <div className="flex items-center mt-10 gap-4">
+                    <div className="flex flex-col sm:flex-row items-stretch gap-2 sm:gap-4 mt-8 sm:mt-10">
                         {/* Check if selected color-size combination is out of stock */}
                         {(() => {
                             const colorSizeStock = getColorSizeStock(selectedColor, selectedSize);
@@ -639,12 +639,12 @@ const Product = () => {
             </div>
 
             {/* Reviews Section */}
-            <div className="px-6 md:px-16 lg:px-32 py-12">
+            <div className="px-4 sm:px-6 md:px-16 lg:px-32 py-8 md:py-12">
                 <ProductReviews productId={id} />
             </div>
 
             {/* Recently Viewed Products */}
-            <div className="px-6 md:px-16 lg:px-32 py-12">
+            <div className="px-4 sm:px-6 md:px-16 lg:px-32 py-8 md:py-12">
                 <RecentlyViewed currentProductId={id} />
             </div>
 

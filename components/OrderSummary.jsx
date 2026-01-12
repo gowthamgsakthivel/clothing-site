@@ -62,35 +62,8 @@ const OrderSummary = () => {
   };
 
   const createOrder = async () => {
-    try {
-      if (!selectedAddress) {
-        return toast.error('Please select an address');
-      }
-      let cartItemsArray = Object.keys(cartItems).map((key) => ({ product: key, quantity: cartItems[key] }));
-      cartItemsArray = cartItemsArray.filter(item => item.quantity > 0);
-      if (cartItemsArray.length === 0) {
-        return toast.error('Cart is empty');
-      }
-
-      setLoadingStates(prev => ({ ...prev, orderPlacement: true }));
-
-      const { data } = await axios.post('/api/order/create', {
-        address: selectedAddress._id,
-        items: cartItemsArray
-      });
-
-      if (data.success) {
-        toast.success(data.message);
-        setCartItems({});
-        router.push('/order-placed');
-      } else {
-        toast.error(data.message);
-      }
-    } catch (error) {
-      toast.error(error.message);
-    } finally {
-      setLoadingStates(prev => ({ ...prev, orderPlacement: false }));
-    }
+    // COD payment has been disabled - only Razorpay is accepted
+    toast.error('Please use online payment (Razorpay) to complete your order');
   };
 
   // Razorpay payment handler
@@ -312,20 +285,12 @@ const OrderSummary = () => {
           </div>
 
           <LoadingButton
-            onClick={createOrder}
-            isLoading={loadingStates.orderPlacement}
-            className="w-full bg-orange-600 text-white py-3 mt-5 hover:bg-orange-700"
-            loadingText="Placing Order..."
-          >
-            Place Order (COD)
-          </LoadingButton>
-          <LoadingButton
             onClick={handleRazorpayPayment}
             isLoading={loadingStates.payment}
-            className="w-full bg-blue-600 text-white py-3 mt-3 hover:bg-blue-700"
+            className="w-full bg-orange-600 text-white py-3 mt-5 hover:bg-orange-700"
             loadingText="Preparing Payment..."
           >
-            Pay with Razorpay
+            Proceed to Payment
           </LoadingButton>
         </div>
       </LoadingOverlay>
