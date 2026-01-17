@@ -213,3 +213,15 @@
 .animate-fadeIn {
   animation: fadeIn 0.2s ease-in-out;
 }
+
+/* Mobile bottom navigation padding */
+@media (max-width: 768px) {
+  body {
+    padding-bottom: 72px;
+  }
+}
+
+/* Safe area for mobile devices with notch */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}

@@ -188,7 +188,8 @@ export const AppContextProvider = (props) => {
         try {
             setLoadingStates(prev => ({ ...prev, cart: true }));
 
-            // options: { color, size }
+            // options: { color, size, quantity }
+            const quantity = options.quantity || 1;
             let cartData = structuredClone(cartItems);
             let key = itemId;
 
@@ -201,9 +202,9 @@ export const AppContextProvider = (props) => {
             }
 
             if (cartData[key]) {
-                cartData[key] += 1;
+                cartData[key] += quantity;
             } else {
-                cartData[key] = 1;
+                cartData[key] = quantity;
             }
 
             // Update local state immediately for responsive UI
@@ -217,13 +218,14 @@ export const AppContextProvider = (props) => {
                 );
 
                 if (response.data.success) {
-                    toast.success('Item added to cart');
+                    toast.success(quantity > 1 ? `${quantity} items added to cart` : 'Item added to cart');
                 } else {
                     toast.error(response.data.message || 'Failed to update cart');
                 }
             } else {
                 // For non-logged in users, store in localStorage
                 localStorage.setItem('sparrow-cart', JSON.stringify(cartData));
+                toast.success(quantity > 1 ? `${quantity} items added to cart` : 'Item added to cart');
             }
         } catch (error) {
             console.error("Error adding to cart:", error);
