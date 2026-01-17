@@ -581,17 +581,19 @@ function AllProductsContent() {
                             </div>
                         </div>
                     )}
-                    <div className="flex flex-wrap gap-3 mb-8 w-full justify-end">
-                        {genderCategories.map((cat) => (
-                            <button
-                                key={cat}
-                                className={`px-4 py-1.5 rounded-full border transition text-sm font-semibold shadow-sm
-                                    ${selectedGender === cat ? 'bg-orange-600 text-white border-orange-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-orange-50'}`}
-                                onClick={() => setSelectedGender(cat)}
+                    <div className="flex flex-wrap gap-3 mb-8 w-full justify-end items-center">
+                        <div className="flex items-center gap-2">
+                            <label className="text-sm text-gray-600">Filter:</label>
+                            <select
+                                value={selectedGender}
+                                onChange={(e) => setSelectedGender(e.target.value)}
+                                className="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 min-w-[160px]"
                             >
-                                {cat}
-                            </button>
-                        ))}
+                                {genderCategories.map((cat) => (
+                                    <option key={cat} value={cat}>{cat}</option>
+                                ))}
+                            </select>
+                        </div>
                         {/* Show Favorites Toggle */}
                         {user && (
                             <button
