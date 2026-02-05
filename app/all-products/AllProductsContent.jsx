@@ -273,7 +273,7 @@ function AllProductsContent() {
                 ].join(', ')}
                 url={`/all-products${searchParams.toString() ? `?${searchParams.toString()}` : ''}`}
             />
-            <div className="flex flex-col lg:flex-row w-full px-4 sm:px-6 md:px-16 lg:px-32 gap-4 lg:gap-0 pt-20 md:pt-24">
+            <div className="flex flex-col lg:flex-row w-full px-4 sm:px-6 md:px-16 lg:px-32 gap-4 lg:gap-0 pt-5 md:pt-24">
                 <FiltersSidebar
                     allCategories={allCategories}
                     availableBrands={availableBrands}

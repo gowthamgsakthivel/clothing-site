@@ -63,6 +63,7 @@ export default function RootLayout({ children }) {
             toastOptions={{
               // Default options
               duration: 3000,
+              className: 'app-toast',
               style: {
                 background: '#fff',
                 color: '#363636',

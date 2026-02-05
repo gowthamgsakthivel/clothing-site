@@ -37,7 +37,7 @@ export async function GET(req) {
             status: order.status,
             paymentMethod: order.paymentMethod,
             paymentStatus: order.paymentStatus,
-            createdAt: new Date(order.date).toISOString(),
+            createdAt: new Date((order.date || 0) * 1000).toISOString(),
             address: order.address
         }));
 

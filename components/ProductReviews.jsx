@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import ReviewForm from './ReviewForm';
 import ReviewCard from './ReviewCard';
@@ -16,10 +16,21 @@ const ProductReviews = ({ productId }) => {
     const [editingReview, setEditingReview] = useState(null);
     const [sortBy, setSortBy] = useState('recent');
     const [userReview, setUserReview] = useState(null);
+    const [currentReviewIndex, setCurrentReviewIndex] = useState(0);
+    const carouselRef = useRef(null);
 
     useEffect(() => {
         fetchReviews();
     }, [productId, sortBy]);
+
+    useEffect(() => {
+        if (reviews.length === 0) {
+            setCurrentReviewIndex(0);
+            return;
+        }
+
+        setCurrentReviewIndex((prev) => Math.min(prev, reviews.length - 1));
+    }, [reviews.length]);
 
     const fetchReviews = async () => {
         try {
@@ -58,6 +69,34 @@ const ProductReviews = ({ productId }) => {
         setShowReviewForm(true);
     };
 
+    const handlePrevReview = () => {
+        const nextIndex = Math.max(0, currentReviewIndex - 1);
+        setCurrentReviewIndex(nextIndex);
+        if (carouselRef.current) {
+            const width = carouselRef.current.clientWidth;
+            carouselRef.current.scrollTo({ left: width * nextIndex, behavior: 'smooth' });
+        }
+    };
+
+    const handleNextReview = () => {
+        const nextIndex = Math.min(reviews.length - 1, currentReviewIndex + 1);
+        setCurrentReviewIndex(nextIndex);
+        if (carouselRef.current) {
+            const width = carouselRef.current.clientWidth;
+            carouselRef.current.scrollTo({ left: width * nextIndex, behavior: 'smooth' });
+        }
+    };
+
+    const handleCarouselScroll = () => {
+        if (!carouselRef.current) return;
+        const width = carouselRef.current.clientWidth;
+        if (width === 0) return;
+        const index = Math.round(carouselRef.current.scrollLeft / width);
+        if (index !== currentReviewIndex) {
+            setCurrentReviewIndex(index);
+        }
+    };
+
     const getRatingPercentage = (rating) => {
         if (!stats || stats.totalReviews === 0) return 0;
         return ((stats.distribution[rating] / stats.totalReviews) * 100).toFixed(0);
@@ -91,8 +130,8 @@ const ProductReviews = ({ productId }) => {
                                             <span
                                                 key={star}
                                                 className={`text-2xl ${star <= Math.round(stats.averageRating)
-                                                        ? 'text-yellow-400'
-                                                        : 'text-gray-300'
+                                                    ? 'text-yellow-400'
+                                                    : 'text-gray-300'
                                                     }`}
                                             >
                                                 ★
@@ -193,8 +232,49 @@ const ProductReviews = ({ productId }) => {
                         </select>
                     </div>
 
-                    {/* Reviews Grid */}
-                    <div className="space-y-4">
+                    {/* Mobile Swipe Carousel */}
+                    <div className="md:hidden space-y-3">
+                        <div className="relative">
+                            <div
+                                ref={carouselRef}
+                                onScroll={handleCarouselScroll}
+                                className="flex overflow-x-auto snap-x snap-mandatory scroll-smooth no-scrollbar"
+                            >
+                                {reviews.map((review) => (
+                                    <div key={review._id} className="min-w-full snap-start pr-1">
+                                        <ReviewCard
+                                            review={review}
+                                            onDelete={handleDeleteReview}
+                                            onUpdate={handleEditReview}
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="absolute top-3 right-3 z-20 flex items-center gap-2 rounded-full bg-white/90 px-2 py-1 shadow-sm">
+                                <button
+                                    type="button"
+                                    onClick={handlePrevReview}
+                                    disabled={currentReviewIndex === 0}
+                                    className="h-8 w-8 rounded-full border border-gray-200 text-gray-700 shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
+                                    aria-label="Previous review"
+                                >
+                                    ‹
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleNextReview}
+                                    disabled={currentReviewIndex >= reviews.length - 1}
+                                    className="h-8 w-8 rounded-full border border-gray-200 text-gray-700 shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
+                                    aria-label="Next review"
+                                >
+                                    ›
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Desktop Grid */}
+                    <div className="hidden md:grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
                         {reviews.map((review) => (
                             <ReviewCard
                                 key={review._id}

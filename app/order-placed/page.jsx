@@ -3,61 +3,6 @@ import { useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
 import SEOMetadata from '@/components/SEOMetadata'
 
-const mockOrder = {
-  id: 'SS-2026-01872',
-  date: 'Feb 4, 2026',
-  paymentStatus: 'Paid',
-  paymentMethod: 'Card',
-  transactionId: 'TXN-93A2-19F3',
-  deliveryMethod: 'Standard',
-  estimatedDelivery: 'Feb 10, 2026',
-  address: {
-    name: 'Arun Kumar',
-    line1: '12/4 Lake View Road',
-    line2: 'MG Nagar',
-    city: 'Chennai',
-    state: 'TN',
-    zip: '600034',
-    phone: '+91 98765 43210',
-  },
-  items: [
-    {
-      id: 'p1',
-      name: 'PUMA Men’s Standard BMW M Motorsport Polo',
-      image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?q=80&w=800&auto=format&fit=crop',
-      size: 'M',
-      color: 'White',
-      quantity: 1,
-      price: 3500,
-    },
-    {
-      id: 'p2',
-      name: 'Sparrow Sports Training Shorts',
-      image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?q=80&w=800&auto=format&fit=crop',
-      size: 'L',
-      color: 'Black',
-      quantity: 2,
-      price: 899,
-    },
-  ],
-  pricing: {
-    subtotal: 5298,
-    shipping: 0,
-    discount: 300,
-    total: 4998,
-  },
-  statusTimeline: {
-    current: 2,
-    steps: [
-      'Order Placed',
-      'Order Confirmed',
-      'Shipped',
-      'Out for Delivery',
-      'Delivered',
-    ],
-  },
-}
-
 const OrderItem = ({ item }) => {
   return (
     <div className="flex gap-4 rounded-xl border border-gray-100 bg-white p-4">
@@ -133,15 +78,11 @@ const StatusTimeline = ({ steps, current }) => {
 }
 
 const OrderPlaced = () => {
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(false)
   const [order, setOrder] = useState(null)
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setOrder(mockOrder)
-      setIsLoading(false)
-    }, 400)
-    return () => clearTimeout(timer)
+    setOrder(null)
   }, [])
 
   const itemCount = useMemo(() => (order?.items || []).reduce((sum, item) => sum + item.quantity, 0), [order])
@@ -162,8 +103,8 @@ const OrderPlaced = () => {
     return (
       <div className="min-h-screen pt-20 md:pt-24 px-4 sm:px-6 md:px-16 lg:px-32 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-lg font-semibold text-gray-800">No order found</p>
-          <p className="text-sm text-gray-500 mt-1">Please check your orders history.</p>
+          <p className="text-lg font-semibold text-gray-800">Order details will appear here</p>
+          <p className="text-sm text-gray-500 mt-1">We’ll show live status after Shiprocket integration.</p>
         </div>
       </div>
     )
