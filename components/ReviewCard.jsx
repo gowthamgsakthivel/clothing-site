@@ -58,16 +58,18 @@ const ReviewCard = ({ review, onDelete, onUpdate }) => {
         ? review.comment.substring(0, 300) + '...'
         : review.comment;
 
+    const reviewImages = (review.images || []).filter(Boolean);
+
     return (
         <div className="border rounded-lg p-6 bg-white hover:shadow-md transition">
             {/* Header */}
-            <div className="flex items-start justify-between mb-4">
-                <div className="flex items-start gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
+                <div className="flex items-start gap-4 min-w-0">
                     <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center text-white font-bold">
                         {review.userName[0]?.toUpperCase() || 'U'}
                     </div>
                     <div>
-                        <div className="flex items-center gap-2 mb-1">
+                        <div className="flex flex-wrap items-center gap-2 mb-1">
                             <p className="font-semibold text-gray-900">{review.userName}</p>
                             {review.verifiedPurchase && (
                                 <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full font-medium flex items-center gap-1">
@@ -75,7 +77,7 @@ const ReviewCard = ({ review, onDelete, onUpdate }) => {
                                 </span>
                             )}
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                             <div className="flex">
                                 {[1, 2, 3, 4, 5].map((star) => (
                                     <span
@@ -96,16 +98,16 @@ const ReviewCard = ({ review, onDelete, onUpdate }) => {
 
                 {/* Owner Actions */}
                 {isOwner && (
-                    <div className="flex gap-2">
+                    <div className="flex gap-3 self-start sm:self-auto">
                         <button
                             onClick={() => onUpdate(review)}
-                            className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                            className="text-sm text-blue-600 hover:text-blue-700 font-medium whitespace-nowrap"
                         >
                             Edit
                         </button>
                         <button
                             onClick={handleDelete}
-                            className="text-sm text-red-600 hover:text-red-700 font-medium"
+                            className="text-sm text-red-600 hover:text-red-700 font-medium whitespace-nowrap"
                         >
                             Delete
                         </button>
@@ -139,24 +141,18 @@ const ReviewCard = ({ review, onDelete, onUpdate }) => {
             </p>
 
             {/* Images */}
-            {review.images && review.images.length > 0 && (
+            {reviewImages.length > 0 && (
                 <div className="flex gap-2 mb-4 flex-wrap">
-                    {review.images.map((img, idx) => (
-                        img ? (
-                            <Image
-                                key={idx}
-                                src={img}
-                                alt={`Review image ${idx + 1}`}
-                                width={100}
-                                height={100}
-                                className="w-24 h-24 object-cover rounded-lg cursor-pointer hover:opacity-80 transition"
-                                onClick={() => window.open(img, '_blank')}
-                            />
-                        ) : (
-                            <div key={idx} className="w-24 h-24 bg-gray-200 rounded-lg flex items-center justify-center text-gray-400 text-xs">
-                                No Image
-                            </div>
-                        )
+                    {reviewImages.map((img, idx) => (
+                        <Image
+                            key={idx}
+                            src={img}
+                            alt={`Review image ${idx + 1}`}
+                            width={100}
+                            height={100}
+                            className="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-lg cursor-pointer hover:opacity-80 transition"
+                            onClick={() => window.open(img, '_blank')}
+                        />
                     ))}
                 </div>
             )}
@@ -166,8 +162,8 @@ const ReviewCard = ({ review, onDelete, onUpdate }) => {
                 <button
                     onClick={handleHelpful}
                     className={`text-sm font-medium flex items-center gap-2 transition ${isHelpful
-                            ? 'text-orange-600'
-                            : 'text-gray-600 hover:text-orange-600'
+                        ? 'text-orange-600'
+                        : 'text-gray-600 hover:text-orange-600'
                         }`}
                 >
                     <span className="text-lg">{isHelpful ? '👍' : '👍🏻'}</span>

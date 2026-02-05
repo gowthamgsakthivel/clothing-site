@@ -23,7 +23,7 @@ const Product = () => {
 
     const { id } = useParams();
 
-    const { products, router, addToCart, user, getToken } = useAppContext();
+    const { products, router, addToCart, user, getToken, favorites, addFavorite, removeFavorite } = useAppContext();
 
     const [mainImage, setMainImage] = useState(null);
     const [productData, setProductData] = useState(null);
@@ -286,6 +286,23 @@ const Product = () => {
         return 0;
     };
 
+    const isFavorite = favorites?.includes(productData?._id);
+
+    const handleFavoriteClick = (event) => {
+        event.stopPropagation();
+        if (!user) {
+            toast.error('Please sign in to add favorites');
+            setTimeout(() => router.push('/sign-in'), 1500);
+            return;
+        }
+
+        if (isFavorite) {
+            removeFavorite(productData._id);
+        } else {
+            addFavorite(productData._id);
+        }
+    };
+
     return productData ? (<>
         <SEOMetadata
             title={`${productData.name} | ${productData.brand} | Sparrow Sports`}
@@ -325,25 +342,28 @@ const Product = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-12 lg:gap-16">
                 <div className="px-0 sm:px-2 lg:px-4 xl:px-6">
                     <div className="rounded-2xl md:rounded-lg overflow-hidden bg-gray-500/10 mb-4 relative aspect-[4/5]">
-                        <div className="absolute top-3 left-3 right-3 z-10 flex items-center justify-between md:hidden">
+                        <button
+                            type="button"
+                            onClick={handleFavoriteClick}
+                            className={`absolute top-3 right-3 z-20 h-10 w-10 rounded-full bg-white/90 shadow-sm flex items-center justify-center ${isFavorite ? 'text-orange-600' : 'text-gray-700'}`}
+                            aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+                        >
+                            <Image
+                                className="h-4 w-4"
+                                src={assets.heart_icon}
+                                alt="heart_icon"
+                                style={{ filter: isFavorite ? 'invert(32%) sepia(98%) saturate(749%) hue-rotate(359deg) brightness(97%) contrast(101%)' : 'none' }}
+                            />
+                        </button>
+                        <div className="absolute top-3 left-2 right-2 z-10 flex items-center justify-between md:hidden pointer-events-none">
                             <button
                                 type="button"
                                 onClick={() => router.back()}
-                                className="h-9 w-9 rounded-full bg-white/90 shadow-sm flex items-center justify-center"
+                                className="h-10 w-10 rounded-full bg-white/90 shadow-sm flex items-center justify-center pointer-events-auto"
                                 aria-label="Go back"
                             >
                                 <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                                </svg>
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => router.push('/wishlist')}
-                                className="h-9 w-9 rounded-full bg-white/90 shadow-sm flex items-center justify-center"
-                                aria-label="Wishlist"
-                            >
-                                <svg className="w-5 h-5 text-gray-700" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M20.8 4.6c-1.5-1.3-3.7-1.1-5 .3l-.8.8-.8-.8c-1.3-1.4-3.5-1.6-5-.3-1.7 1.5-1.8 4.1-.2 5.7l8 8c.4.4 1 .4 1.4 0l8-8c1.6-1.6 1.5-4.2-.2-5.7z" />
                                 </svg>
                             </button>
                         </div>
@@ -446,20 +466,20 @@ const Product = () => {
                         </span>
                     </div>
                     <hr className="bg-gray-200 my-4 sm:my-6" />
-                    <div className="space-y-6">
+                    <div className="space-y-4">
                         <div className="space-y-1">
-                            <p className="text-sm font-semibold text-gray-700">Brand</p>
+                            <p className="text-xs font-semibold text-gray-700">Brand</p>
                             <p className="text-sm text-gray-800/80">{productData.brand}</p>
                         </div>
 
-                        <div className="space-y-2">
+                        <div className="space-y-1.5">
                             <div className="flex items-center justify-between">
-                                <p className="text-sm font-semibold text-gray-700">Color</p>
+                                <p className="text-xs font-semibold text-gray-700">Color</p>
                                 {selectedColor && (
-                                    <span className="text-xs text-gray-500">Selected: {selectedColor}</span>
+                                    <span className="text-[11px] text-gray-500">Selected: {selectedColor}</span>
                                 )}
                             </div>
-                            <div className="flex flex-wrap gap-2">
+                            <div className="flex flex-wrap gap-1.5">
                                 {(() => {
                                     const availableColors = getAvailableColors();
                                     return availableColors.length > 0 ? (
@@ -470,7 +490,7 @@ const Product = () => {
                                                 <button
                                                     key={c._id || idx}
                                                     type="button"
-                                                    className={`min-h-[44px] px-3 py-2 rounded-full border text-sm font-medium flex items-center gap-2 transition focus:outline-none ${isDisabled
+                                                    className={`min-h-[40px] px-2.5 py-1.5 rounded-full border text-xs font-medium flex items-center gap-2 transition focus:outline-none ${isDisabled
                                                         ? 'bg-gray-100 text-gray-400 opacity-50 cursor-not-allowed border-gray-200'
                                                         : isSelected
                                                             ? 'border-orange-500 ring-2 ring-orange-300 bg-white'
@@ -488,7 +508,7 @@ const Product = () => {
                                                     disabled={isDisabled}
                                                 >
                                                     <span
-                                                        className="w-4 h-4 rounded-full border border-gray-300"
+                                                        className="w-3.5 h-3.5 rounded-full border border-gray-300"
                                                         style={{ backgroundColor: c.color }}
                                                         aria-hidden="true"
                                                     />
@@ -504,12 +524,12 @@ const Product = () => {
                             </div>
                         </div>
 
-                        <div className="space-y-2">
+                        <div className="space-y-1.5">
                             <div className="flex items-center justify-between">
-                                <p className="text-sm font-semibold text-gray-700">Size</p>
+                                <p className="text-xs font-semibold text-gray-700">Size</p>
                                 <button
                                     onClick={() => setShowSizeGuide(true)}
-                                    className="text-xs text-orange-600 font-medium flex items-center gap-1"
+                                    className="text-[11px] text-orange-600 font-medium flex items-center gap-1"
                                 >
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -517,13 +537,13 @@ const Product = () => {
                                     Size Guide
                                 </button>
                             </div>
-                            <p className="text-xs text-gray-500">
+                            <p className="text-[11px] text-gray-500">
                                 {(() => {
                                     const availableSizes = getAvailableSizes();
                                     return availableSizes.includes('L') ? 'Most customers buy L' : 'True to size';
                                 })()}
                             </p>
-                            <div className="flex flex-wrap gap-2">
+                            <div className="flex flex-wrap gap-1.5">
                                 {(() => {
                                     const availableSizes = getAvailableSizes();
                                     return availableSizes.length > 0 ? (
@@ -538,7 +558,7 @@ const Product = () => {
                                                 <div key={size} className="flex flex-col items-start">
                                                     <button
                                                         type="button"
-                                                        className={`min-h-[44px] px-4 py-2 rounded-full border text-sm font-semibold transition focus:outline-none ${isDisabled
+                                                        className={`min-h-[40px] px-3.5 py-1.5 rounded-full border text-xs font-semibold transition focus:outline-none ${isDisabled
                                                             ? 'bg-gray-100 text-gray-400 opacity-50 cursor-not-allowed border-gray-200'
                                                             : isSelected
                                                                 ? 'bg-orange-500 text-white border-orange-500'
@@ -560,7 +580,7 @@ const Product = () => {
                                                         {isOutOfStock && <span className="ml-1 text-red-400">✕</span>}
                                                     </button>
                                                     {isLowStock && (
-                                                        <span className="mt-1 text-[11px] text-red-600 font-medium">Only {sizeStock} left</span>
+                                                        <span className="mt-1 text-[10px] text-red-600 font-medium">Only {sizeStock} left</span>
                                                     )}
                                                 </div>
                                             );
@@ -573,15 +593,15 @@ const Product = () => {
                         </div>
 
                         <div className="space-y-1">
-                            <p className="text-sm font-semibold text-gray-700">Category</p>
+                            <p className="text-xs font-semibold text-gray-700">Category</p>
                             <p className="text-sm text-gray-800/80">{productData.category}</p>
                         </div>
 
-                        <div className="space-y-2">
+                        <div className="space-y-1.5">
                             <div className="flex items-center justify-between">
-                                <label className="text-sm font-semibold text-gray-700">Quantity</label>
+                                <label className="text-xs font-semibold text-gray-700">Quantity</label>
                                 {selectedColor && selectedSize && (
-                                    <span className="text-xs text-gray-500 font-medium">
+                                    <span className="text-[11px] text-gray-500 font-medium">
                                         {getColorSizeStock(selectedColor, selectedSize)} available
                                     </span>
                                 )}
@@ -591,16 +611,16 @@ const Product = () => {
                                     <button
                                         type="button"
                                         onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                                        className="w-12 h-12 flex items-center justify-center active:bg-gray-100 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                                        className="w-10 h-10 flex items-center justify-center active:bg-gray-100 transition disabled:opacity-40 disabled:cursor-not-allowed"
                                         disabled={quantity <= 1}
                                         aria-label="Decrease quantity"
                                     >
-                                        <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
                                         </svg>
                                     </button>
-                                    <div className="w-14 h-12 flex items-center justify-center border-x border-gray-300 bg-gray-50">
-                                        <span className="text-base font-semibold text-gray-900">{quantity}</span>
+                                    <div className="w-12 h-10 flex items-center justify-center border-x border-gray-300 bg-gray-50">
+                                        <span className="text-sm font-semibold text-gray-900">{quantity}</span>
                                     </div>
                                     <button
                                         type="button"
@@ -610,21 +630,21 @@ const Product = () => {
                                                 setQuantity(quantity + 1);
                                             }
                                         }}
-                                        className="w-12 h-12 flex items-center justify-center active:bg-gray-100 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                                        className="w-10 h-10 flex items-center justify-center active:bg-gray-100 transition disabled:opacity-40 disabled:cursor-not-allowed"
                                         disabled={(() => {
                                             const maxStock = getColorSizeStock(selectedColor, selectedSize);
                                             return !selectedColor || !selectedSize || quantity >= maxStock;
                                         })()}
                                         aria-label="Increase quantity"
                                     >
-                                        <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                                         </svg>
                                     </button>
                                 </div>
                                 {selectedColor && selectedSize && quantity > 0 && (
-                                    <div className="flex flex-col gap-1 text-xs">
-                                        <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded-md font-medium w-fit">
+                                    <div className="flex flex-col gap-1 text-[11px]">
+                                        <span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded-md font-medium w-fit">
                                             {quantity} {quantity === 1 ? 'item' : 'items'}
                                         </span>
                                         {(() => {
@@ -644,17 +664,23 @@ const Product = () => {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs text-gray-600">
-                            <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2">
-                                <span className="inline-block w-2 h-2 rounded-full bg-green-500" aria-hidden="true"></span>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5 text-[11px] text-gray-600">
+                            <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-2.5 py-1.5">
+                                <svg className="w-3.5 h-3.5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
                                 Factory stitched
                             </div>
-                            <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2">
-                                <span className="inline-block w-2 h-2 rounded-full bg-green-500" aria-hidden="true"></span>
+                            <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-2.5 py-1.5">
+                                <svg className="w-3.5 h-3.5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
                                 Direct from manufacturer
                             </div>
-                            <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2">
-                                <span className="inline-block w-2 h-2 rounded-full bg-green-500" aria-hidden="true"></span>
+                            <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-2.5 py-1.5">
+                                <svg className="w-3.5 h-3.5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
                                 Quality checked
                             </div>
                         </div>

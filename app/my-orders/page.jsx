@@ -559,7 +559,7 @@ const MyOrders = () => {
                                             const isPaid = ['paid', 'confirmed', 'delivered', 'completed'].includes(paymentLower);
                                             const statusInfo = getStatusPresentation(order.status);
 
-                                            const dateInfo = formatOrderDate(order.date);
+                                            const dateInfo = formatOrderDate(order.date || order.createdAt);
 
                                             return (
                                                 <motion.div
