@@ -6,7 +6,7 @@ import User from "@/models/User";
 
 export async function POST(request) {
     try {
-        console.log("⭐ Starting stock update API route");
+        //console.log("⭐ Starting stock update API route");
 
         // Authenticate user
         const { userId } = getAuth(request);
@@ -97,7 +97,7 @@ export async function POST(request) {
 
             await product.save();
 
-            console.log("✅ Stock updated successfully for product:", productId);
+            //console.log("✅ Stock updated successfully for product:", productId);
 
             return NextResponse.json({
                 success: true,

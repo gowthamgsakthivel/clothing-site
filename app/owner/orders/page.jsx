@@ -13,12 +13,11 @@ const Orders = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [detailsOrder, setDetailsOrder] = useState(null);
-    const [statusFilter, setStatusFilter] = useState('all'); // all, pending, shipped, delivered
-    const [sortBy, setSortBy] = useState('date-desc'); // date-desc, date-asc, status
-    const [statusUpdateModal, setStatusUpdateModal] = useState(null); // { orderId, currentStatus }
+    const [statusFilter, setStatusFilter] = useState('all');
+    const [sortBy, setSortBy] = useState('date-desc');
+    const [statusUpdateModal, setStatusUpdateModal] = useState(null);
     const [updatingStatus, setUpdatingStatus] = useState(false);
 
-    // Status workflow progression
     const statusWorkflow = {
         'Order Placed': 'Packed',
         'Processing': 'Packed',
@@ -31,12 +30,10 @@ const Orders = () => {
         'Completed': null
     };
 
-    // Get the next status in workflow
     const getNextStatus = (currentStatus) => {
         return statusWorkflow[currentStatus] || null;
     };
 
-    // Get status color and badge style
     const getStatusStyle = (status) => {
         const styles = {
             'Order Placed': { bg: 'bg-blue-100', text: 'text-blue-800', badge: 'bg-blue-500' },
@@ -52,7 +49,6 @@ const Orders = () => {
         return styles[status] || styles['Order Placed'];
     };
 
-    // Update order status
     const updateOrderStatus = async (orderId, newStatus) => {
         try {
             setUpdatingStatus(true);
@@ -67,7 +63,6 @@ const Orders = () => {
             );
 
             if (response.data.success) {
-                // Update local state
                 setOrders(orders.map(order =>
                     order._id === orderId ? { ...order, status: newStatus } : order
                 ));
@@ -84,58 +79,37 @@ const Orders = () => {
         }
     };
 
-    // Enhanced fetch function with error handling
-    const fetchSellerOrders = async (status = 'all', sort = 'date-desc') => {
+    const fetchOwnerOrders = async (status = 'all', sort = 'date-desc') => {
         try {
             setLoading(true);
             setError(null);
 
-            console.log("Fetching seller orders...");
-
-            // Check if user is available
             if (!user?.id) {
-                console.log("User not available yet, waiting...");
                 setError("User authentication not ready. Please wait or refresh the page.");
                 return;
             }
 
-            console.log("Getting auth token for user:", user.id);
             const token = await getToken();
 
-            console.log("Token received:", {
-                hasToken: !!token,
-                tokenType: typeof token,
-                tokenLength: token?.length,
-                tokenStart: token?.substring(0, 20)
-            });
-
             if (!token) {
-                console.log("No token available");
                 setError("Authentication failed. Please sign in again.");
                 return;
             }
 
-            // Build query string with filters
             const params = new URLSearchParams();
             params.append('status', status);
             params.append('sortBy', sort);
 
-            console.log("Making API request to /api/order/seller-orders with filters:", { status, sort });
             const response = await axios.get(`/api/order/seller-orders?${params.toString()}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 },
-                timeout: 15000, // 15 second timeout
+                timeout: 15000,
                 validateStatus: function (status) {
-                    // Accept all status codes to handle them manually
-                    console.log('API Response status:', status);
                     return true;
                 }
             });
-
-            console.log("Seller orders API response status:", response.status);
-            console.log("Seller orders API response data:", response.data);
 
             if (response.status === 401) {
                 setError("Authentication failed. Please sign in again.");
@@ -144,8 +118,8 @@ const Orders = () => {
             }
 
             if (response.status === 403) {
-                setError("Access denied. Seller permissions required.");
-                toast.error("Access denied. You need seller permissions to view orders.");
+                setError("Access denied. Permissions required.");
+                toast.error("Access denied. Permissions required.");
                 return;
             }
 
@@ -159,27 +133,18 @@ const Orders = () => {
             const data = response.data;
 
             if (data.success) {
-                // Defensive check for orders data
                 if (Array.isArray(data.orders)) {
-                    console.log(`Successfully loaded ${data.orders.length} orders`);
                     setOrders(data.orders);
-                    if (data.orders.length === 0) {
-                        console.log("No orders found for this seller");
-                    }
                 } else {
-                    console.warn("Orders data is not an array:", data.orders);
                     setOrders([]);
                     setError("Received invalid orders data format");
                 }
             } else {
-                console.error("API returned error:", data.message);
                 const errorMsg = data.message || "Failed to load orders";
                 toast.error(errorMsg);
                 setError(errorMsg);
             }
         } catch (error) {
-            console.error("Error fetching seller orders:", error);
-
             if (error.code === 'ECONNREFUSED') {
                 setError("Cannot connect to server. Please check if the server is running.");
                 toast.error("Server connection failed");
@@ -187,16 +152,13 @@ const Orders = () => {
                 setError("Request timed out. Please try again.");
                 toast.error("Request timed out");
             } else if (error.response) {
-                // Server responded with error status
                 const errorMsg = error.response.data?.message || `Server error (${error.response.status})`;
                 setError(errorMsg);
                 toast.error(errorMsg);
             } else if (error.request) {
-                // Request was made but no response received
                 setError("No response from server. Please check your internet connection.");
                 toast.error("Network error - no response from server");
             } else {
-                // Something else happened
                 const errorMessage = error.message || "Unknown error occurred";
                 setError(`Network error: ${errorMessage}`);
                 toast.error(`Error: ${errorMessage}`);
@@ -206,22 +168,20 @@ const Orders = () => {
         }
     };
 
-    // Fetch orders when user is available or filters change
     useEffect(() => {
         if (user?.id) {
-            fetchSellerOrders(statusFilter, sortBy);
+            fetchOwnerOrders(statusFilter, sortBy);
         } else if (user === null) {
             setLoading(false);
-            setError("Please sign in to view your seller orders");
+            setError("Please sign in to view your orders");
         }
-        // Keep loading state while user is being fetched
     }, [user, getToken, statusFilter, sortBy]); return (
         <div className="w-full h-screen overflow-auto flex flex-col justify-between text-sm bg-gray-50">
             {!user ? (
                 <div className="md:p-10 p-4">
                     <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-yellow-700">
                         <h3 className="text-lg font-medium mb-2">Authentication Required</h3>
-                        <p>Please sign in to view your seller orders.</p>
+                        <p>Please sign in to view your orders.</p>
                     </div>
                 </div>
             ) : loading ? (
@@ -232,7 +192,7 @@ const Orders = () => {
                         <h3 className="text-lg font-medium mb-2">Error Loading Orders</h3>
                         <p className="mb-4">{error}</p>
                         <button
-                            onClick={() => fetchSellerOrders(statusFilter, sortBy)}
+                            onClick={() => fetchOwnerOrders(statusFilter, sortBy)}
                             className="bg-red-100 hover:bg-red-200 text-red-800 px-4 py-2 rounded"
                         >
                             Try Again
@@ -244,7 +204,7 @@ const Orders = () => {
                     <div className="flex justify-between items-center">
                         <h2 className="text-lg font-medium">Orders</h2>
                         <button
-                            onClick={() => fetchSellerOrders(statusFilter, sortBy)}
+                            onClick={() => fetchOwnerOrders(statusFilter, sortBy)}
                             className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded text-sm"
                             disabled={loading}
                         >
@@ -252,10 +212,8 @@ const Orders = () => {
                         </button>
                     </div>
 
-                    {/* Filter Controls */}
                     <div className="bg-white rounded-md border border-gray-200 p-4 space-y-4">
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {/* Status Filter */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Status</label>
                                 <select
@@ -270,7 +228,6 @@ const Orders = () => {
                                 </select>
                             </div>
 
-                            {/* Sort By */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">Sort by</label>
                                 <select
@@ -284,7 +241,6 @@ const Orders = () => {
                                 </select>
                             </div>
 
-                            {/* Clear Filters Button */}
                             <div className="flex items-end">
                                 <button
                                     onClick={() => {
@@ -326,7 +282,6 @@ const Orders = () => {
                                                         <div className="flex items-center gap-2">
                                                             {Array.isArray(order.items) && order.items.length > 0 ? (
                                                                 <>
-                                                                    {/* Show first product image */}
                                                                     {order.items[0].product?.image?.[0] ? (
                                                                         <img
                                                                             src={order.items[0].product.image[0]}
@@ -338,7 +293,6 @@ const Orders = () => {
                                                                             No Image
                                                                         </div>
                                                                     )}
-                                                                    {/* Show product count if multiple items */}
                                                                     {order.items.length > 1 && (
                                                                         <span className="text-xs text-gray-500">+{order.items.length - 1} more</span>
                                                                     )}
@@ -352,7 +306,6 @@ const Orders = () => {
                                                     </td>
                                                     <td className="px-4 py-3">{(() => {
                                                         try {
-                                                            // Helper function to format date safely
                                                             const formatDate = (timestamp) => {
                                                                 try {
                                                                     const date = new Date(timestamp * 1000);
@@ -365,12 +318,10 @@ const Orders = () => {
                                                                 }
                                                             };
 
-                                                            // If we have a valid number, use it
                                                             if (typeof order.date === 'number' && !isNaN(order.date) && order.date > 0) {
                                                                 return formatDate(order.date);
                                                             }
 
-                                                            // If it's a string that looks like a number, convert it
                                                             if (typeof order.date === 'string' && /^\d+$/.test(order.date)) {
                                                                 const timestamp = parseInt(order.date, 10);
                                                                 if (!isNaN(timestamp) && timestamp > 0) {
@@ -378,7 +329,6 @@ const Orders = () => {
                                                                 }
                                                             }
 
-                                                            // For other string formats, try direct parsing
                                                             if (typeof order.date === 'string' && order.date.length > 0) {
                                                                 const parsed = new Date(order.date);
                                                                 if (!isNaN(parsed.getTime())) {
@@ -421,7 +371,6 @@ const Orders = () => {
                                                 </tr>
                                             );
                                         } catch (err) {
-                                            console.error(`Error rendering order row ${index}:`, err);
                                             return (
                                                 <tr key={`error-${index}`} className="border-t border-gray-200">
                                                     <td colSpan="5" className="px-4 py-3 text-red-500">
@@ -438,7 +387,6 @@ const Orders = () => {
                 </div>
             )}
 
-            {/* Order Details Modal */}
             {detailsOrder && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
                     <div className="bg-white rounded-lg shadow-lg max-w-lg w-full p-6 relative">
@@ -447,7 +395,6 @@ const Orders = () => {
                         <div className="mb-2 text-xs text-gray-500">Order ID: <span className="font-mono">{detailsOrder._id}</span></div>
                         <div className="mb-2">Date: {(() => {
                             try {
-                                // Helper function to format date safely
                                 const formatDate = (timestamp) => {
                                     try {
                                         const date = new Date(timestamp * 1000);
@@ -460,12 +407,10 @@ const Orders = () => {
                                     }
                                 };
 
-                                // If we have a valid number, use it
                                 if (typeof detailsOrder.date === 'number' && !isNaN(detailsOrder.date) && detailsOrder.date > 0) {
                                     return formatDate(detailsOrder.date);
                                 }
 
-                                // If it's a string that looks like a number, convert it
                                 if (typeof detailsOrder.date === 'string' && /^\d+$/.test(detailsOrder.date)) {
                                     const timestamp = parseInt(detailsOrder.date, 10);
                                     if (!isNaN(timestamp) && timestamp > 0) {
@@ -473,7 +418,6 @@ const Orders = () => {
                                     }
                                 }
 
-                                // For other string formats, try direct parsing
                                 if (typeof detailsOrder.date === 'string' && detailsOrder.date.length > 0) {
                                     const parsed = new Date(detailsOrder.date);
                                     if (!isNaN(parsed.getTime())) {
@@ -558,7 +502,6 @@ const Orders = () => {
                 </div>
             )}
 
-            {/* Status Update Modal */}
             {statusUpdateModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
                     <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6 relative">
@@ -586,7 +529,6 @@ const Orders = () => {
                                 </p>
                             </div>
 
-                            {/* Status progression info */}
                             <div className="bg-gray-50 p-3 rounded text-xs text-gray-600">
                                 <p className="font-semibold mb-2">📦 Order Workflow:</p>
                                 <div className="space-y-1">

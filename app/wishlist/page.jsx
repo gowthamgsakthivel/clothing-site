@@ -1,12 +1,13 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import Image from 'next/image';
 import { useAppContext } from '@/context/AppContext';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ProductCard from '@/components/ProductCard';
 import SEOMetadata from '@/components/SEOMetadata';
 import Loading from '@/components/Loading';
-import Image from 'next/image';
 import { assets } from '@/assets/assets';
 import toast from 'react-hot-toast';
 
@@ -17,7 +18,6 @@ const WishlistPage = () => {
         fetchFavorites,
         products,
         fetchProductData,
-        loadingStates,
         router
     } = useAppContext();
 
@@ -28,16 +28,46 @@ const WishlistPage = () => {
     const [shareUrl, setShareUrl] = useState('');
     const [isSharing, setIsSharing] = useState(false);
 
+    const wishlistCount = wishlistProducts.length;
+    const minPrice = useMemo(() => {
+        if (!wishlistProducts.length) return null;
+        return Math.min(...wishlistProducts.map(p => p.offerPrice));
+    }, [wishlistProducts]);
+
+    const loadWishlistData = useCallback(async () => {
+        setLoading(true);
+        try {
+            if (!favorites.length) {
+                await fetchFavorites();
+            }
+
+            if (!products.length) {
+                await fetchProductData();
+            }
+
+            const favoriteProducts = products.filter(product =>
+                favorites.includes(product._id)
+            );
+
+            setWishlistProducts(favoriteProducts);
+        } catch (error) {
+            console.error('Error loading wishlist data:', error);
+            toast.error('Failed to load wishlist');
+        } finally {
+            setLoading(false);
+        }
+    }, [favorites, fetchFavorites, fetchProductData, products]);
+
     useEffect(() => {
         if (user) {
             loadWishlistData();
         } else {
             setLoading(false);
         }
-    }, [user, favorites, products]);
+    }, [user, favorites, products, loadWishlistData]);
 
     const handleShareWishlist = async () => {
-        if (wishlistProducts.length === 0) {
+        if (!wishlistProducts.length) {
             toast.error('Add some products to your wishlist first!');
             return;
         }
@@ -72,6 +102,11 @@ const WishlistPage = () => {
     };
 
     const copyShareLink = async () => {
+        if (!shareUrl) {
+            toast.error('No share link available');
+            return;
+        }
+
         try {
             await navigator.clipboard.writeText(shareUrl);
             toast.success('Link copied to clipboard!');
@@ -80,30 +115,13 @@ const WishlistPage = () => {
         }
     };
 
-    const loadWishlistData = async () => {
-        setLoading(true);
-        try {
-            // Ensure we have fresh favorites data
-            if (!favorites.length) {
-                await fetchFavorites();
-            }
+    const handleCloseShareModal = () => {
+        setShowShareModal(false);
+    };
 
-            // Ensure we have products data
-            if (!products.length) {
-                await fetchProductData();
-            }
-
-            // Filter products that are in favorites
-            const favoriteProducts = products.filter(product =>
-                favorites.includes(product._id)
-            );
-
-            setWishlistProducts(favoriteProducts);
-        } catch (error) {
-            console.error('Error loading wishlist data:', error);
-        } finally {
-            setLoading(false);
-        }
+    const handleViewFirstItem = () => {
+        if (!wishlistProducts.length) return;
+        router.push(`/product/${wishlistProducts[0]._id}`);
     };
 
     if (!user) {
@@ -163,7 +181,6 @@ const WishlistPage = () => {
 
             <div className="min-h-screen bg-gray-50">
                 <div className="px-4 sm:px-6 md:px-16 lg:px-32 py-8 md:py-12 pt-20 md:pt-24">
-                    {/* Page Header */}
                     <div className="text-center mb-12">
                         <div className="flex items-center justify-center mb-4">
                             <svg className="w-8 h-8 text-orange-600 mr-3" fill="currentColor" viewBox="0 0 24 24">
@@ -178,22 +195,21 @@ const WishlistPage = () => {
                         </p>
                     </div>
 
-                    {/* Wishlist Stats */}
                     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
-                        <div className="flex flex-col sm:flex-row justify-between items-center">
-                            <div className="flex items-center space-x-4 mb-4 sm:mb-0">
+                        <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+                            <div className="flex items-center space-x-6">
                                 <div className="text-center">
                                     <div className="text-2xl font-bold text-orange-600">
-                                        {wishlistProducts.length}
+                                        {wishlistCount}
                                     </div>
                                     <div className="text-sm text-gray-600">
-                                        {wishlistProducts.length === 1 ? 'Item' : 'Items'}
+                                        {wishlistCount === 1 ? 'Item' : 'Items'}
                                     </div>
                                 </div>
-                                {wishlistProducts.length > 0 && (
+                                {minPrice !== null && (
                                     <div className="text-center">
                                         <div className="text-2xl font-bold text-gray-900">
-                                            ₹{Math.min(...wishlistProducts.map(p => p.offerPrice)).toLocaleString()}
+                                            ₹{minPrice.toLocaleString()}
                                         </div>
                                         <div className="text-sm text-gray-600">
                                             Starting from
@@ -201,8 +217,8 @@ const WishlistPage = () => {
                                     </div>
                                 )}
                             </div>
-                            <div className="flex space-x-4">
-                                {wishlistProducts.length > 0 && (
+                            <div className="flex flex-wrap justify-center gap-3">
+                                {wishlistCount > 0 && (
                                     <button
                                         onClick={handleShareWishlist}
                                         disabled={isSharing}
@@ -223,15 +239,9 @@ const WishlistPage = () => {
                                     </svg>
                                     <span>Add More Items</span>
                                 </button>
-                                {wishlistProducts.length > 0 && (
+                                {wishlistCount > 0 && (
                                     <button
-                                        onClick={() => {
-                                            // Add all wishlist items to cart
-                                            wishlistProducts.forEach(product => {
-                                                // You could implement bulk add to cart functionality here
-                                                router.push(`/product/${product._id}`);
-                                            });
-                                        }}
+                                        onClick={handleViewFirstItem}
                                         className="bg-orange-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-orange-700 transition flex items-center space-x-2"
                                     >
                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -244,15 +254,13 @@ const WishlistPage = () => {
                         </div>
                     </div>
 
-                    {/* Loading State */}
                     {loading && (
                         <div className="flex justify-center items-center py-20">
                             <Loading />
                         </div>
                     )}
 
-                    {/* Empty Wishlist State */}
-                    {!loading && wishlistProducts.length === 0 && (
+                    {!loading && wishlistCount === 0 && (
                         <div className="text-center py-20">
                             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 max-w-md mx-auto">
                                 <svg className="w-16 h-16 text-gray-300 mx-auto mb-6" fill="currentColor" viewBox="0 0 24 24">
@@ -274,14 +282,12 @@ const WishlistPage = () => {
                         </div>
                     )}
 
-                    {/* Wishlist Products Grid */}
-                    {!loading && wishlistProducts.length > 0 && (
+                    {!loading && wishlistCount > 0 && (
                         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 md:gap-6">
                             {wishlistProducts.map((product) => (
                                 <div key={product._id} className="relative">
                                     <ProductCard product={product} />
-                                    {/* Wishlist indicator */}
-                                    <div className="absolute top-2 right-2 bg-white rounded-full p-1 shadow-sm">
+                                    <div className="absolute top-2 right-2 bg-white rounded-full p-1 shadow-sm" aria-hidden="true">
                                         <svg className="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 24 24">
                                             <path d="M20.8 4.6c-1.5-1.3-3.7-1.1-5 .3l-.8.8-.8-.8c-1.3-1.4-3.5-1.6-5-.3-1.7 1.5-1.8 4.1-.2 5.7l8 8c.4.4 1 .4 1.4 0l8-8c1.6-1.6 1.5-4.2-.2-5.7z" />
                                         </svg>
@@ -291,8 +297,7 @@ const WishlistPage = () => {
                         </div>
                     )}
 
-                    {/* Wishlist Tips */}
-                    {!loading && wishlistProducts.length > 0 && (
+                    {!loading && wishlistCount > 0 && (
                         <div className="mt-12 bg-orange-50 border border-orange-200 rounded-lg p-6">
                             <h3 className="text-lg font-semibold text-orange-900 mb-3 flex items-center">
                                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -325,15 +330,26 @@ const WishlistPage = () => {
                 </div>
             </div>
 
-            {/* Share Modal */}
             {showShareModal && (
-                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-lg max-w-md w-full p-6">
+                <div
+                    className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="wishlist-share-title"
+                    onClick={handleCloseShareModal}
+                >
+                    <div
+                        className="bg-white rounded-lg max-w-md w-full p-6"
+                        onClick={(event) => event.stopPropagation()}
+                    >
                         <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-xl font-semibold text-gray-900">Share Your Wishlist</h3>
+                            <h3 id="wishlist-share-title" className="text-xl font-semibold text-gray-900">
+                                Share Your Wishlist
+                            </h3>
                             <button
-                                onClick={() => setShowShareModal(false)}
+                                onClick={handleCloseShareModal}
                                 className="text-gray-400 hover:text-gray-600"
+                                aria-label="Close share dialog"
                             >
                                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -345,13 +361,13 @@ const WishlistPage = () => {
                             Share this link with friends so they can see your favorite products!
                         </p>
 
-                        {/* Share URL */}
                         <div className="mb-4">
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                            <label className="block text-sm font-medium text-gray-700 mb-2" htmlFor="wishlist-share-link">
                                 Share Link
                             </label>
                             <div className="flex items-center gap-2">
                                 <input
+                                    id="wishlist-share-link"
                                     type="text"
                                     value={shareUrl}
                                     readOnly
@@ -366,7 +382,6 @@ const WishlistPage = () => {
                             </div>
                         </div>
 
-                        {/* Social Share */}
                         <div className="pt-4 border-t border-gray-200">
                             <p className="text-sm font-medium text-gray-700 mb-3">Share via</p>
                             <div className="grid grid-cols-4 gap-3">

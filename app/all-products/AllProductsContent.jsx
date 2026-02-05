@@ -5,12 +5,16 @@ import { useAppContext } from "@/context/AppContext";
 import { useSearchParams, useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import ProductCard from "@/components/ProductCard";
 import SEOMetadata from "@/components/SEOMetadata";
 import axios from "axios";
-import Loading from "@/components/Loading";
-import Image from "next/image";
-import { assets } from "@/assets/assets";
+import FiltersSidebar from "./components/FiltersSidebar";
+import MobileFiltersModal from "./components/MobileFiltersModal";
+import MobileFiltersBar from "./components/MobileFiltersBar";
+import SortAndResults from "./components/SortAndResults";
+import ActiveFilters from "./components/ActiveFilters";
+import FiltersToolbar from "./components/FiltersToolbar";
+import ProductsGrid from "./components/ProductsGrid";
+import PaginationControls from "./components/PaginationControls";
 
 function AllProductsContent() {
     const router = useRouter();
@@ -270,125 +274,21 @@ function AllProductsContent() {
                 url={`/all-products${searchParams.toString() ? `?${searchParams.toString()}` : ''}`}
             />
             <div className="flex flex-col lg:flex-row w-full px-4 sm:px-6 md:px-16 lg:px-32 gap-4 lg:gap-0 pt-20 md:pt-24">
-                {/* Sidebar: Comprehensive filters */}
-                <aside className="hidden lg:block w-72 pt-12 pr-8 max-h-screen overflow-y-auto">
-                    <div className="bg-white rounded-xl shadow p-6 border border-gray-100 space-y-6">
-                        {/* Filter Header */}
-                        <div className="flex items-center justify-between">
-                            <h3 className="font-semibold text-lg text-gray-900">Filters</h3>
-                            <button
-                                onClick={clearAllFilters}
-                                className="text-sm text-orange-600 hover:text-orange-700 underline"
-                            >
-                                Clear All
-                            </button>
-                        </div>
-
-                        {/* Categories */}
-                        <div>
-                            <h4 className="font-medium text-gray-900 mb-3">Categories</h4>
-                            <div className="space-y-2 max-h-40 overflow-y-auto">
-                                {allCategories.map((cat) => (
-                                    <label key={cat} className="flex items-center gap-2 text-gray-700 text-sm cursor-pointer hover:bg-gray-50 p-1 rounded">
-                                        <input
-                                            type="checkbox"
-                                            checked={selectedCategories.includes(cat)}
-                                            onChange={() => handleCategoryChange(cat)}
-                                            className="accent-orange-600"
-                                        />
-                                        <span className="flex-1">{cat}</span>
-                                        <span className="text-xs text-gray-400">
-                                            {products.filter(p => p.category === cat).length}
-                                        </span>
-                                    </label>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Brands */}
-                        {availableBrands.length > 0 && (
-                            <div>
-                                <h4 className="font-medium text-gray-900 mb-3">Brands</h4>
-                                <div className="space-y-2 max-h-40 overflow-y-auto">
-                                    {availableBrands.map((brand) => (
-                                        <label key={brand} className="flex items-center gap-2 text-gray-700 text-sm cursor-pointer hover:bg-gray-50 p-1 rounded">
-                                            <input
-                                                type="checkbox"
-                                                checked={selectedBrands.includes(brand)}
-                                                onChange={() => handleBrandChange(brand)}
-                                                className="accent-orange-600"
-                                            />
-                                            <span className="flex-1">{brand}</span>
-                                            <span className="text-xs text-gray-400">
-                                                {products.filter(p => p.brand === brand).length}
-                                            </span>
-                                        </label>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Colors */}
-                        {availableColors.length > 0 && (
-                            <div>
-                                <h4 className="font-medium text-gray-900 mb-3">Colors</h4>
-                                <div className="grid grid-cols-3 gap-2 max-h-40 overflow-y-auto">
-                                    {availableColors.map((color) => (
-                                        <label key={color} className="flex items-center gap-1 text-gray-700 text-xs cursor-pointer hover:bg-gray-50 p-1 rounded">
-                                            <input
-                                                type="checkbox"
-                                                checked={selectedColors.includes(color)}
-                                                onChange={() => handleColorChange(color)}
-                                                className="accent-orange-600 scale-75"
-                                            />
-                                            <span className="flex-1 truncate">{color}</span>
-                                        </label>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Price Range */}
-                        <div>
-                            <h4 className="font-medium text-gray-900 mb-3">Price Range</h4>
-                            <div className="space-y-3">
-                                <div className="flex items-center gap-2">
-                                    <input
-                                        type="number"
-                                        placeholder="Min"
-                                        value={priceRange[0]}
-                                        onChange={(e) => setPriceRange([parseInt(e.target.value) || 0, priceRange[1]])}
-                                        className="w-full p-2 border border-gray-300 rounded text-sm"
-                                        min="0"
-                                        max="10000"
-                                    />
-                                    <span className="text-gray-400">-</span>
-                                    <input
-                                        type="number"
-                                        placeholder="Max"
-                                        value={priceRange[1]}
-                                        onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value) || 10000])}
-                                        className="w-full p-2 border border-gray-300 rounded text-sm"
-                                        min="0"
-                                        max="10000"
-                                    />
-                                </div>
-                                <input
-                                    type="range"
-                                    min="0"
-                                    max="10000"
-                                    value={priceRange[1]}
-                                    onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value)])}
-                                    className="w-full accent-orange-600"
-                                />
-                                <div className="flex justify-between text-xs text-gray-500">
-                                    <span>₹0</span>
-                                    <span>₹10,000+</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </aside>
+                <FiltersSidebar
+                    allCategories={allCategories}
+                    availableBrands={availableBrands}
+                    availableColors={availableColors}
+                    selectedCategories={selectedCategories}
+                    selectedBrands={selectedBrands}
+                    selectedColors={selectedColors}
+                    priceRange={priceRange}
+                    onCategoryChange={handleCategoryChange}
+                    onBrandChange={handleBrandChange}
+                    onColorChange={handleColorChange}
+                    onPriceRangeChange={setPriceRange}
+                    onClearAll={clearAllFilters}
+                    products={products}
+                />
                 {/* Main content */}
                 <div className="flex-1 flex flex-col items-start">
                     <div className="flex flex-col items-end pt-12 w-full">
@@ -396,288 +296,71 @@ function AllProductsContent() {
                         <div className="w-16 h-0.5 bg-orange-600 rounded-full mb-6"></div>
                     </div>
 
-                    {/* Sort and Results Info */}
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 w-full">
-                        <div className="text-sm text-gray-600">
-                            Showing {filteredProducts.length} of {products.length} products
-                        </div>
-                        <div className="flex items-center gap-4">
-                            <label className="text-sm text-gray-600">Sort by:</label>
-                            <select
-                                value={sortBy}
-                                onChange={(e) => setSortBy(e.target.value)}
-                                className="border border-gray-300 rounded px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-                            >
-                                <option value="newest">Newest First</option>
-                                <option value="price-low">Price: Low to High</option>
-                                <option value="price-high">Price: High to Low</option>
-                                <option value="name-asc">Name: A to Z</option>
-                                <option value="name-desc">Name: Z to A</option>
-                                <option value="brand">Brand</option>
-                            </select>
-                        </div>
-                    </div>
+                    <SortAndResults
+                        filteredCount={filteredProducts.length}
+                        totalCount={products.length}
+                        sortBy={sortBy}
+                        onSortChange={setSortBy}
+                    />
 
-                    {/* Active Filters */}
-                    <div className="flex flex-wrap gap-2 mb-4 w-full">
-                        {selectedGender !== 'All' && (
-                            <span className="inline-flex items-center gap-1 bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded-full">
-                                {selectedGender}
-                                <button onClick={() => setSelectedGender('All')} className="hover:text-orange-900">×</button>
-                            </span>
-                        )}
-                        {selectedCategories.map(cat => (
-                            <span key={cat} className="inline-flex items-center gap-1 bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded-full">
-                                {cat}
-                                <button onClick={() => handleCategoryChange(cat)} className="hover:text-orange-900">×</button>
-                            </span>
-                        ))}
-                        {selectedBrands.map(brand => (
-                            <span key={brand} className="inline-flex items-center gap-1 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
-                                {brand}
-                                <button onClick={() => handleBrandChange(brand)} className="hover:text-blue-900">×</button>
-                            </span>
-                        ))}
-                        {selectedColors.map(color => (
-                            <span key={color} className="inline-flex items-center gap-1 bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
-                                {color}
-                                <button onClick={() => handleColorChange(color)} className="hover:text-green-900">×</button>
-                            </span>
-                        ))}
-                        {(priceRange[0] > 0 || priceRange[1] < 10000) && (
-                            <span className="inline-flex items-center gap-1 bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full">
-                                ₹{priceRange[0]} - ₹{priceRange[1]}
-                                <button onClick={() => setPriceRange([0, 10000])} className="hover:text-purple-900">×</button>
-                            </span>
-                        )}
-                        {showFavorites && (
-                            <span className="inline-flex items-center gap-1 bg-pink-100 text-pink-800 text-xs px-2 py-1 rounded-full">
-                                Favorites Only
-                                <button onClick={() => setShowFavorites(false)} className="hover:text-pink-900">×</button>
-                            </span>
-                        )}
-                    </div>
-                    {/* Mobile Filter Button */}
-                    <div className="lg:hidden flex justify-between items-center w-full mb-4 gap-3">
-                        <button
-                            onClick={() => setShowMobileFilters(true)}
-                            className="flex items-center gap-2 bg-orange-600 text-white px-4 py-2 rounded-lg"
-                        >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.414A1 1 0 013 6.707V4z" />
-                            </svg>
-                            Filters
-                        </button>
-                        <select
-                            value={sortBy}
-                            onChange={(e) => setSortBy(e.target.value)}
-                            className="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-                        >
-                            <option value="newest">Newest</option>
-                            <option value="price-low">Price ↑</option>
-                            <option value="price-high">Price ↓</option>
-                            <option value="name-asc">A-Z</option>
-                            <option value="name-desc">Z-A</option>
-                            <option value="brand">Brand</option>
-                        </select>
-                    </div>
+                    <ActiveFilters
+                        selectedGender={selectedGender}
+                        selectedCategories={selectedCategories}
+                        selectedBrands={selectedBrands}
+                        selectedColors={selectedColors}
+                        priceRange={priceRange}
+                        showFavorites={showFavorites}
+                        onClearGender={() => setSelectedGender('All')}
+                        onToggleCategory={handleCategoryChange}
+                        onToggleBrand={handleBrandChange}
+                        onToggleColor={handleColorChange}
+                        onResetPrice={() => setPriceRange([0, 10000])}
+                        onToggleFavorites={() => setShowFavorites(false)}
+                    />
+                    <MobileFiltersBar
+                        onShowFilters={() => setShowMobileFilters(true)}
+                        sortBy={sortBy}
+                        onSortChange={setSortBy}
+                    />
 
-                    {/* Mobile Filter Modal */}
-                    {showMobileFilters && (
-                        <div className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-50">
-                            <div className="bg-white h-full w-full overflow-y-auto">
-                                <div className="p-4 border-b flex justify-between items-center">
-                                    <h3 className="text-lg font-semibold">Filters</h3>
-                                    <button
-                                        onClick={() => setShowMobileFilters(false)}
-                                        className="p-2 hover:bg-gray-100 rounded-full"
-                                    >
-                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                        </svg>
-                                    </button>
-                                </div>
-                                <div className="p-4 space-y-6">
-                                    {/* Same filter content as sidebar but for mobile */}
-                                    <div className="flex justify-between">
-                                        <button
-                                            onClick={clearAllFilters}
-                                            className="text-sm text-orange-600 hover:text-orange-700 underline"
-                                        >
-                                            Clear All Filters
-                                        </button>
-                                    </div>
+                    <MobileFiltersModal
+                        show={showMobileFilters}
+                        onClose={() => setShowMobileFilters(false)}
+                        onClearAll={clearAllFilters}
+                        genderCategories={genderCategories}
+                        selectedGender={selectedGender}
+                        onGenderChange={setSelectedGender}
+                        user={user}
+                        showFavorites={showFavorites}
+                        onToggleFavorites={() => setShowFavorites((prev) => !prev)}
+                        allCategories={allCategories}
+                        selectedCategories={selectedCategories}
+                        onCategoryChange={handleCategoryChange}
+                        availableBrands={availableBrands}
+                        selectedBrands={selectedBrands}
+                        onBrandChange={handleBrandChange}
+                        priceRange={priceRange}
+                        onPriceRangeChange={setPriceRange}
+                    />
+                    <FiltersToolbar
+                        genderCategories={genderCategories}
+                        selectedGender={selectedGender}
+                        onGenderChange={setSelectedGender}
+                        user={user}
+                        showFavorites={showFavorites}
+                        onToggleFavorites={() => setShowFavorites((prev) => !prev)}
+                    />
 
-                                    {/* Mobile Categories */}
-                                    <div>
-                                        <h4 className="font-medium text-gray-900 mb-3">Categories</h4>
-                                        <div className="space-y-2">
-                                            {allCategories.map((cat) => (
-                                                <label key={cat} className="flex items-center gap-2 text-gray-700 text-sm cursor-pointer p-2 hover:bg-gray-50 rounded">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={selectedCategories.includes(cat)}
-                                                        onChange={() => handleCategoryChange(cat)}
-                                                        className="accent-orange-600"
-                                                    />
-                                                    <span className="flex-1">{cat}</span>
-                                                </label>
-                                            ))}
-                                        </div>
-                                    </div>
+                    <ProductsGrid
+                        loading={loading}
+                        products={filteredProducts}
+                    />
 
-                                    {/* Mobile Brands */}
-                                    {availableBrands.length > 0 && (
-                                        <div>
-                                            <h4 className="font-medium text-gray-900 mb-3">Brands</h4>
-                                            <div className="space-y-2">
-                                                {availableBrands.map((brand) => (
-                                                    <label key={brand} className="flex items-center gap-2 text-gray-700 text-sm cursor-pointer p-2 hover:bg-gray-50 rounded">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={selectedBrands.includes(brand)}
-                                                            onChange={() => handleBrandChange(brand)}
-                                                            className="accent-orange-600"
-                                                        />
-                                                        <span className="flex-1">{brand}</span>
-                                                    </label>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* Mobile Price Range */}
-                                    <div>
-                                        <h4 className="font-medium text-gray-900 mb-3">Price Range</h4>
-                                        <div className="space-y-3">
-                                            <div className="flex items-center gap-2">
-                                                <input
-                                                    type="number"
-                                                    placeholder="Min"
-                                                    value={priceRange[0]}
-                                                    onChange={(e) => setPriceRange([parseInt(e.target.value) || 0, priceRange[1]])}
-                                                    className="w-full p-2 border border-gray-300 rounded text-sm"
-                                                />
-                                                <span>-</span>
-                                                <input
-                                                    type="number"
-                                                    placeholder="Max"
-                                                    value={priceRange[1]}
-                                                    onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value) || 10000])}
-                                                    className="w-full p-2 border border-gray-300 rounded text-sm"
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="p-4 border-t">
-                                    <button
-                                        onClick={() => setShowMobileFilters(false)}
-                                        className="w-full bg-orange-600 text-white py-3 rounded-lg font-medium"
-                                    >
-                                        Apply Filters
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                    <div className="flex flex-wrap gap-3 mb-8 w-full justify-end items-center">
-                        <div className="flex items-center gap-2">
-                            <label className="text-sm text-gray-600">Filter:</label>
-                            <select
-                                value={selectedGender}
-                                onChange={(e) => setSelectedGender(e.target.value)}
-                                className="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 min-w-[160px]"
-                            >
-                                {genderCategories.map((cat) => (
-                                    <option key={cat} value={cat}>{cat}</option>
-                                ))}
-                            </select>
-                        </div>
-                        {/* Show Favorites Toggle */}
-                        {user && (
-                            <button
-                                className={`px-4 py-1.5 rounded-full border transition text-sm font-semibold shadow-sm flex items-center gap-2 ${showFavorites ? 'bg-orange-600 text-white border-orange-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-orange-50'}`}
-                                onClick={() => setShowFavorites((prev) => !prev)}
-                                aria-label={showFavorites ? 'Show all products' : 'Show favorites'}
-                            >
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill={showFavorites ? '#ea580c' : 'none'} stroke="#ea580c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><path d="M20.8 4.6c-1.5-1.3-3.7-1.1-5 .3l-.8.8-.8-.8c-1.3-1.4-3.5-1.6-5-.3-1.7 1.5-1.8 4.1-.2 5.7l8 8c.4.4 1 .4 1.4 0l8-8c1.6-1.6 1.5-4.2-.2-5.7z"></path></svg>
-                                {showFavorites ? 'Show All' : 'Show Favorites'}
-                            </button>
-                        )}
-                    </div>
-
-                    {loading ? (
-                        <div className="w-full py-12 flex justify-center">
-                            <Loading />
-                        </div>
-                    ) : filteredProducts.length > 0 ? (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 md:gap-6 pb-6 w-full">
-                            {filteredProducts.map((product, index) => <ProductCard key={product._id || index} product={product} />)}
-                        </div>
-                    ) : (
-                        <div className="w-full py-12 text-center">
-                            <p className="text-xl text-gray-500">No products found matching your criteria.</p>
-                        </div>
-                    )}
-
-                    {/* Pagination Controls */}
                     {!loading && filteredProducts.length > 0 && (
-                        <div className="flex justify-center items-center gap-2 w-full my-8">
-                            <button
-                                onClick={() => changePage(pagination.page - 1)}
-                                disabled={!pagination.hasPrevPage}
-                                className={`p-2 rounded-full ${pagination.hasPrevPage ? 'hover:bg-gray-100' : 'opacity-50 cursor-not-allowed'}`}
-                                aria-label="Previous page"
-                            >
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path>
-                                </svg>
-                            </button>
-
-                            {Array.from({ length: pagination.totalPages }).map((_, index) => {
-                                const pageNum = index + 1;
-                                // Show current page, first, last and one page before and after current
-                                const shouldShow =
-                                    pageNum === 1 ||
-                                    pageNum === pagination.totalPages ||
-                                    Math.abs(pageNum - pagination.page) <= 1;
-
-                                // Add ellipsis if there's a gap
-                                if (!shouldShow) {
-                                    if (pageNum === 2 || pageNum === pagination.totalPages - 1) {
-                                        return (
-                                            <span key={`ellipsis-${pageNum}`} className="px-2 text-gray-400">...</span>
-                                        );
-                                    }
-                                    return null;
-                                }
-
-                                return (
-                                    <button
-                                        key={pageNum}
-                                        onClick={() => changePage(pageNum)}
-                                        className={`w-8 h-8 rounded-full ${pagination.page === pageNum
-                                            ? 'bg-orange-500 text-white'
-                                            : 'text-gray-700 hover:bg-gray-100'
-                                            }`}
-                                    >
-                                        {pageNum}
-                                    </button>
-                                );
-                            })}
-
-                            <button
-                                onClick={() => changePage(pagination.page + 1)}
-                                disabled={!pagination.hasNextPage}
-                                className={`p-2 rounded-full ${pagination.hasNextPage ? 'hover:bg-gray-100' : 'opacity-50 cursor-not-allowed'}`}
-                                aria-label="Next page"
-                            >
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
-                                </svg>
-                            </button>
-                        </div>
+                        <PaginationControls
+                            pagination={pagination}
+                            onChangePage={changePage}
+                        />
                     )}
                 </div>
             </div>

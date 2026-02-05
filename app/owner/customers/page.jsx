@@ -5,8 +5,8 @@ import { useAppContext } from '@/context/AppContext';
 import Link from 'next/link';
 import { toast } from 'react-hot-toast';
 
-const AdminUsers = () => {
-    const { getToken, user } = useAppContext();
+const OwnerCustomers = () => {
+    const { getToken } = useAppContext();
     const [loading, setLoading] = useState(true);
     const [users, setUsers] = useState([]);
     const [filterRole, setFilterRole] = useState('all');
@@ -95,18 +95,16 @@ const AdminUsers = () => {
     return (
         <div className="p-6 md:p-8 w-full">
             <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8">
-                {/* Header */}
                 <div className="mb-8">
                     <div className="flex items-center gap-3 mb-4">
-                        <Link href="/admin" className="text-orange-600 hover:text-orange-700">
-                            ← Admin Dashboard
+                        <Link href="/owner" className="text-orange-600 hover:text-orange-700">
+                            ← Owner Dashboard
                         </Link>
                     </div>
-                    <h1 className="text-3xl md:text-4xl font-bold text-gray-900">User Management</h1>
-                    <p className="text-gray-600 mt-2">Manage user accounts and roles</p>
+                    <h1 className="text-3xl md:text-4xl font-bold text-gray-900">Customer Management</h1>
+                    <p className="text-gray-600 mt-2">Manage customer accounts and roles</p>
                 </div>
 
-                {/* Search and Filters */}
                 <div className="mb-6 space-y-4">
                     <div className="flex flex-col md:flex-row gap-4">
                         <input
@@ -129,7 +127,6 @@ const AdminUsers = () => {
                     </div>
                 </div>
 
-                {/* Users Table */}
                 <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="w-full">
@@ -185,7 +182,6 @@ const AdminUsers = () => {
                     </div>
                 </div>
 
-                {/* Edit Modal */}
                 {selectedUser && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
                         <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
@@ -236,4 +232,4 @@ const AdminUsers = () => {
     );
 };
 
-export default AdminUsers;
+export default OwnerCustomers;

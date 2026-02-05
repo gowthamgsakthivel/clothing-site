@@ -4,29 +4,29 @@ import axios from 'axios';
 import { useAppContext } from '@/context/AppContext';
 import Link from 'next/link';
 import { toast } from 'react-hot-toast';
+import { useRouter } from 'next/navigation';
 
-const AdminDashboard = () => {
+const OwnerDashboard = () => {
     const { getToken, user } = useAppContext();
+    const router = useRouter();
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState({
         totalUsers: 0,
-        totalSellers: 0,
         totalOrders: 0,
         totalRevenue: 0,
         totalProducts: 0,
         totalContacts: 0,
         recentOrders: [],
-        topSellers: [],
         ordersByStatus: {},
     });
 
     useEffect(() => {
         if (user) {
-            fetchAdminStats();
+            fetchOwnerStats();
         }
-    }, []);
+    }, [user]);
 
-    const fetchAdminStats = async () => {
+    const fetchOwnerStats = async () => {
         try {
             setLoading(true);
             const token = await getToken();
@@ -41,8 +41,8 @@ const AdminDashboard = () => {
                 toast.error(response.data.message || 'Failed to fetch stats');
             }
         } catch (error) {
-            console.error('Error fetching admin stats:', error);
-            toast.error('Failed to load admin dashboard');
+            console.error('Error fetching owner stats:', error);
+            toast.error('Failed to load owner dashboard');
         } finally {
             setLoading(false);
         }
@@ -80,63 +80,63 @@ const AdminDashboard = () => {
 
     return (
         <div className="p-4 md:p-6 lg:p-8 w-full bg-gray-50 min-h-screen pt-6 md:pt-8">
-            {/* Header */}
             <div className="mb-6 md:mb-8">
-                <h1 className="text-3xl md:text-4xl font-bold text-gray-900">Admin Dashboard</h1>
-                <p className="text-gray-600 mt-2">Welcome back, {user?.name || 'Admin'}</p>
+                <div className="flex items-center gap-3 mb-2">
+                    <button
+                        onClick={() => router.back()}
+                        className="inline-flex items-center justify-center w-8 h-8 rounded-full border border-gray-300 text-gray-700 hover:bg-gray-100"
+                        aria-label="Go back"
+                    >
+                        ←
+                    </button>
+                    <h1 className="text-3xl md:text-4xl font-bold text-gray-900">Owner Dashboard</h1>
+                </div>
+                <p className="text-gray-600 mt-2">Welcome back, {user?.name || 'Owner'}</p>
             </div>
 
-            {/* Quick Stats */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                <StatCard label="Total Users" value={stats.totalUsers} icon="👥" color="blue" />
-                <StatCard label="Total Sellers" value={stats.totalSellers} icon="🏪" color="purple" />
-                <StatCard label="Total Orders" value={stats.totalOrders} icon="📦" color="green" />
-                <StatCard label="Total Revenue" value={`₹${stats.totalRevenue.toLocaleString()}`} icon="💰" color="orange" />
-                <StatCard label="Total Products" value={stats.totalProducts} icon="🛍️" color="blue" />
-                <StatCard label="Contact Messages" value={stats.totalContacts} icon="💬" color="red" />
+                <StatCard label="Customers" value={stats.totalUsers} icon="👥" color="blue" />
+                <StatCard label="Orders" value={stats.totalOrders} icon="📦" color="green" />
+                <StatCard label="Revenue" value={`₹${stats.totalRevenue.toLocaleString()}`} icon="💰" color="orange" />
+                <StatCard label="Products" value={stats.totalProducts} icon="🛍️" color="blue" />
+                <StatCard label="Messages" value={stats.totalContacts} icon="💬" color="red" />
             </div>
 
-            {/* Quick Actions */}
             <div className="mb-8">
                 <h2 className="text-2xl font-bold text-gray-900 mb-4">Quick Actions</h2>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                    <Link href="/admin/users">
+                    <Link href="/owner/customers">
                         <div className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-lg transition cursor-pointer text-center">
                             <div className="text-2xl mb-2">👥</div>
-                            <p className="text-sm font-medium text-gray-900">Users</p>
+                            <p className="text-sm font-medium text-gray-900">Customers</p>
                         </div>
                     </Link>
-
-                    <Link href="/admin/sellers">
-                        <div className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-lg transition cursor-pointer text-center">
-                            <div className="text-2xl mb-2">🏪</div>
-                            <p className="text-sm font-medium text-gray-900">Sellers</p>
-                        </div>
-                    </Link>
-
-                    <Link href="/admin/orders">
+                    <Link href="/owner/orders">
                         <div className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-lg transition cursor-pointer text-center">
                             <div className="text-2xl mb-2">📦</div>
                             <p className="text-sm font-medium text-gray-900">Orders</p>
                         </div>
                     </Link>
-
-                    <Link href="/admin/products/add">
+                    <Link href="/owner/add-product">
                         <div className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-lg transition cursor-pointer text-center">
                             <div className="text-2xl mb-2">➕</div>
                             <p className="text-sm font-medium text-gray-900">Add Product</p>
                         </div>
                     </Link>
-
-                    <Link href="/admin/contacts">
+                    <Link href="/owner/inventory">
+                        <div className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-lg transition cursor-pointer text-center">
+                            <div className="text-2xl mb-2">📦</div>
+                            <p className="text-sm font-medium text-gray-900">Inventory</p>
+                        </div>
+                    </Link>
+                    <Link href="/owner/messages">
                         <div className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-lg transition cursor-pointer text-center">
                             <div className="text-2xl mb-2">💬</div>
                             <p className="text-sm font-medium text-gray-900">Messages</p>
                         </div>
                     </Link>
-
                     <button
-                        onClick={fetchAdminStats}
+                        onClick={fetchOwnerStats}
                         className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-lg transition cursor-pointer text-center"
                     >
                         <div className="text-2xl mb-2">🔄</div>
@@ -145,7 +145,6 @@ const AdminDashboard = () => {
                 </div>
             </div>
 
-            {/* Orders by Status */}
             {Object.keys(stats.ordersByStatus).length > 0 && (
                 <div className="mb-8">
                     <h2 className="text-2xl font-bold text-gray-900 mb-4">Orders by Status</h2>
@@ -160,12 +159,11 @@ const AdminDashboard = () => {
                 </div>
             )}
 
-            {/* Recent Orders */}
             {stats.recentOrders && stats.recentOrders.length > 0 && (
                 <div className="mb-8">
                     <div className="flex justify-between items-center mb-4">
                         <h2 className="text-2xl font-bold text-gray-900">Recent Orders</h2>
-                        <Link href="/admin/orders" className="text-orange-600 hover:text-orange-700 font-medium">
+                        <Link href="/owner/orders" className="text-orange-600 hover:text-orange-700 font-medium">
                             View All →
                         </Link>
                     </div>
@@ -198,11 +196,11 @@ const AdminDashboard = () => {
                                                     order.status === 'Cancelled' ? 'bg-red-100 text-red-800' :
                                                         'bg-blue-100 text-blue-800'
                                                     }`}>
-                                                    {order.status}
+                                                    {order.status || 'Pending'}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 text-sm text-gray-600">
-                                                {new Date(order.date).toLocaleDateString()}
+                                                {order.date ? new Date(order.date * 1000).toLocaleDateString() : '—'}
                                             </td>
                                         </tr>
                                     ))}
@@ -216,4 +214,4 @@ const AdminDashboard = () => {
     );
 };
 
-export default AdminDashboard;
+export default OwnerDashboard;

@@ -6,31 +6,31 @@ import connectDB from "@/config/db";
 import axios from "axios";
 
 export async function GET(request) {
-    console.log("⭐ Starting download custom design image API route");
+    // console.log("⭐ Starting download custom design image API route");
     try {
         // Authenticate seller
         const { userId } = getAuth(request);
-        console.log("👤 Seller auth result:", { userId: userId || "undefined" });
+        // console.log("👤 Seller auth result:", { userId: userId || "undefined" });
 
         if (!userId) {
-            console.log("❌ No userId found in auth");
+            // console.log("❌ No userId found in auth");
             return NextResponse.json({
                 success: false,
                 message: 'Authentication required'
             }, { status: 401 });
         }
 
-        console.log("🛡️ Checking if user is a seller");
+        // console.log("🛡️ Checking if user is a seller");
         try {
             const isSeller = await authSeller(userId);
             if (!isSeller) {
-                console.log("❌ User is not authorized as seller");
+                // console.log("❌ User is not authorized as seller");
                 return NextResponse.json({
                     success: false,
                     message: 'Not authorized as seller'
                 }, { status: 403 });
             }
-            console.log("✅ User is confirmed as seller");
+            // console.log("✅ User is confirmed as seller");
         } catch (authError) {
             console.error("❌ Error checking seller status:", authError);
             return NextResponse.json({
@@ -44,14 +44,14 @@ export async function GET(request) {
         const designId = searchParams.get('designId');
 
         if (!designId) {
-            console.log("❌ Missing designId parameter");
+            // console.log("❌ Missing designId parameter");
             return NextResponse.json({
                 success: false,
                 message: 'Design ID is required'
             }, { status: 400 });
         }
 
-        console.log("🔍 Looking up design with ID:", designId);
+        // console.log("🔍 Looking up design with ID:", designId);
 
         // Connect to database
         console.log("🔌 Connecting to database...");
@@ -79,29 +79,29 @@ export async function GET(request) {
         }
 
         if (!designRequest) {
-            console.log("❌ Design request not found with ID:", designId);
+            // console.log("❌ Design request not found with ID:", designId);
             return NextResponse.json({
                 success: false,
                 message: 'Design request not found'
             }, { status: 404 });
         }
-        console.log("✅ Found design request");
+        // console.log("✅ Found design request");
 
         // Get the image URL from the design request
         const imageUrl = designRequest.designImage;
         if (!imageUrl) {
-            console.log("❌ Design image URL not found");
+            // console.log("❌ Design image URL not found");
             return NextResponse.json({
                 success: false,
                 message: 'Design image not found'
             }, { status: 404 });
         }
 
-        console.log("🖼️ Design image URL:", imageUrl);
+        // console.log("🖼️ Design image URL:", imageUrl);
 
         try {
             // Fetch the image
-            console.log("🔽 Fetching image from URL");
+            // console.log("🔽 Fetching image from URL");
             const response = await axios.get(imageUrl, {
                 responseType: 'arraybuffer',
                 // Increase timeout for large images
@@ -110,7 +110,7 @@ export async function GET(request) {
 
             // Get the image type from Content-Type header or infer from URL
             const contentType = response.headers['content-type'] || inferContentTypeFromUrl(imageUrl);
-            console.log("📄 Content type:", contentType);
+            // console.log("📄 Content type:", contentType);
 
             // Create a sanitized name from the design name or customer name
             const sanitizedName = (designRequest.name || 'design')
@@ -122,7 +122,7 @@ export async function GET(request) {
             const fileName = `design_${sanitizedName}_${designId.substring(0, 8)}.${getExtensionFromContentType(contentType)}`;
 
             // Return the image data with appropriate headers for download
-            console.log("📤 Sending image for download as:", fileName);
+            // console.log("📤 Sending image for download as:", fileName);
             return new NextResponse(response.data, {
                 headers: {
                     'Content-Type': contentType,

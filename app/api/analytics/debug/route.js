@@ -7,7 +7,7 @@ import authSeller from "@/lib/authSeller";
 
 // This is a simplified version of the analytics API route for debugging
 export async function GET(request) {
-    console.log("⭐ Starting analytics debug API route");
+    //console.log("⭐ Starting analytics debug API route");
     try {
         // Auth info
         let userId;
@@ -50,12 +50,12 @@ export async function GET(request) {
         }
 
         // Connect to database
-        console.log("🔌 Connecting to database...");
+        //console.log("🔌 Connecting to database...");
         let dbInfo = { success: false, message: "Database connection not attempted" };
 
         try {
             await connectDB();
-            console.log("✅ Connected to database");
+            //console.log("✅ Connected to database");
             dbInfo = { success: true, message: "Database connected successfully" };
         } catch (dbError) {
             console.error("❌ Database connection failed:", dbError);
@@ -78,14 +78,14 @@ export async function GET(request) {
 
         try {
             regularOrderCount = await Order.countDocuments({});
-            console.log("Regular orders count:", regularOrderCount);
+            //console.log("Regular orders count:", regularOrderCount);
         } catch (error) {
             console.error("Error counting regular orders:", error);
         }
 
         try {
             customDesignCount = await CustomDesign.countDocuments({});
-            console.log("Custom designs count:", customDesignCount);
+            //console.log("Custom designs count:", customDesignCount);
         } catch (error) {
             console.error("Error counting custom designs:", error);
         }

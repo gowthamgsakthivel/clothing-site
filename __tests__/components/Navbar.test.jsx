@@ -63,6 +63,7 @@ describe('Navbar', () => {
         // Default context values for a regular user
         useAppContext.mockReturnValue({
             isSeller: false,
+            isAdmin: false,
             router: mockRouter,
             user: null,
         });
@@ -102,6 +103,7 @@ describe('Navbar', () => {
         // Mock an authenticated user
         useAppContext.mockReturnValue({
             isSeller: false,
+            isAdmin: false,
             router: mockRouter,
             user: { id: 'user-123' },
         });
@@ -121,23 +123,24 @@ describe('Navbar', () => {
         expect(orderActions.length).toBeGreaterThan(0);
     });
 
-    test('shows seller dashboard button for sellers', () => {
-        // Mock a seller user
+    test('shows owner dashboard button for owners', () => {
+        // Mock an owner user
         useAppContext.mockReturnValue({
             isSeller: true,
+            isAdmin: false,
             router: mockRouter,
-            user: { id: 'seller-123' },
+            user: { id: 'owner-123' },
         });
 
         render(<Navbar />);
 
         // Check for seller dashboard button
-        const sellerButtons = screen.getAllByText('Seller Dashboard');
-        expect(sellerButtons.length).toBeGreaterThan(0);
+        const ownerButtons = screen.getAllByText('Owner Dashboard');
+        expect(ownerButtons.length).toBeGreaterThan(0);
 
         // Test navigation behavior
-        fireEvent.click(sellerButtons[0]);
-        expect(mockRouter.push).toHaveBeenCalledWith('/seller');
+        fireEvent.click(ownerButtons[0]);
+        expect(mockRouter.push).toHaveBeenCalledWith('/owner');
     });
 
     test('toggles mobile search bar when search icon is clicked', () => {
@@ -194,6 +197,7 @@ describe('Navbar', () => {
         // Mock an authenticated user
         useAppContext.mockReturnValue({
             isSeller: false,
+            isAdmin: false,
             router: mockRouter,
             user: { id: 'user-123' },
         });

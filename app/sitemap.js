@@ -13,9 +13,6 @@ export default async function sitemap() {
         '/my-orders',
         '/order-placed',
         '/search',
-        '/seller',
-        '/seller/orders',
-        '/seller/product-list',
     ].map((route) => ({
         url: `${baseUrl}${route}`,
         lastModified: new Date(),

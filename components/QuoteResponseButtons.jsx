@@ -16,41 +16,41 @@ const QuoteResponseButtons = ({ design, getToken, onQuoteResponded }) => {
     const handleQuoteResponse = async (response, message = null) => {
         try {
             setIsSubmitting(true);
-            console.log(`Responding to quote for design ${design._id} with response: ${response}`);
+            // console.log(`Responding to quote for design ${design._id} with response: ${response}`);
             const payload = {
                 designId: design._id,
                 response: response,
                 message: message
             };
 
-            console.log("Sending API request with payload:", payload);
+            // console.log("Sending API request with payload:", payload);
             const { data } = await axios.post(
                 '/api/custom-design/respond-to-quote',
                 payload
             );
-            console.log("API response:", data);
+            // console.log("API response:", data);
 
             if (data.success) {
                 if (response === 'accepted') {
-                    console.log("Quote accepted, showing payment modal");
+                    // console.log("Quote accepted, showing payment modal");
                     // Store the updated design and show payment modal
                     const updatedDesign = { ...design, status: 'approved', ...data.designRequest };
-                    console.log("Setting approved design:", updatedDesign);
+                    // console.log("Setting approved design:", updatedDesign);
                     setApprovedDesign(updatedDesign);
 
                     // Always show payment modal when quote is accepted
-                    console.log("Opening payment modal");
+                    // console.log("Opening payment modal");
                     setShowPaymentModal(true);
                     toast.success('Quote accepted! Please complete your payment to proceed with production.');
 
                     // Also notify through the callback
                     if (typeof onQuoteResponded === 'function') {
-                        console.log("Calling onQuoteResponded callback");
+                        // console.log("Calling onQuoteResponded callback");
                         onQuoteResponded(data.designRequest);
                     }
                 } else {
                     // For rejected/change request
-                    console.log("Quote rejected or change requested");
+                    // console.log("Quote rejected or change requested");
                     toast.success('Change request submitted successfully.');
 
                     // Call the callback to refresh the design data
@@ -93,7 +93,7 @@ const QuoteResponseButtons = ({ design, getToken, onQuoteResponded }) => {
 
         try {
             setIsSubmitting(true);
-            console.log(`Sending counter offer of ₹${offerAmount} for design ${design._id}`);
+            // console.log(`Sending counter offer of ₹${offerAmount} for design ${design._id}`);
             // Ensure all data is valid and in the correct format
             const payload = {
                 designId: design._id,
@@ -102,14 +102,14 @@ const QuoteResponseButtons = ({ design, getToken, onQuoteResponded }) => {
                 message: negotiationMessage || '' // Ensure this is at least an empty string
             };
 
-            console.log("Sending negotiation API request with payload:", payload);
+            // console.log("Sending negotiation API request with payload:", payload);
             const { data } = await axios.post(
                 '/api/custom-design/respond-to-quote',
                 payload
             );
 
             if (data.success) {
-                console.log("Negotiation submitted successfully");
+                // console.log("Negotiation submitted successfully");
                 toast.success('Your counter offer has been submitted to the seller.');
 
                 // Update UI state

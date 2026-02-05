@@ -1,6 +1,5 @@
 'use client'
 import React, { useEffect, useState } from "react";
-import { assets } from "@/assets/assets";
 import Image from "next/image";
 import { useAppContext } from "@/context/AppContext";
 import Footer from "@/components/seller/Footer";
@@ -9,34 +8,27 @@ import axios from "axios";
 import { toast } from "react-hot-toast";
 import Link from "next/link";
 
-const ProductList = () => {
-
+const OwnerProductList = () => {
   const { router, getToken, user } = useAppContext()
 
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
 
-  const fetchSellerProduct = async () => {
+  const fetchOwnerProducts = async () => {
     try {
-      console.log("Fetching seller products...");
       const token = await getToken();
-      console.log("Got auth token, making API request...");
 
       const { data } = await axios.get('/api/product/seller-products', {
         headers: { Authorization: `Bearer ${token}` }
       });
 
       if (data.success) {
-        console.log(`Received ${data.products?.length || 0} products`);
         setProducts(data.products)
-        setLoading(false)
       } else {
-        console.error("API returned error:", data.message);
         toast.error(data.message || "Failed to load products");
       }
     } catch (error) {
-      console.error("Error fetching products:", error);
       const errorMessage = error.response?.data?.message || error.message || "Unknown error";
       toast.error(`Error: ${errorMessage}`);
     } finally {
@@ -46,7 +38,7 @@ const ProductList = () => {
 
   useEffect(() => {
     if (user) {
-      fetchSellerProduct();
+      fetchOwnerProducts();
     }
   }, [user])
 
@@ -70,7 +62,6 @@ const ProductList = () => {
     <div className="w-full min-h-screen flex flex-col justify-between">
       {loading ? <Loading /> : (
         <div className="w-full md:p-10 p-4">
-          {/* Header */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
             <div>
               <h2 className="text-2xl font-semibold text-gray-800">Product List</h2>
@@ -78,16 +69,15 @@ const ProductList = () => {
             </div>
 
             <div className="flex gap-3">
-              <Link href="/admin/products/add" className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors">
+              <Link href="/owner/add-product" className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors">
                 Add New Product
               </Link>
-              <Link href="/admin/products/manage-stock" className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+              <Link href="/owner/inventory" className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
                 Manage Stock
               </Link>
             </div>
           </div>
 
-          {/* Search and Stats */}
           <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between mb-6">
             <div className="flex-1 max-w-md">
               <input
@@ -105,7 +95,6 @@ const ProductList = () => {
             </div>
           </div>
 
-          {/* Products Table */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full min-w-[800px]">
@@ -192,7 +181,7 @@ const ProductList = () => {
                             </button>
 
                             <button
-                              onClick={() => router.push(`/admin/products/manage-stock?product=${product._id}`)}
+                              onClick={() => router.push(`/owner/inventory?product=${product._id}`)}
                               className="flex items-center gap-1 px-2 md:px-3 py-1.5 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors text-xs whitespace-nowrap"
                               title="Manage Stock"
                             >
@@ -222,7 +211,7 @@ const ProductList = () => {
                           <div>
                             <p>No products found</p>
                             <Link
-                              href="/admin/products/add"
+                              href="/owner/add-product"
                               className="mt-2 inline-block text-orange-600 hover:text-orange-700 text-sm"
                             >
                               Add your first product
@@ -243,4 +232,4 @@ const ProductList = () => {
   );
 };
 
-export default ProductList;
+export default OwnerProductList;

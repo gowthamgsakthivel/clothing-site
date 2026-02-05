@@ -10,10 +10,13 @@ const SizeGuideModal = ({ isOpen, onClose, sizeChart, productName, fitType = 're
   const fitInfo = fitGuides[fitType] || fitGuides.regular;
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 animate-fadeIn">
-      <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-end md:items-center justify-center p-0 md:p-4 animate-fadeIn">
+      <div className="bg-white w-full md:max-w-4xl max-h-[90vh] overflow-hidden shadow-2xl rounded-t-2xl md:rounded-lg">
+        <div className="flex justify-center md:hidden pt-3">
+          <span className="h-1.5 w-12 rounded-full bg-gray-300" aria-hidden="true"></span>
+        </div>
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b">
+        <div className="flex items-center justify-between p-5 md:p-6 border-b">
           <div>
             <h2 className="text-2xl font-semibold text-gray-900">Size Guide</h2>
             <p className="text-sm text-gray-600 mt-1">{productName || 'Find your perfect fit'}</p>
@@ -34,8 +37,8 @@ const SizeGuideModal = ({ isOpen, onClose, sizeChart, productName, fitType = 're
           <button
             onClick={() => setActiveTab('chart')}
             className={`flex-1 px-6 py-3 text-sm font-medium transition ${activeTab === 'chart'
-                ? 'text-orange-600 border-b-2 border-orange-600'
-                : 'text-gray-600 hover:text-gray-900'
+              ? 'text-orange-600 border-b-2 border-orange-600'
+              : 'text-gray-600 hover:text-gray-900'
               }`}
           >
             Size Chart
@@ -43,8 +46,8 @@ const SizeGuideModal = ({ isOpen, onClose, sizeChart, productName, fitType = 're
           <button
             onClick={() => setActiveTab('measure')}
             className={`flex-1 px-6 py-3 text-sm font-medium transition ${activeTab === 'measure'
-                ? 'text-orange-600 border-b-2 border-orange-600'
-                : 'text-gray-600 hover:text-gray-900'
+              ? 'text-orange-600 border-b-2 border-orange-600'
+              : 'text-gray-600 hover:text-gray-900'
               }`}
           >
             How to Measure
@@ -52,8 +55,8 @@ const SizeGuideModal = ({ isOpen, onClose, sizeChart, productName, fitType = 're
           <button
             onClick={() => setActiveTab('fit')}
             className={`flex-1 px-6 py-3 text-sm font-medium transition ${activeTab === 'fit'
-                ? 'text-orange-600 border-b-2 border-orange-600'
-                : 'text-gray-600 hover:text-gray-900'
+              ? 'text-orange-600 border-b-2 border-orange-600'
+              : 'text-gray-600 hover:text-gray-900'
               }`}
           >
             Fit Guide

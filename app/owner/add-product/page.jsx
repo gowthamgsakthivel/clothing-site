@@ -4,7 +4,6 @@ import { useAppContext } from '@/context/AppContext';
 import { toast } from 'react-hot-toast';
 import axios from 'axios';
 import Image from 'next/image';
-import { assets } from '@/assets/assets';
 
 const AddProduct = () => {
     const { user, getToken } = useAppContext();
@@ -32,7 +31,6 @@ const AddProduct = () => {
     const availableSizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
     const categories = ['T-Shirt', 'Shirt', 'Pants', 'Shorts', 'Hoodie', 'Jacket', 'Accessories'];
 
-    // Add new color variant
     const addColorVariant = () => {
         setProductData(prev => ({
             ...prev,
@@ -51,7 +49,6 @@ const AddProduct = () => {
         }));
     };
 
-    // Update color information
     const updateColor = (colorIndex, field, value) => {
         setProductData(prev => {
             const newInventory = [...prev.inventory];
@@ -60,7 +57,6 @@ const AddProduct = () => {
         });
     };
 
-    // Update size stock
     const updateSizeStock = (colorIndex, sizeIndex, field, value) => {
         setProductData(prev => {
             const newInventory = [...prev.inventory];
@@ -69,7 +65,6 @@ const AddProduct = () => {
         });
     };
 
-    // Remove color variant
     const removeColor = (colorIndex) => {
         setProductData(prev => ({
             ...prev,
@@ -77,35 +72,22 @@ const AddProduct = () => {
         }));
     };
 
-    // Handle image upload
     const handleImageChange = (e) => {
         const files = Array.from(e.target.files);
-        console.log('Selected files:', files.length); // Debug log
-
         if (files.length === 0) return;
-
         setImages(files);
-
-        // Create previews
         const previews = files.map(file => URL.createObjectURL(file));
         setImagePreviews(previews);
-
-        console.log('Image previews created:', previews.length); // Debug log
     };
 
-    // Remove individual image
     const removeImage = (indexToRemove) => {
         const newImages = images.filter((_, index) => index !== indexToRemove);
         const newPreviews = imagePreviews.filter((_, index) => index !== indexToRemove);
-
-        // Revoke the URL for the removed preview to prevent memory leaks
         URL.revokeObjectURL(imagePreviews[indexToRemove]);
-
         setImages(newImages);
         setImagePreviews(newPreviews);
     };
 
-    // Calculate total stock
     const calculateTotalStock = () => {
         return productData.inventory.reduce((total, colorData) => {
             return total + colorData.sizeStock.reduce((colorTotal, sizeData) => {
@@ -114,7 +96,6 @@ const AddProduct = () => {
         }, 0);
     };
 
-    // Submit product
     const handleSubmit = async (e) => {
         e.preventDefault();
 
@@ -128,12 +109,17 @@ const AddProduct = () => {
             return;
         }
 
-        // Validate inventory data
         for (let i = 0; i < productData.inventory.length; i++) {
             const colorVariant = productData.inventory[i];
 
-            if (!colorVariant.color.name || colorVariant.color.name.trim() === '') {
+            const colorName = colorVariant.color.name?.trim();
+            if (!colorName) {
                 toast.error(`Color name is required for variant ${i + 1}`);
+                return;
+            }
+
+            if (colorName.startsWith('#')) {
+                toast.error(`Please enter a color name (not a hex code) for variant ${i + 1}`);
                 return;
             }
 
@@ -152,26 +138,18 @@ const AddProduct = () => {
         setIsLoading(true);
 
         try {
-            // Debug: Log the inventory data being sent
-            console.log('Inventory data being sent:', JSON.stringify(productData.inventory, null, 2));
-
             const formData = new FormData();
 
-            // Add basic product data
             Object.keys(productData).forEach(key => {
                 if (key !== 'inventory' && key !== 'stockSettings') {
                     formData.append(key, productData[key]);
                 }
             });
 
-            // Add inventory data as JSON
             formData.append('inventory', JSON.stringify(productData.inventory));
             formData.append('stockSettings', JSON.stringify(productData.stockSettings));
-
-            // Add total stock
             formData.append('totalStock', calculateTotalStock());
 
-            // Add images
             images.forEach((image, index) => {
                 formData.append(`image${index}`, image);
             });
@@ -187,7 +165,6 @@ const AddProduct = () => {
 
             if (response.data.success) {
                 toast.success('Product added successfully!');
-                // Reset form
                 setProductData({
                     name: '',
                     description: '',
@@ -210,18 +187,11 @@ const AddProduct = () => {
             }
 
         } catch (error) {
-            console.error('Error adding product:', error);
-
-            // Log the full error details
             if (error.response) {
-                console.error('Response data:', error.response.data);
-                console.error('Response status:', error.response.status);
                 toast.error(error.response.data?.message || 'Server error occurred');
             } else if (error.request) {
-                console.error('No response received:', error.request);
                 toast.error('Network error - please check your connection');
             } else {
-                console.error('Error message:', error.message);
                 toast.error('Failed to add product');
             }
         } finally {
@@ -247,7 +217,6 @@ const AddProduct = () => {
                     <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-8">Add New Product</h1>
 
                     <form onSubmit={handleSubmit} className="space-y-8">
-                        {/* Basic Product Information */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -354,7 +323,6 @@ const AddProduct = () => {
                             />
                         </div>
 
-                        {/* Product Images */}
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
                                 Product Images *
@@ -394,7 +362,6 @@ const AddProduct = () => {
                                 </div>
                             )}
 
-                            {/* File Upload Instructions */}
                             <div className="mt-2 text-sm text-gray-500">
                                 <p>• Select multiple images by holding Ctrl/Cmd while clicking</p>
                                 <p>• Supported formats: JPG, PNG, GIF (Max 5MB each)</p>
@@ -402,7 +369,6 @@ const AddProduct = () => {
                             </div>
                         </div>
 
-                        {/* Inventory Management */}
                         <div className="border-t pt-8">
                             <div className="flex justify-between items-center mb-6">
                                 <h2 className="text-2xl font-semibold text-gray-800">Inventory Management</h2>
@@ -435,7 +401,6 @@ const AddProduct = () => {
                             </div>
                         </div>
 
-                        {/* Submit Button */}
                         <div className="flex justify-end pt-6">
                             <button
                                 type="submit"
@@ -452,7 +417,6 @@ const AddProduct = () => {
     );
 };
 
-// Color Inventory Card Component
 const ColorInventoryCard = ({
     colorData,
     colorIndex,
@@ -474,6 +438,7 @@ const ColorInventoryCard = ({
                         style={{ backgroundColor: colorData.color.code }}
                     ></div>
                     <div className="space-y-2">
+                        <label className="block text-xs font-medium text-gray-600">Color Name</label>
                         <input
                             type="text"
                             placeholder="Color name (e.g., Red, Blue)"
@@ -481,12 +446,24 @@ const ColorInventoryCard = ({
                             onChange={(e) => onUpdateColor(colorIndex, 'name', e.target.value)}
                             className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
                         />
-                        <input
-                            type="color"
-                            value={colorData.color.code}
-                            onChange={(e) => onUpdateColor(colorIndex, 'code', e.target.value)}
-                            className="w-16 h-8 border border-gray-300 rounded cursor-pointer"
-                        />
+                        <label className="block text-xs font-medium text-gray-600">Color Code</label>
+                        <div className="flex items-center gap-2">
+                            <input
+                                type="color"
+                                value={colorData.color.code}
+                                onChange={(e) => onUpdateColor(colorIndex, 'code', e.target.value)}
+                                className="w-16 h-9 border border-gray-300 rounded cursor-pointer"
+                                aria-label="Pick color"
+                            />
+                            <input
+                                type="text"
+                                value={colorData.color.code}
+                                onChange={(e) => onUpdateColor(colorIndex, 'code', e.target.value)}
+                                className="w-28 px-2 py-2 border border-gray-300 rounded-md text-xs font-mono uppercase"
+                                placeholder="#000000"
+                                maxLength={7}
+                            />
+                        </div>
                     </div>
                 </div>
 

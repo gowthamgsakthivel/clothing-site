@@ -6,31 +6,31 @@ import connectDB from "@/config/db";
 import mongoose from "mongoose";
 
 export async function GET(request) {
-    console.log("⭐ Starting custom design analytics API route");
+    //console.log("⭐ Starting custom design analytics API route");
     try {
         // Authenticate seller
         const { userId } = getAuth(request);
-        console.log("👤 Seller auth result:", { userId: userId || "undefined" });
+        //console.log("👤 Seller auth result:", { userId: userId || "undefined" });
 
         if (!userId) {
-            console.log("❌ No userId found in auth");
+            //console.log("❌ No userId found in auth");
             return NextResponse.json({
                 success: false,
                 message: 'Authentication required'
             }, { status: 401 });
         }
 
-        console.log("🛡️ Checking if user is a seller");
+        //console.log("🛡️ Checking if user is a seller");
         try {
             const isSeller = await authSeller(userId);
             if (!isSeller) {
-                console.log("❌ User is not authorized as seller");
+                //console.log("❌ User is not authorized as seller");
                 return NextResponse.json({
                     success: false,
                     message: 'Not authorized as seller'
                 }, { status: 403 });
             }
-            console.log("✅ User is confirmed as seller");
+            //console.log("✅ User is confirmed as seller");
         } catch (authError) {
             console.error("❌ Error checking seller status:", authError);
             return NextResponse.json({
@@ -40,10 +40,10 @@ export async function GET(request) {
         }
 
         // Connect to database
-        console.log("🔌 Connecting to database...");
+        //console.log("🔌 Connecting to database...");
         try {
             await connectDB();
-            console.log("✅ Connected to database");
+            //console.log("✅ Connected to database");
         } catch (dbError) {
             console.error("❌ Database connection failed:", dbError);
             return NextResponse.json({
@@ -55,26 +55,59 @@ export async function GET(request) {
         // Get query parameters for time frame
         const { searchParams } = new URL(request.url);
         const timeFrame = searchParams.get('timeFrame') || 'all'; // all, last7days, last30days, last90days
+        const fromISO = searchParams.get('from');
+        const toISO = searchParams.get('to');
 
-        // Build date filter if needed
+        // Build date filter if needed (UTC normalized)
         let dateFilter = {};
-        const now = new Date();
 
-        if (timeFrame === 'last7days') {
-            const last7Days = new Date(now);
-            last7Days.setDate(now.getDate() - 7);
-            dateFilter = { createdAt: { $gte: last7Days } };
-        } else if (timeFrame === 'last30days') {
-            const last30Days = new Date(now);
-            last30Days.setDate(now.getDate() - 30);
-            dateFilter = { createdAt: { $gte: last30Days } };
-        } else if (timeFrame === 'last90days') {
-            const last90Days = new Date(now);
-            last90Days.setDate(now.getDate() - 90);
-            dateFilter = { createdAt: { $gte: last90Days } };
+        const buildUtcRange = (fromDate, toDate) => {
+            const from = new Date(fromDate);
+            const to = new Date(toDate);
+
+            if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) {
+                return null;
+            }
+
+            from.setUTCHours(0, 0, 0, 0);
+            to.setUTCHours(23, 59, 59, 999);
+
+            return { from, to };
+        };
+
+        let range = null;
+
+        if (fromISO && toISO) {
+            range = buildUtcRange(fromISO, toISO);
+            //console.log("Using explicit UTC range:", { fromISO, toISO, valid: !!range });
         }
 
-        console.log("⏰ Time frame filter:", timeFrame);
+        if (!range && timeFrame !== 'all') {
+            const now = new Date();
+            const todayUtc = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+            let from = new Date(todayUtc);
+
+            if (timeFrame === 'last7days') {
+                from.setUTCDate(from.getUTCDate() - 7);
+            } else if (timeFrame === 'last30days') {
+                from.setUTCDate(from.getUTCDate() - 30);
+            } else if (timeFrame === 'last90days') {
+                from.setUTCDate(from.getUTCDate() - 90);
+            }
+
+            const to = new Date(todayUtc);
+            to.setUTCDate(to.getUTCDate());
+            to.setUTCHours(23, 59, 59, 999);
+
+            range = { from, to };
+            //console.log("Using timeFrame UTC range:", { timeFrame, from, to });
+        }
+
+        if (range) {
+            dateFilter = { createdAt: { $gte: range.from, $lte: range.to } };
+        }
+
+        //console.log("⏰ Time frame filter:", timeFrame, "range:", range || "all-time");
 
         // Collect analytics data
         let analyticsData = {};
@@ -82,7 +115,7 @@ export async function GET(request) {
         try {
             // 1. Total number of design requests
             analyticsData.totalRequests = await CustomDesign.countDocuments(dateFilter);
-            console.log("📊 Total requests:", analyticsData.totalRequests);
+            //console.log("📊 Total requests:", analyticsData.totalRequests);
 
             // 2. Count by status
             const statusCounts = await CustomDesign.aggregate([
@@ -104,7 +137,7 @@ export async function GET(request) {
                 }
             });
 
-            console.log("📊 Status counts:", analyticsData.statusCounts);
+            //console.log("📊 Status counts:", analyticsData.statusCounts);
 
             // 3. Average quote amount
             const quoteStats = await CustomDesign.aggregate([
@@ -135,7 +168,7 @@ export async function GET(request) {
                 totalQuoteValue: 0
             };
 
-            console.log("📊 Quote stats:", analyticsData.quoteStats);
+            //console.log("📊 Quote stats:", analyticsData.quoteStats);
 
             // 4. Count by size preference
             const sizeCounts = await CustomDesign.aggregate([
@@ -145,11 +178,12 @@ export async function GET(request) {
             ]);
 
             analyticsData.sizeCounts = sizeCounts;
-            console.log("📊 Size counts:", analyticsData.sizeCounts.length);
+            //console.log("📊 Size counts:", analyticsData.sizeCounts.length);
 
             // 5. Monthly trends (last 6 months)
-            const sixMonthsAgo = new Date(now);
-            sixMonthsAgo.setMonth(now.getMonth() - 6);
+            const now = new Date();
+            const sixMonthsAgo = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+            sixMonthsAgo.setUTCMonth(sixMonthsAgo.getUTCMonth() - 6);
 
             const monthlyTrends = await CustomDesign.aggregate([
                 {
@@ -188,7 +222,7 @@ export async function GET(request) {
             ]);
 
             analyticsData.monthlyTrends = monthlyTrends;
-            console.log("📊 Monthly trends:", analyticsData.monthlyTrends.length);
+            //console.log("📊 Monthly trends:", analyticsData.monthlyTrends.length);
 
             // 6. Response time analysis
             const responseTimes = await CustomDesign.aggregate([
@@ -228,7 +262,7 @@ export async function GET(request) {
                 minResponseTime: 0
             };
 
-            console.log("📊 Response times:", analyticsData.responseTimes);
+            //console.log("📊 Response times:", analyticsData.responseTimes);
 
             // 7. Conversion rates
             analyticsData.conversionRates = {
@@ -244,7 +278,7 @@ export async function GET(request) {
             analyticsData.conversionRates.quotedToApproved = Math.round(analyticsData.conversionRates.quotedToApproved * 100) / 100;
             analyticsData.conversionRates.totalToCompleted = Math.round(analyticsData.conversionRates.totalToCompleted * 100) / 100;
 
-            console.log("📊 Conversion rates:", analyticsData.conversionRates);
+            //console.log("📊 Conversion rates:", analyticsData.conversionRates);
 
         } catch (analyticsError) {
             console.error("❌ Error calculating analytics:", analyticsError);

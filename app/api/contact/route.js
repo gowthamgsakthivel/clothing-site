@@ -62,7 +62,7 @@ export async function POST(request) {
                 sendContactNotification({ name, email, message }),
                 sendAutoReply(email, name)
             ]).then(([adminResult, customerResult]) => {
-                console.log('Email results:', { adminResult, customerResult });
+                //console.log('Email results:', { adminResult, customerResult });
             }).catch(error => {
                 console.error('Email sending error:', error);
             });

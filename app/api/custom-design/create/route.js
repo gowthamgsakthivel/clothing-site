@@ -71,8 +71,8 @@ export async function POST(request) {
         let formData;
         try {
             formData = await request.formData();
-            console.log("Form data received:",
-                [...formData.entries()].map(([key]) => key).join(', '));
+            // console.log("Form data received:",
+            //     [...formData.entries()].map(([key]) => key).join(', '));
         } catch (formError) {
             console.error("Error parsing form data:", formError);
             return NextResponse.json({
@@ -91,11 +91,11 @@ export async function POST(request) {
             }, { status: 400 });
         }
 
-        console.log("Image received:", {
-            name: designImage.name,
-            type: designImage.type,
-            size: designImage.size
-        });
+        // console.log("Image received:", {
+        //     name: designImage.name,
+        //     type: designImage.type,
+        //     size: designImage.size
+        // });
 
         // Get design details
         const detailsJson = formData.get('details');
@@ -111,17 +111,17 @@ export async function POST(request) {
         let details;
         try {
             details = JSON.parse(detailsJson);
-            console.log("Details parsed successfully:", Object.keys(details));
+            // console.log("Details parsed successfully:", Object.keys(details));
 
             // Additional logging to help diagnose issues
-            console.log("Design details content:", {
-                name: details.name?.substring(0, 20) || "missing",
-                email: details.email || "missing",
-                phone: details.phone || "missing",
-                description: details.description?.substring(0, 20) || "missing",
-                quantity: details.quantity || "missing",
-                size: details.size || "missing"
-            });
+            // console.log("Design details content:", {
+            //     name: details.name?.substring(0, 20) || "missing",
+            //     email: details.email || "missing",
+            //     phone: details.phone || "missing",
+            //     description: details.description?.substring(0, 20) || "missing",
+            //     quantity: details.quantity || "missing",
+            //     size: details.size || "missing"
+            // });
         } catch (parseError) {
             console.error("Error parsing details JSON:", parseError);
             console.error("Raw details value type:", typeof detailsJson);
@@ -137,7 +137,7 @@ export async function POST(request) {
         // Validate design details
         const validation = validateDesignData(details);
         if (!validation.isValid) {
-            console.log("❌ Design details validation failed:", validation.errors);
+            // console.log("❌ Design details validation failed:", validation.errors);
             return NextResponse.json({
                 success: false,
                 message: 'Validation failed: ' + Object.values(validation.errors).join(', '),
@@ -145,7 +145,7 @@ export async function POST(request) {
             }, { status: 400 });
         }
 
-        console.log("✅ Design details validation passed");
+        // console.log("✅ Design details validation passed");
 
         // Upload design image to Cloudinary
         try {

@@ -30,6 +30,7 @@ const Product = () => {
     const [selectedColor, setSelectedColor] = useState(null);
     const [selectedSize, setSelectedSize] = useState(null);
     const [quantity, setQuantity] = useState(1);
+    const [showFullDescription, setShowFullDescription] = useState(false);
     const [isNotifying, setIsNotifying] = useState(false);
     const [notifySuccess, setNotifySuccess] = useState(false);
     const [showSizeGuide, setShowSizeGuide] = useState(false);
@@ -323,7 +324,29 @@ const Product = () => {
         <div className="px-4 sm:px-6 md:px-16 lg:px-32 pt-20 md:pt-24 space-y-8 md:space-y-10">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-12 lg:gap-16">
                 <div className="px-0 sm:px-2 lg:px-4 xl:px-6">
-                    <div className="rounded-lg overflow-hidden bg-gray-500/10 mb-4 relative">
+                    <div className="rounded-2xl md:rounded-lg overflow-hidden bg-gray-500/10 mb-4 relative aspect-[4/5]">
+                        <div className="absolute top-3 left-3 right-3 z-10 flex items-center justify-between md:hidden">
+                            <button
+                                type="button"
+                                onClick={() => router.back()}
+                                className="h-9 w-9 rounded-full bg-white/90 shadow-sm flex items-center justify-center"
+                                aria-label="Go back"
+                            >
+                                <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                </svg>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => router.push('/wishlist')}
+                                className="h-9 w-9 rounded-full bg-white/90 shadow-sm flex items-center justify-center"
+                                aria-label="Wishlist"
+                            >
+                                <svg className="w-5 h-5 text-gray-700" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M20.8 4.6c-1.5-1.3-3.7-1.1-5 .3l-.8.8-.8-.8c-1.3-1.4-3.5-1.6-5-.3-1.7 1.5-1.8 4.1-.2 5.7l8 8c.4.4 1 .4 1.4 0l8-8c1.6-1.6 1.5-4.2-.2-5.7z" />
+                                </svg>
+                            </button>
+                        </div>
                         {/* Show badge only if selected color has less than 10 units */}
                         {selectedColor && getColorObj(selectedColor) && getColorObj(selectedColor).stock < 10 && (
                             <span className="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded z-10">
@@ -334,50 +357,57 @@ const Product = () => {
                             <Image
                                 src={mainImage || productData.image[0]}
                                 alt="alt"
-                                className="w-full h-auto object-cover mix-blend-multiply"
-                                width={1280}
-                                height={720}
+                                fill
+                                sizes="(max-width: 768px) 100vw, 50vw"
+                                className="object-contain mix-blend-multiply"
                             />
                         ) : (
-                            <div className="w-full h-96 flex items-center justify-center bg-gray-200 text-gray-400">
+                            <div className="absolute inset-0 flex items-center justify-center bg-gray-200 text-gray-400">
                                 No Image Available
                             </div>
                         )}
-                    </div>
-
-                    <div className="grid grid-cols-4 gap-4">
-                        {productData.image.map((image, index) => (
-                            <div
-                                key={index}
-                                onClick={() => setMainImage(image)}
-                                className="cursor-pointer rounded-lg overflow-hidden bg-gray-500/10"
-                            >
-                                <div className="w-24 h-24 rounded overflow-hidden bg-gray-100 flex items-center justify-center">
-                                    <Image
-                                        src={image}
-                                        alt="alt"
-                                        className="object-cover w-full h-full"
-                                        width={96}
-                                        height={96}
-                                    />
+                        {productData.image.length > 1 && (
+                            <div className="absolute bottom-3 left-3 right-3 z-10">
+                                <div className="flex items-center justify-center gap-2">
+                                    {productData.image.map((image, index) => (
+                                        <button
+                                            key={index}
+                                            type="button"
+                                            onClick={() => setMainImage(image)}
+                                            className={`h-12 w-12 rounded-lg overflow-hidden bg-white/90 shadow-sm border ${mainImage === image || (!mainImage && index === 0)
+                                                ? 'border-orange-500'
+                                                : 'border-transparent'
+                                                }`}
+                                            aria-label={`View image ${index + 1}`}
+                                        >
+                                            <Image
+                                                src={image}
+                                                alt="alt"
+                                                className="object-cover w-full h-full"
+                                                width={48}
+                                                height={48}
+                                            />
+                                        </button>
+                                    ))}
                                 </div>
                             </div>
-
-                        ))}
+                        )}
                     </div>
                 </div>
 
-                <div className="flex flex-col">
+                <div className="flex flex-col bg-white md:bg-transparent rounded-t-3xl md:rounded-none mt-4 md:mt-0 p-4 sm:p-6 md:p-0 shadow md:shadow-none relative z-10">
                     <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4 mb-4">
                         <h1 className="text-2xl sm:text-3xl font-medium text-gray-800/90 flex-1">
                             {productData.name}
                         </h1>
-                        <ShareButton
-                            product={productData}
-                            title={productData.name}
-                            description={productData.description}
-                            image={productData.image[0]}
-                        />
+                        <div className="hidden md:block">
+                            <ShareButton
+                                product={productData}
+                                title={productData.name}
+                                description={productData.description}
+                                image={productData.image[0]}
+                            />
+                        </div>
                     </div>
                     <div className="flex items-center gap-2">
                         <div className="flex items-center gap-0.5">
@@ -393,188 +423,240 @@ const Product = () => {
                         </div>
                         <p className="text-sm">(4.5)</p>
                     </div>
-                    <p className="text-gray-600 mt-2 sm:mt-3 text-sm sm:text-base">
-                        {productData.description}
-                    </p>
-                    <p className="text-2xl sm:text-3xl font-medium mt-4 sm:mt-6">
-                        ₹{productData.offerPrice}
-                        <span className="text-xs sm:text-base font-normal text-gray-800/60 line-through ml-2">
+                    <div className="mt-2 sm:mt-3">
+                        <p className={`text-gray-600 text-sm sm:text-base ${showFullDescription ? '' : 'max-h-16 overflow-hidden'}`}>
+                            {productData.description}
+                        </p>
+                        {productData.description && productData.description.length > 140 && (
+                            <button
+                                type="button"
+                                onClick={() => setShowFullDescription((prev) => !prev)}
+                                className="mt-2 text-sm font-medium text-orange-600 hover:text-orange-700"
+                            >
+                                {showFullDescription ? 'Show Less' : 'Read More'}
+                            </button>
+                        )}
+                    </div>
+                    <div className="flex items-end gap-3 mt-4 sm:mt-6">
+                        <p className="text-2xl sm:text-3xl font-semibold text-gray-900">
+                            ₹{productData.offerPrice}
+                        </p>
+                        <span className="text-xs sm:text-base font-normal text-gray-500 line-through">
                             ₹{productData.price}
                         </span>
-                    </p>
-                    <hr className="bg-gray-600 my-4 sm:my-6" />
-                    <div className="overflow-x-auto w-full">
-                        <table className="table-auto border-collapse w-full min-w-fit text-sm md:text-base">
-                            <tbody>
-                                <tr>
-                                    <td className="text-gray-600 font-medium">Brand</td>
-                                    <td className="text-gray-800/50 ">{productData.brand}</td>
-                                </tr>
-                                <tr>
-                                    <td className="text-gray-600 font-medium">Color</td>
-                                    <td className="text-gray-800/50 ">
-                                        <div className="flex gap-2 flex-wrap">
-                                            {(() => {
-                                                const availableColors = getAvailableColors();
-                                                return availableColors.length > 0 ? (
-                                                    availableColors.map((c, idx) => (
-                                                        <div key={c._id || idx} className="relative">
-                                                            <button
-                                                                type="button"
-                                                                className={`w-6 h-6 rounded-full border-2 ${c.stock < 1 ? 'opacity-50' : ''} ${selectedColor === c.color ? 'border-orange-500 ring-2 ring-orange-300' : 'border-gray-300'} focus:outline-none`}
-                                                                style={{ backgroundColor: c.color }}
-                                                                onClick={() => {
-                                                                    if (c.stock >= 1) {
-                                                                        setSelectedColor(c.color);
-                                                                        setQuantity(1); // Reset quantity when color changes
-                                                                    }
-                                                                }}
-                                                                aria-label={`Select color ${c.color}`}
-                                                                title={c.stock < 1 ? 'Out of stock' : `${c.stock} in stock`}
-                                                            >
-                                                                {selectedColor === c.color && <span className="block w-full h-full rounded-full border-2 border-white"></span>}
-                                                            </button>
-                                                            {c.stock < 1 && (
-                                                                <div className="absolute inset-0 flex items-center justify-center">
-                                                                    <div className="w-8 h-0.5 bg-red-500 transform rotate-45"></div>
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    ))
-                                                ) : (
-                                                    <span>-</span>
-                                                );
-                                            })()}
-                                        </div>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td className="text-gray-600 font-medium">Size</td>
-                                    <td className="text-gray-800/50 ">
-                                        <div className="mb-2">
-                                            <button
-                                                onClick={() => setShowSizeGuide(true)}
-                                                className="text-xs sm:text-sm text-orange-600 hover:text-orange-700 font-medium flex items-center gap-1"
-                                            >
-                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                                </svg>
-                                                Size Guide
-                                            </button>
-                                        </div>
-                                        <div className="flex gap-2 flex-wrap">
-                                            {(() => {
-                                                const availableSizes = getAvailableSizes();
-                                                return availableSizes.length > 0 ? (
-                                                    availableSizes.map((size, idx) => {
-                                                        const sizeStock = getColorSizeStock(selectedColor, size);
-                                                        const isOutOfStock = selectedColor && sizeStock <= 0;
-                                                        const isDisabled = !selectedColor || isOutOfStock;
-
-                                                        return (
-                                                            <button
-                                                                key={size}
-                                                                type="button"
-                                                                className={`px-2 py-1 rounded border text-xs font-medium relative ${isDisabled
-                                                                    ? 'bg-gray-100 text-gray-400 opacity-50 cursor-not-allowed border-gray-200'
-                                                                    : selectedSize === size
-                                                                        ? 'bg-orange-500 text-white border-orange-500'
-                                                                        : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200'
-                                                                    }`}
-                                                                onClick={() => {
-                                                                    if (!isDisabled) {
-                                                                        setSelectedSize(size);
-                                                                        setQuantity(1); // Reset quantity when size changes
-                                                                    }
-                                                                }}
-                                                                disabled={isDisabled}
-                                                                title={isOutOfStock ? `${size} is out of stock in ${selectedColor}` :
-                                                                    selectedColor ? `${sizeStock} ${size} available in ${selectedColor}` :
-                                                                        'Please select a color first'}
-                                                            >
-                                                                {size}
-                                                                {isOutOfStock && (
-                                                                    <span className="ml-1 text-red-400">✕</span>
-                                                                )}
-                                                            </button>
-                                                        );
-                                                    })
-                                                ) : (
-                                                    <span>-</span>
-                                                );
-                                            })()}
-                                        </div>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td className="text-gray-600 font-medium">Category</td>
-                                    <td className="text-gray-800/50">
-                                        {productData.category}
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
                     </div>
-
-
-                    {/* Quantity Selector */}
-                    <div className="mt-6 sm:mt-8">
-                        <div className="flex items-center justify-between mb-2">
-                            <label className="text-gray-700 font-semibold text-sm">Quantity</label>
-                            {selectedColor && selectedSize && (
-                                <span className="text-xs text-gray-500 font-medium">
-                                    {getColorSizeStock(selectedColor, selectedSize)} available
-                                </span>
-                            )}
+                    <hr className="bg-gray-200 my-4 sm:my-6" />
+                    <div className="space-y-6">
+                        <div className="space-y-1">
+                            <p className="text-sm font-semibold text-gray-700">Brand</p>
+                            <p className="text-sm text-gray-800/80">{productData.brand}</p>
                         </div>
-                        <div className="flex items-center gap-3">
-                            <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden bg-white">
+
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                                <p className="text-sm font-semibold text-gray-700">Color</p>
+                                {selectedColor && (
+                                    <span className="text-xs text-gray-500">Selected: {selectedColor}</span>
+                                )}
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                                {(() => {
+                                    const availableColors = getAvailableColors();
+                                    return availableColors.length > 0 ? (
+                                        availableColors.map((c, idx) => {
+                                            const isDisabled = c.stock < 1;
+                                            const isSelected = selectedColor === c.color;
+                                            return (
+                                                <button
+                                                    key={c._id || idx}
+                                                    type="button"
+                                                    className={`min-h-[44px] px-3 py-2 rounded-full border text-sm font-medium flex items-center gap-2 transition focus:outline-none ${isDisabled
+                                                        ? 'bg-gray-100 text-gray-400 opacity-50 cursor-not-allowed border-gray-200'
+                                                        : isSelected
+                                                            ? 'border-orange-500 ring-2 ring-orange-300 bg-white'
+                                                            : 'border-gray-300 bg-white active:scale-[0.98]'
+                                                        }`}
+                                                    onClick={() => {
+                                                        if (!isDisabled) {
+                                                            setSelectedColor(c.color);
+                                                            setQuantity(1);
+                                                        }
+                                                    }}
+                                                    aria-pressed={isSelected}
+                                                    aria-label={`Select color ${c.color}`}
+                                                    title={isDisabled ? 'Out of stock' : `${c.stock} in stock`}
+                                                    disabled={isDisabled}
+                                                >
+                                                    <span
+                                                        className="w-4 h-4 rounded-full border border-gray-300"
+                                                        style={{ backgroundColor: c.color }}
+                                                        aria-hidden="true"
+                                                    />
+                                                    <span className="whitespace-nowrap">{c.color}</span>
+                                                    {isDisabled && <span className="text-xs">(Out)</span>}
+                                                </button>
+                                            );
+                                        })
+                                    ) : (
+                                        <span className="text-sm text-gray-500">No colors available</span>
+                                    );
+                                })()}
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                                <p className="text-sm font-semibold text-gray-700">Size</p>
                                 <button
-                                    type="button"
-                                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                                    className="w-8 h-8 flex items-center justify-center hover:bg-gray-50 active:bg-gray-100 transition disabled:opacity-40 disabled:cursor-not-allowed"
-                                    disabled={quantity <= 1}
-                                    aria-label="Decrease quantity"
+                                    onClick={() => setShowSizeGuide(true)}
+                                    className="text-xs text-orange-600 font-medium flex items-center gap-1"
                                 >
-                                    <svg className="w-3.5 h-3.5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                     </svg>
-                                </button>
-                                <div className="w-12 h-8 flex items-center justify-center border-x border-gray-300 bg-gray-50">
-                                    <span className="font-semibold text-gray-900">{quantity}</span>
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        const maxStock = getColorSizeStock(selectedColor, selectedSize);
-                                        if (maxStock > 0 && quantity < maxStock) {
-                                            setQuantity(quantity + 1);
-                                        }
-                                    }}
-                                    className="w-8 h-8 flex items-center justify-center hover:bg-gray-50 active:bg-gray-100 transition disabled:opacity-40 disabled:cursor-not-allowed"
-                                    disabled={(() => {
-                                        const maxStock = getColorSizeStock(selectedColor, selectedSize);
-                                        return !selectedColor || !selectedSize || quantity >= maxStock;
-                                    })()}
-                                    aria-label="Increase quantity"
-                                >
-                                    <svg className="w-3.5 h-3.5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                                    </svg>
+                                    Size Guide
                                 </button>
                             </div>
-                            {selectedColor && selectedSize && quantity > 0 && (
-                                <div className="flex items-center gap-2 text-xs">
-                                    <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded-md font-medium">
-                                        {quantity} {quantity === 1 ? 'item' : 'items'}
+                            <p className="text-xs text-gray-500">
+                                {(() => {
+                                    const availableSizes = getAvailableSizes();
+                                    return availableSizes.includes('L') ? 'Most customers buy L' : 'True to size';
+                                })()}
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                                {(() => {
+                                    const availableSizes = getAvailableSizes();
+                                    return availableSizes.length > 0 ? (
+                                        availableSizes.map((size) => {
+                                            const sizeStock = getColorSizeStock(selectedColor, size);
+                                            const isOutOfStock = selectedColor && sizeStock <= 0;
+                                            const isDisabled = !selectedColor || isOutOfStock;
+                                            const isSelected = selectedSize === size;
+                                            const isLowStock = selectedColor && sizeStock > 0 && sizeStock <= 2;
+
+                                            return (
+                                                <div key={size} className="flex flex-col items-start">
+                                                    <button
+                                                        type="button"
+                                                        className={`min-h-[44px] px-4 py-2 rounded-full border text-sm font-semibold transition focus:outline-none ${isDisabled
+                                                            ? 'bg-gray-100 text-gray-400 opacity-50 cursor-not-allowed border-gray-200'
+                                                            : isSelected
+                                                                ? 'bg-orange-500 text-white border-orange-500'
+                                                                : 'bg-white text-gray-700 border-gray-300 active:scale-[0.98]'
+                                                            }`}
+                                                        onClick={() => {
+                                                            if (!isDisabled) {
+                                                                setSelectedSize(size);
+                                                                setQuantity(1);
+                                                            }
+                                                        }}
+                                                        disabled={isDisabled}
+                                                        aria-pressed={isSelected}
+                                                        title={isOutOfStock ? `${size} is out of stock in ${selectedColor}` :
+                                                            selectedColor ? `${sizeStock} ${size} available in ${selectedColor}` :
+                                                                'Please select a color first'}
+                                                    >
+                                                        {size}
+                                                        {isOutOfStock && <span className="ml-1 text-red-400">✕</span>}
+                                                    </button>
+                                                    {isLowStock && (
+                                                        <span className="mt-1 text-[11px] text-red-600 font-medium">Only {sizeStock} left</span>
+                                                    )}
+                                                </div>
+                                            );
+                                        })
+                                    ) : (
+                                        <span className="text-sm text-gray-500">No sizes available</span>
+                                    );
+                                })()}
+                            </div>
+                        </div>
+
+                        <div className="space-y-1">
+                            <p className="text-sm font-semibold text-gray-700">Category</p>
+                            <p className="text-sm text-gray-800/80">{productData.category}</p>
+                        </div>
+
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                                <label className="text-sm font-semibold text-gray-700">Quantity</label>
+                                {selectedColor && selectedSize && (
+                                    <span className="text-xs text-gray-500 font-medium">
+                                        {getColorSizeStock(selectedColor, selectedSize)} available
                                     </span>
-                                    {getColorSizeStock(selectedColor, selectedSize) - quantity > 0 && (
-                                        <span className="text-gray-500">
-                                            • {getColorSizeStock(selectedColor, selectedSize) - quantity} left
-                                        </span>
-                                    )}
+                                )}
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <div className="flex items-center border border-gray-300 rounded-xl overflow-hidden bg-white">
+                                    <button
+                                        type="button"
+                                        onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                                        className="w-12 h-12 flex items-center justify-center active:bg-gray-100 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                                        disabled={quantity <= 1}
+                                        aria-label="Decrease quantity"
+                                    >
+                                        <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+                                        </svg>
+                                    </button>
+                                    <div className="w-14 h-12 flex items-center justify-center border-x border-gray-300 bg-gray-50">
+                                        <span className="text-base font-semibold text-gray-900">{quantity}</span>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const maxStock = getColorSizeStock(selectedColor, selectedSize);
+                                            if (maxStock > 0 && quantity < maxStock) {
+                                                setQuantity(quantity + 1);
+                                            }
+                                        }}
+                                        className="w-12 h-12 flex items-center justify-center active:bg-gray-100 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                                        disabled={(() => {
+                                            const maxStock = getColorSizeStock(selectedColor, selectedSize);
+                                            return !selectedColor || !selectedSize || quantity >= maxStock;
+                                        })()}
+                                        aria-label="Increase quantity"
+                                    >
+                                        <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                        </svg>
+                                    </button>
                                 </div>
-                            )}
+                                {selectedColor && selectedSize && quantity > 0 && (
+                                    <div className="flex flex-col gap-1 text-xs">
+                                        <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded-md font-medium w-fit">
+                                            {quantity} {quantity === 1 ? 'item' : 'items'}
+                                        </span>
+                                        {(() => {
+                                            const remaining = getColorSizeStock(selectedColor, selectedSize) - quantity;
+                                            if (remaining > 0 && remaining <= 2) {
+                                                return (
+                                                    <span className="text-red-600 font-medium">Only {remaining} left</span>
+                                                );
+                                            }
+                                            if (remaining > 0) {
+                                                return <span className="text-gray-500">{remaining} left</span>;
+                                            }
+                                            return null;
+                                        })()}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs text-gray-600">
+                            <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2">
+                                <span className="inline-block w-2 h-2 rounded-full bg-green-500" aria-hidden="true"></span>
+                                Factory stitched
+                            </div>
+                            <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2">
+                                <span className="inline-block w-2 h-2 rounded-full bg-green-500" aria-hidden="true"></span>
+                                Direct from manufacturer
+                            </div>
+                            <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2">
+                                <span className="inline-block w-2 h-2 rounded-full bg-green-500" aria-hidden="true"></span>
+                                Quality checked
+                            </div>
                         </div>
                     </div>
 

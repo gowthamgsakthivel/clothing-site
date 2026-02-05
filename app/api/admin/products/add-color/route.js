@@ -81,7 +81,7 @@ export async function POST(request) {
         // Save product
         await product.save();
 
-        console.log(`✅ New color "${colorName}" added to product: ${productId}`);
+        //console.log(`✅ New color "${colorName}" added to product: ${productId}`);
 
         return NextResponse.json({
             success: true,

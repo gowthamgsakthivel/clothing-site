@@ -4,22 +4,23 @@ import Navbar from '@/components/Navbar'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
-const AdminLayout = ({ children }) => {
+const OwnerLayout = ({ children }) => {
   const pathname = usePathname()
 
   const navigationItems = [
-    { href: '/admin', label: 'Dashboard', icon: '📊' },
-    { href: '/admin/products/add', label: 'Add Product', icon: '➕' },
-    { href: '/admin/products/manage-stock', label: 'Manage Stock', icon: '📦' },
-    { href: '/admin/users', label: 'Users', icon: '👥' },
-    { href: '/admin/orders', label: 'Orders', icon: '📋' },
-    { href: '/admin/sellers', label: 'Sellers', icon: '🏪' },
-    { href: '/admin/contacts', label: 'Messages', icon: '💬' },
+    { href: '/owner', label: 'Dashboard', icon: '📊' },
+    { href: '/owner/products', label: 'Products', icon: '🛍️' },
+    { href: '/owner/add-product', label: 'Add Product', icon: '➕' },
+    { href: '/owner/inventory', label: 'Inventory', icon: '📦' },
+    { href: '/owner/orders', label: 'Orders', icon: '📋' },
+    { href: '/owner/custom-designs', label: 'Custom Designs', icon: '🎨' },
+    { href: '/owner/customers', label: 'Customers', icon: '👥' },
+    { href: '/owner/messages', label: 'Messages', icon: '💬' },
   ]
 
   const isActive = (href) => {
-    if (href === '/admin') {
-      return pathname === '/admin'
+    if (href === '/owner') {
+      return pathname === '/owner'
     }
     return pathname.startsWith(href)
   }
@@ -28,10 +29,9 @@ const AdminLayout = ({ children }) => {
     <div className="min-h-screen bg-gray-50">
       <Navbar />
       <div className="flex w-full max-w-[100vw] overflow-x-hidden pt-16">
-        {/* Sidebar */}
         <aside className="w-64 bg-white border-r border-gray-200 min-h-screen sticky top-16 h-[calc(100vh-64px)]">
           <div className="p-6 border-b border-gray-200">
-            <h2 className="text-lg font-bold text-gray-900">Admin Panel</h2>
+            <h2 className="text-lg font-bold text-gray-900">Owner Panel</h2>
             <p className="text-xs text-gray-600 mt-1">Manage your store</p>
           </div>
 
@@ -52,7 +52,6 @@ const AdminLayout = ({ children }) => {
           </nav>
         </aside>
 
-        {/* Main Content */}
         <main className="flex-1 min-w-0 overflow-x-auto">
           {children}
         </main>
@@ -61,4 +60,4 @@ const AdminLayout = ({ children }) => {
   )
 }
 
-export default AdminLayout
+export default OwnerLayout

@@ -6,16 +6,16 @@ import connectDB from "@/config/db";
 import mongoose from "mongoose";
 
 export async function GET(request) {
-    console.log("⭐ Starting custom design list API route");
+    // console.log("⭐ Starting custom design list API route");
     try {
         // Authenticate user
         const auth = getAuth(request);
         const { userId } = auth;
 
-        console.log("👤 Auth result:", { userId: userId || "undefined" });
+        // console.log("👤 Auth result:", { userId: userId || "undefined" });
 
         if (!userId) {
-            console.log("❌ No userId found in auth");
+            // console.log("❌ No userId found in auth");
             return NextResponse.json({
                 success: false,
                 message: 'Authentication required'
@@ -42,7 +42,7 @@ export async function GET(request) {
         }
 
         // Get user using Clerk user ID as MongoDB _id
-        console.log("🔍 Finding user with ID:", userId);
+        // console.log("🔍 Finding user with ID:", userId);
         let user;
         try {
             user = await User.findById(userId);
@@ -55,13 +55,13 @@ export async function GET(request) {
         }
 
         if (!user) {
-            console.log("❌ User not found with ID:", userId);
+            // console.log("❌ User not found with ID:", userId);
             return NextResponse.json({
                 success: false,
                 message: 'User not found'
             }, { status: 404 });
         }
-        console.log("✅ Found user:", user.name);
+        // console.log("✅ Found user:", user.name);
 
         // Check if CustomDesign collection exists in the database
         try {
@@ -71,10 +71,10 @@ export async function GET(request) {
 
             // Check if customdesign collection exists (lowercase)
             const customDesignExists = collectionNames.includes('customdesigns');
-            console.log("CustomDesign collection exists:", customDesignExists);
+            // console.log("CustomDesign collection exists:", customDesignExists);
 
             if (!customDesignExists) {
-                console.log("CustomDesign collection doesn't exist, returning empty array");
+                // console.log("CustomDesign collection doesn't exist, returning empty array");
                 return NextResponse.json({
                     success: true,
                     designRequests: []
@@ -112,7 +112,7 @@ export async function GET(request) {
 
             // If it's a timeout error, return partial success
             if (designError.name === 'MongooseError' && designError.message.includes('timeout')) {
-                console.log("Query timeout, returning empty array");
+                // console.log("Query timeout, returning empty array");
                 designRequests = [];
             } else {
                 // For other errors, return error response

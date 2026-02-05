@@ -25,13 +25,11 @@ const CustomDesignsPage = () => {
     const [responseForm, setResponseForm] = useState({ message: '' });
     const [convertingToOrder, setConvertingToOrder] = useState(false);
 
-    // Fetch custom design requests
     const fetchDesignRequests = async (page = 1, status = 'all') => {
         try {
             setLoading(true);
             const token = await getToken();
 
-            console.log("Fetching seller design requests...");
             const response = await axios.get(
                 `/api/custom-design/seller?page=${page}&status=${status}`,
                 {
@@ -39,12 +37,9 @@ const CustomDesignsPage = () => {
                 }
             );
 
-            console.log("API response status:", response.status);
             const { data } = response;
 
             if (data.success) {
-                console.log(`Found ${data.designRequests?.length || 0} design requests`);
-                // Ensure we have arrays, not undefined
                 const requests = Array.isArray(data.designRequests) ? data.designRequests : [];
                 setDesignRequests(requests);
                 setPagination(data.pagination || {
@@ -56,27 +51,18 @@ const CustomDesignsPage = () => {
                     hasPrevPage: false
                 });
             } else {
-                console.error('API returned error:', data.message);
                 toast.error(data.message || 'Failed to fetch design requests');
                 setDesignRequests([]);
             }
         } catch (error) {
-            console.error('Error fetching design requests:', error);
-
-            // Log detailed error information
             if (error.response) {
-                console.error('Response data:', error.response.data);
-                console.error('Response status:', error.response.status);
                 toast.error(`Error ${error.response.status}: ${error.response.data?.message || 'Failed to fetch design requests'}`);
             } else if (error.request) {
-                console.error('No response received:', error.request);
                 toast.error('Server did not respond. Please check your connection.');
             } else {
-                console.error('Error setting up request:', error.message);
                 toast.error('Failed to fetch design requests');
             }
 
-            // Set empty data
             setDesignRequests([]);
             setPagination({
                 page: 1,
@@ -91,7 +77,6 @@ const CustomDesignsPage = () => {
         }
     };
 
-    // Submit quote for a design request
     const submitQuote = async (designRequestId) => {
         if (!quoteForm.amount || isNaN(Number(quoteForm.amount)) || Number(quoteForm.amount) <= 0) {
             toast.error('Please enter a valid quote amount');
@@ -123,12 +108,10 @@ const CustomDesignsPage = () => {
                 toast.error(data.message || 'Failed to submit quote');
             }
         } catch (error) {
-            console.error('Error submitting quote:', error);
             toast.error('Failed to submit quote');
         }
     };
 
-    // Submit response to a design request
     const submitResponse = async (designRequestId) => {
         if (!responseForm.message) {
             toast.error('Please enter a response message');
@@ -159,12 +142,10 @@ const CustomDesignsPage = () => {
                 toast.error(data.message || 'Failed to submit response');
             }
         } catch (error) {
-            console.error('Error submitting response:', error);
             toast.error('Failed to submit response');
         }
     };
 
-    // Update request status
     const updateRequestStatus = async (designRequestId, status) => {
         try {
             const token = await getToken();
@@ -189,19 +170,15 @@ const CustomDesignsPage = () => {
                 toast.error(data.message || 'Failed to update status');
             }
         } catch (error) {
-            console.error('Error updating status:', error);
             toast.error('Failed to update status');
         }
     };
 
-    // Convert approved design to an order
     const convertToOrder = async (designId) => {
         try {
             setConvertingToOrder(true);
-            console.log(`Converting design ${designId} to order`);
             const token = await getToken();
 
-            // Ensure we're using the correct API endpoint path
             const { data } = await axios.post(
                 '/api/custom-design/convert-to-order',
                 { designId },
@@ -214,7 +191,6 @@ const CustomDesignsPage = () => {
                 toast.success('Design converted to order successfully');
                 fetchDesignRequests(pagination.page, filterStatus);
 
-                // Update the active request with the new order information
                 setActiveRequest(prev => ({
                     ...prev,
                     status: 'completed',
@@ -224,9 +200,6 @@ const CustomDesignsPage = () => {
                 toast.error(data.message || 'Failed to convert design to order');
             }
         } catch (error) {
-            console.error('Error converting design to order:', error);
-
-            // More detailed error message
             if (error.response) {
                 toast.error(error.response.data?.message || 'Failed to convert design to order');
             } else {
@@ -237,14 +210,12 @@ const CustomDesignsPage = () => {
         }
     };
 
-    // Handle filter change
     const handleFilterChange = (e) => {
         const status = e.target.value;
         setFilterStatus(status);
         fetchDesignRequests(1, status);
     };
 
-    // Handle pagination
     const changePage = (newPage) => {
         if (newPage > 0 && newPage <= pagination.totalPages) {
             fetchDesignRequests(newPage, filterStatus);
@@ -255,7 +226,6 @@ const CustomDesignsPage = () => {
         fetchDesignRequests(1, 'all');
     }, []);
 
-    // Format date string
     const formatDate = (dateString) => {
         const date = new Date(dateString);
         return date.toLocaleDateString('en-US', {
@@ -267,9 +237,8 @@ const CustomDesignsPage = () => {
 
     return (
         <div className="w-full p-8 bg-gray-50">
-            <h1 className="text-2xl font-bold mb-6">Custom T-Shirt Design Requests</h1>
+            <h1 className="text-2xl font-bold mb-6">Custom Design Requests</h1>
 
-            {/* Filter controls */}
             <div className="mb-6 flex flex-wrap items-center gap-4">
                 <div>
                     <label htmlFor="status-filter" className="block text-sm font-medium text-gray-700 mb-1">Filter by Status</label>
@@ -304,7 +273,6 @@ const CustomDesignsPage = () => {
                 </div>
             ) : (
                 <>
-                    {/* Design requests list */}
                     <div className="bg-white rounded-lg shadow overflow-hidden">
                         <table className="min-w-full divide-y divide-gray-200">
                             <thead className="bg-gray-50">
@@ -420,7 +388,6 @@ const CustomDesignsPage = () => {
                         </table>
                     </div>
 
-                    {/* Pagination */}
                     {pagination.totalPages > 1 && (
                         <div className="flex justify-center mt-6">
                             <nav className="flex items-center space-x-2">
@@ -458,7 +425,6 @@ const CustomDesignsPage = () => {
                 </>
             )}
 
-            {/* Design request detail modal */}
             {activeRequest && (
                 <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50">
                     <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto p-0">
@@ -476,7 +442,6 @@ const CustomDesignsPage = () => {
 
                         <div className="p-6">
                             <div className="flex flex-col md:flex-row md:space-x-6">
-                                {/* Left column - Design image */}
                                 <div className="md:w-1/2 mb-6 md:mb-0">
                                     <div className="relative h-72 w-full rounded-lg overflow-hidden bg-gray-100 border">
                                         <Image
@@ -487,7 +452,6 @@ const CustomDesignsPage = () => {
                                         />
                                     </div>
 
-                                    {/* Download Button */}
                                     <div className="mt-2 flex justify-end">
                                         <a
                                             href={`/api/custom-design/download?designId=${activeRequest._id}`}
@@ -520,17 +484,15 @@ const CustomDesignsPage = () => {
                                             ))}
                                         </div>
 
-                                        {/* Create order from approved design */}
                                         {activeRequest.status === 'approved' && !activeRequest.orderId && (
                                             <div className="mt-4">
                                                 <button
                                                     onClick={() => {
-                                                        console.log("Convert to order clicked for design:", activeRequest._id);
                                                         convertToOrder(activeRequest._id);
                                                     }}
                                                     className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
                                                 >
-                                                    Convert to Order
+                                                    {convertingToOrder ? 'Converting...' : 'Convert to Order'}
                                                 </button>
                                                 <p className="mt-2 text-xs text-gray-500">
                                                     This will create an order for the customer and mark this design as completed.
@@ -556,7 +518,6 @@ const CustomDesignsPage = () => {
                                     </div>
                                 </div>
 
-                                {/* Right column - Request details */}
                                 <div className="md:w-1/2">
                                     <div className="grid grid-cols-2 gap-4 mb-6">
                                         <div>
@@ -607,7 +568,6 @@ const CustomDesignsPage = () => {
                                         </div>
                                     )}
 
-                                    {/* Quote Form */}
                                     {['pending', 'quoted'].includes(activeRequest.status) && (
                                         <div className="border p-4 rounded-lg mb-4">
                                             <h4 className="font-medium text-gray-900 mb-2">
@@ -644,7 +604,6 @@ const CustomDesignsPage = () => {
                                         </div>
                                     )}
 
-                                    {/* Response Form */}
                                     <div className="border p-4 rounded-lg">
                                         <h4 className="font-medium text-gray-900 mb-2">Send Response to Customer</h4>
                                         <div className="space-y-3">
@@ -667,25 +626,21 @@ const CustomDesignsPage = () => {
                                         </div>
                                     </div>
 
-                                    {/* Negotiation Component - Show when in negotiating status */}
                                     {activeRequest.status === 'negotiating' && (
                                         <div className="mt-6">
                                             <SellerNegotiationResponse
                                                 design={activeRequest}
                                                 getToken={getToken}
                                                 onResponseSubmitted={(updatedDesign) => {
-                                                    // Update the active request
                                                     setActiveRequest(prev => ({
                                                         ...prev,
                                                         ...updatedDesign
                                                     }));
 
-                                                    // Refresh the list
                                                     fetchDesignRequests(pagination.page, filterStatus);
                                                 }}
                                             />
 
-                                            {/* Show negotiation history */}
                                             {activeRequest.negotiationHistory && activeRequest.negotiationHistory.length > 0 && (
                                                 <div className="mt-4">
                                                     <NegotiationHistory
@@ -697,7 +652,6 @@ const CustomDesignsPage = () => {
                                         </div>
                                     )}
 
-                                    {/* Customer Change Request - Show at the top since it needs immediate attention */}
                                     {activeRequest.customerResponse && activeRequest.customerResponse.message && activeRequest.status !== 'negotiating' && (
                                         <div className="mt-6 p-4 bg-orange-50 rounded-lg border border-orange-100">
                                             <div className="flex items-center mb-1">
@@ -713,7 +667,6 @@ const CustomDesignsPage = () => {
                                         </div>
                                     )}
 
-                                    {/* Previous Responses */}
                                     {activeRequest.sellerResponse && activeRequest.sellerResponse.message && (
                                         <div className="mt-6 p-4 bg-gray-50 rounded-lg">
                                             <h4 className="font-medium text-gray-900 mb-2">Previous Response</h4>
@@ -724,7 +677,6 @@ const CustomDesignsPage = () => {
                                         </div>
                                     )}
 
-                                    {/* Quote Details */}
                                     {activeRequest.quote && activeRequest.quote.amount && (
                                         <div className="mt-4 p-4 bg-gray-50 rounded-lg">
                                             <h4 className="font-medium text-gray-900 mb-2">Current Quote</h4>

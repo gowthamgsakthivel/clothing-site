@@ -6,14 +6,14 @@ import Order from "@/models/Orders";
 import CustomDesign from "@/models/CustomDesign";
 
 export async function GET(request) {
-    console.log("⭐ Starting seller overview analytics API route");
+    //console.log("⭐ Starting seller overview analytics API route");
     try {
         // Authenticate seller
         let userId;
         try {
             const auth = getAuth(request);
             userId = auth.userId;
-            console.log("👤 Seller auth result:", { userId: userId || "undefined" });
+            //console.log("👤 Seller auth result:", { userId: userId || "undefined" });
         } catch (authError) {
             console.error("❌ Error with authentication:", authError);
             return NextResponse.json({
@@ -23,24 +23,24 @@ export async function GET(request) {
         }
 
         if (!userId) {
-            console.log("❌ No userId found in auth");
+            //console.log("❌ No userId found in auth");
             return NextResponse.json({
                 success: false,
                 message: 'Authentication required'
             }, { status: 401 });
         }
 
-        console.log("🛡️ Checking if user is a seller");
+        //console.log("🛡️ Checking if user is a seller");
         try {
             const isSeller = await authSeller(userId);
             if (!isSeller) {
-                console.log("❌ User is not authorized as seller");
+                //console.log("❌ User is not authorized as seller");
                 return NextResponse.json({
                     success: false,
                     message: 'Not authorized as seller'
                 }, { status: 403 });
             }
-            console.log("✅ User is confirmed as seller");
+            //console.log("✅ User is confirmed as seller");
         } catch (authError) {
             console.error("❌ Error checking seller status:", authError);
             return NextResponse.json({
@@ -50,10 +50,10 @@ export async function GET(request) {
         }
 
         // Connect to database
-        console.log("🔌 Connecting to database...");
+        //console.log("🔌 Connecting to database...");
         try {
             await connectDB();
-            console.log("✅ Connected to database");
+            //console.log("✅ Connected to database");
         } catch (dbError) {
             console.error("❌ Database connection failed:", dbError);
             return NextResponse.json({
@@ -65,41 +65,65 @@ export async function GET(request) {
         // Get query parameters for time frame
         const { searchParams } = new URL(request.url);
         const timeFrame = searchParams.get('timeFrame') || 'all'; // all, last7days, last30days, last90days
+        const fromISO = searchParams.get('from');
+        const toISO = searchParams.get('to');
 
-        // Build date filter if needed
+        // Build date filter if needed (UTC normalized)
         let dateFilter = {};
         let orderDateFilter = {};
-        const now = new Date();
 
-        console.log(`Building time frame filters for: ${timeFrame}`);
+        //console.log(`Building time frame filters for: ${timeFrame}`);
 
-        if (timeFrame === 'last7days') {
-            const last7Days = new Date(now);
-            last7Days.setDate(now.getDate() - 7);
-            dateFilter = { createdAt: { $gte: last7Days } };
-            // For Orders model - uses Unix timestamp (seconds)
-            const timestamp = Math.floor(last7Days.getTime() / 1000);
-            orderDateFilter = { date: { $gte: timestamp } };
-            console.log(`Date filters - last7Days: ${last7Days}, timestamp: ${timestamp}`);
-        } else if (timeFrame === 'last30days') {
-            const last30Days = new Date(now);
-            last30Days.setDate(now.getDate() - 30);
-            dateFilter = { createdAt: { $gte: last30Days } };
-            // For Orders model - uses Unix timestamp (seconds)
-            const timestamp = Math.floor(last30Days.getTime() / 1000);
-            orderDateFilter = { date: { $gte: timestamp } };
-            console.log(`Date filters - last30Days: ${last30Days}, timestamp: ${timestamp}`);
-        } else if (timeFrame === 'last90days') {
-            const last90Days = new Date(now);
-            last90Days.setDate(now.getDate() - 90);
-            dateFilter = { createdAt: { $gte: last90Days } };
-            // For Orders model - uses Unix timestamp (seconds)
-            const timestamp = Math.floor(last90Days.getTime() / 1000);
-            orderDateFilter = { date: { $gte: timestamp } };
-            console.log(`Date filters - last90Days: ${last90Days}, timestamp: ${timestamp}`);
+        const buildUtcRange = (fromDate, toDate) => {
+            const from = new Date(fromDate);
+            const to = new Date(toDate);
+
+            if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) {
+                return null;
+            }
+
+            from.setUTCHours(0, 0, 0, 0);
+            to.setUTCHours(23, 59, 59, 999);
+
+            return { from, to };
+        };
+
+        let range = null;
+
+        if (fromISO && toISO) {
+            range = buildUtcRange(fromISO, toISO);
+            //console.log("Using explicit UTC range:", { fromISO, toISO, valid: !!range });
         }
 
-        console.log("⏰ Time frame filter:", timeFrame);
+        if (!range && timeFrame !== 'all') {
+            const now = new Date();
+            const todayUtc = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+            let from = new Date(todayUtc);
+
+            if (timeFrame === 'last7days') {
+                from.setUTCDate(from.getUTCDate() - 7);
+            } else if (timeFrame === 'last30days') {
+                from.setUTCDate(from.getUTCDate() - 30);
+            } else if (timeFrame === 'last90days') {
+                from.setUTCDate(from.getUTCDate() - 90);
+            }
+
+            const to = new Date(todayUtc);
+            to.setUTCDate(to.getUTCDate());
+            to.setUTCHours(23, 59, 59, 999);
+
+            range = { from, to };
+            //console.log("Using timeFrame UTC range:", { timeFrame, from, to });
+        }
+
+        if (range) {
+            dateFilter = { createdAt: { $gte: range.from, $lte: range.to } };
+            const fromTimestamp = Math.floor(range.from.getTime() / 1000);
+            const toTimestamp = Math.floor(range.to.getTime() / 1000);
+            orderDateFilter = { date: { $gte: fromTimestamp, $lte: toTimestamp } };
+        }
+
+        //console.log("⏰ Time frame filter:", timeFrame, "range:", range || "all-time");
 
         // Collect analytics data
         let analyticsData = {};
@@ -133,8 +157,9 @@ export async function GET(request) {
             ]);
 
             // Monthly orders trend
-            const sixMonthsAgo = new Date(now);
-            sixMonthsAgo.setMonth(now.getMonth() - 6);
+            const now = new Date();
+            const sixMonthsAgo = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+            sixMonthsAgo.setUTCMonth(sixMonthsAgo.getUTCMonth() - 6);
             const sixMonthsAgoTimestamp = Math.floor(sixMonthsAgo.getTime() / 1000);
 
             let orderMonthlyTrends = [];
@@ -143,9 +168,9 @@ export async function GET(request) {
             const fallbackMonthlyTrends = [];
             for (let i = 0; i < 6; i++) {
                 const d = new Date();
-                d.setMonth(d.getMonth() - i);
+                d.setUTCMonth(d.getUTCMonth() - i);
                 fallbackMonthlyTrends.push({
-                    _id: { year: d.getFullYear(), month: d.getMonth() + 1 },
+                    _id: { year: d.getUTCFullYear(), month: d.getUTCMonth() + 1 },
                     count: 0,
                     revenue: 0
                 });
@@ -158,7 +183,7 @@ export async function GET(request) {
                     date: { $gte: sixMonthsAgoTimestamp }
                 }).select('date amount').lean();
 
-                console.log(`Found ${recentOrders.length} recent orders`);
+                //console.log(`Found ${recentOrders.length} recent orders`);
 
                 // Group by year/month in JavaScript
                 const monthlyData = {};
@@ -203,8 +228,8 @@ export async function GET(request) {
                             orderDate = new Date(); // Fallback to current date
                         }
 
-                        const year = orderDate.getFullYear();
-                        const month = orderDate.getMonth() + 1; // JavaScript months are 0-indexed
+                        const year = orderDate.getUTCFullYear();
+                        const month = orderDate.getUTCMonth() + 1; // JavaScript months are 0-indexed
 
                         const key = `${year}-${month}`;
 
@@ -292,7 +317,7 @@ export async function GET(request) {
                     createdAt: { $gte: sixMonthsAgo }
                 }).select('createdAt quote.amount').lean();
 
-                console.log(`Found ${recentDesigns.length} recent custom designs`);
+                //console.log(`Found ${recentDesigns.length} recent custom designs`);
 
                 // Group by year/month in JavaScript
                 const monthlyData = {};

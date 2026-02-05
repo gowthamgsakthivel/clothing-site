@@ -7,44 +7,40 @@ import axios from 'axios';
 import Image from 'next/image';
 import Loading from '@/components/Loading';
 
-const ManageInventory = () => {
+const OwnerInventory = () => {
     const { user, getToken } = useAppContext();
     const searchParams = useSearchParams();
+    const selectedProductId = searchParams.get('product');
     const [products, setProducts] = useState([]);
     const [selectedProduct, setSelectedProduct] = useState(null);
     const [stockData, setStockData] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
-    const [showAddColorModal, setShowAddColorModal] = useState(false);
-    const [newColorData, setNewColorData] = useState({
-        name: '',
-        code: '#000000',
-        quantities: {
-            XS: 0,
-            S: 0,
-            M: 0,
-            L: 0,
-            XL: 0,
-            XXL: 0
-        }
-    });
 
     useEffect(() => {
         fetchProducts();
     }, []);
 
+    useEffect(() => {
+        if (selectedProductId && products.length > 0) {
+            const matchedProduct = products.find(product => product._id === selectedProductId);
+            if (matchedProduct) {
+                handleSelectProduct(matchedProduct);
+            }
+        }
+    }, [selectedProductId, products]);
+
     const fetchProducts = async () => {
         try {
             setIsLoading(true);
             const token = await getToken();
-            const response = await axios.get('/api/seller/products', {
+            const response = await axios.get('/api/product/seller-products', {
                 headers: { Authorization: `Bearer ${token}` }
             });
 
             if (response.data.success) {
                 setProducts(response.data.products || []);
-                toast.success('Products loaded');
             }
         } catch (error) {
             console.error('Error fetching products:', error);
@@ -72,9 +68,17 @@ const ManageInventory = () => {
             setIsSaving(true);
             const token = await getToken();
 
-            const response = await axios.patch(
-                `/api/seller/products/${selectedProduct._id}`,
-                { inventory: stockData },
+            const updates = (stockData || []).flatMap((colorData, colorIndex) =>
+                (colorData.sizeStock || []).map((sizeData, sizeIndex) => ({
+                    colorIndex,
+                    sizeIndex,
+                    quantity: sizeData.quantity
+                }))
+            );
+
+            const response = await axios.post(
+                '/api/admin/products/stock-update',
+                { productId: selectedProduct._id, updates },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
 
@@ -106,13 +110,11 @@ const ManageInventory = () => {
 
     return (
         <div className="p-6 w-full">
-            {/* Header */}
             <div className="mb-6">
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">Manage Inventory</h1>
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">Inventory</h1>
                 <p className="text-gray-600">Update product stock levels and colors</p>
             </div>
 
-            {/* Search and Filter */}
             <div className="mb-6">
                 <input
                     type="text"
@@ -123,9 +125,7 @@ const ManageInventory = () => {
                 />
             </div>
 
-            {/* Products List */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Products Column */}
                 <div className="lg:col-span-1">
                     <div className="bg-white rounded-lg shadow-sm border border-gray-200">
                         <div className="bg-gray-50 px-4 py-3 border-b">
@@ -145,9 +145,9 @@ const ManageInventory = () => {
                                             }`}
                                     >
                                         <div className="flex gap-3">
-                                            {product.images?.[0] && (
+                                            {product.image?.[0] && (
                                                 <Image
-                                                    src={product.images[0]}
+                                                    src={product.image[0]}
                                                     alt={product.name}
                                                     width={50}
                                                     height={50}
@@ -166,7 +166,6 @@ const ManageInventory = () => {
                     </div>
                 </div>
 
-                {/* Stock Details Column */}
                 <div className="lg:col-span-2">
                     {selectedProduct ? (
                         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -175,7 +174,6 @@ const ManageInventory = () => {
                                 <p className="text-gray-600">Update stock for colors and sizes</p>
                             </div>
 
-                            {/* Stock Table */}
                             <div className="overflow-x-auto">
                                 <table className="w-full text-sm">
                                     <thead>
@@ -218,7 +216,6 @@ const ManageInventory = () => {
                                 </table>
                             </div>
 
-                            {/* Action Buttons */}
                             <div className="mt-6 flex gap-3">
                                 <button
                                     onClick={handleSaveStock}
@@ -249,10 +246,10 @@ const ManageInventory = () => {
     );
 };
 
-export default function ManageInventoryPage() {
+export default function OwnerInventoryPage() {
     return (
         <Suspense fallback={<Loading />}>
-            <ManageInventory />
+            <OwnerInventory />
         </Suspense>
     );
 }

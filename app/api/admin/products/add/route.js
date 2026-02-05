@@ -14,7 +14,7 @@ cloudinary.config({
 
 export async function POST(request) {
     try {
-        console.log("⭐ Starting add product API route");
+        //console.log("⭐ Starting add product API route");
 
         // Authenticate user
         const { userId } = getAuth(request);
@@ -162,7 +162,7 @@ export async function POST(request) {
 
         await newProduct.save();
 
-        console.log("✅ Product added successfully with ID:", newProduct._id);
+        //console.log("✅ Product added successfully with ID:", newProduct._id);
 
         return NextResponse.json({
             success: true,

@@ -27,6 +27,44 @@ const MyOrders = () => {
     const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(true);
     const [error, setError] = useState(null);
 
+    const getStatusPresentation = (status) => {
+        const normalized = (status || '').toLowerCase();
+
+        if (['delivered', 'completed'].includes(normalized)) {
+            return { label: 'Delivered', tone: 'completed' };
+        }
+        if (['cancelled', 'failed', 'rejected'].includes(normalized)) {
+            return { label: 'Cancelled', tone: 'pending' };
+        }
+        if (['shipped', 'in transit', 'out for delivery'].includes(normalized)) {
+            return { label: 'Shipped', tone: 'current' };
+        }
+        if (['processing', 'packed'].includes(normalized)) {
+            return { label: 'Processing', tone: 'current' };
+        }
+        if (['confirmed', 'order confirmed'].includes(normalized)) {
+            return { label: 'Order Confirmed', tone: 'current' };
+        }
+
+        return { label: 'Order Placed', tone: 'pending' };
+    };
+
+    const getStatusBadgeClasses = (tone) => {
+        if (tone === 'completed') {
+            return 'bg-green-100 text-green-700 border-green-200';
+        }
+        if (tone === 'current') {
+            return 'bg-orange-100 text-orange-700 border-orange-200';
+        }
+        return 'bg-gray-100 text-gray-600 border-gray-200';
+    };
+
+    const getPaymentBadgeClasses = (isPaid) => {
+        return isPaid
+            ? 'bg-green-50 text-green-700 border-green-200'
+            : 'bg-gray-100 text-gray-600 border-gray-200';
+    };
+
     const fetchOrders = async () => {
         try {
             setLoading(true);
@@ -346,7 +384,7 @@ const MyOrders = () => {
 
                     {/* Modern Filter Tabs */}
                     {!loading && allOrders.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mb-8 pb-4 border-b-2 border-gray-100">
+                        <div className="flex flex-nowrap gap-2 mb-4 pb-3 border-b-2 border-gray-100 overflow-x-auto no-scrollbar">
                             {[
                                 { id: 'all', label: 'All Orders', icon: '📦', count: allOrders.length },
                                 {
@@ -410,18 +448,23 @@ const MyOrders = () => {
                                         }
                                         setActiveFilter(filter.id);
                                     }}
-                                    className={`px-4 py-2.5 rounded-lg text-sm font-medium transition duration-200 flex items-center gap-2 ${activeFilter === filter.id
-                                            ? 'bg-orange-600 text-white shadow-md'
-                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                    className={`px-3 py-2 rounded-md text-xs font-semibold transition duration-200 flex items-center gap-2 border ${activeFilter === filter.id
+                                        ? 'bg-orange-600 text-white border-orange-600 shadow-sm'
+                                        : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
                                         }`}
                                 >
-                                    <span className="text-base">{filter.icon}</span>
-                                    {filter.label}
-                                    <span className={`text-xs font-semibold ${activeFilter === filter.id ? 'bg-white text-orange-600' : 'bg-gray-300 text-gray-700'} rounded-full px-2`}>
+                                    <span className="text-sm">{filter.icon}</span>
+                                    <span className="whitespace-nowrap">{filter.label}</span>
+                                    <span className={`text-[10px] font-semibold ${activeFilter === filter.id ? 'bg-white text-orange-600' : 'bg-gray-300 text-gray-700'} rounded-full px-2 py-0.5`}>
                                         {filter.count}
                                     </span>
                                 </button>
                             ))}
+                            {activeFilter === 'recent' && (
+                                <div className="w-full text-xs text-gray-500 mt-2">
+                                    Showing orders from the last 30 days.
+                                </div>
+                            )}
                         </div>
                     )}
 
@@ -441,12 +484,37 @@ const MyOrders = () => {
                             </button>
                         </motion.div>
                     ) : loading ? (
-                        <Loading />
+                        <div className="space-y-5">
+                            {Array.from({ length: 3 }).map((_, idx) => (
+                                <div key={idx} className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6 shadow-sm">
+                                    <div className="flex items-start justify-between gap-4">
+                                        <div className="space-y-2">
+                                            <div className="h-4 w-24 bg-gray-200 rounded" />
+                                            <div className="h-5 w-40 bg-gray-200 rounded" />
+                                            <div className="h-3 w-28 bg-gray-200 rounded" />
+                                        </div>
+                                        <div className="h-6 w-20 bg-gray-200 rounded" />
+                                    </div>
+                                    <div className="mt-5 space-y-3">
+                                        {Array.from({ length: 2 }).map((__, itemIdx) => (
+                                            <div key={itemIdx} className="flex gap-3">
+                                                <div className="h-12 w-12 bg-gray-200 rounded" />
+                                                <div className="flex-1 space-y-2">
+                                                    <div className="h-3 w-3/4 bg-gray-200 rounded" />
+                                                    <div className="h-3 w-1/3 bg-gray-200 rounded" />
+                                                </div>
+                                                <div className="h-3 w-12 bg-gray-200 rounded" />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     ) : (
                         <div className="space-y-4">
                             {orders.length === 0 ? (
                                 <motion.div
-                                    className="text-center py-12 bg-white rounded-xl shadow border border-gray-200"
+                                    className="text-center py-12 bg-white rounded-2xl shadow-sm border border-gray-200"
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ duration: 0.5 }}
@@ -484,71 +552,45 @@ const MyOrders = () => {
                                     )}
                                 </motion.div>
                             ) : (
-                                <div className="space-y-4">
+                                <div className="space-y-6">
                                     {orders.map((order, index) => {
                                         try {
-                                            // Determine status color and icon
-                                            const statusLower = (order.status || '').toLowerCase();
-                                            let statusColor = 'gray';
-                                            let statusIcon = '📦';
-                                            let statusBg = 'bg-gray-100 text-gray-800 border-gray-300';
-
-                                            if (statusLower.includes('delivered') || statusLower.includes('completed')) {
-                                                statusColor = 'green';
-                                                statusIcon = '✅';
-                                                statusBg = 'bg-green-100 text-green-800 border-green-300';
-                                            } else if (statusLower.includes('shipped') || statusLower.includes('transit')) {
-                                                statusColor = 'blue';
-                                                statusIcon = '🚚';
-                                                statusBg = 'bg-blue-100 text-blue-800 border-blue-300';
-                                            } else if (statusLower.includes('packed') || statusLower.includes('processing')) {
-                                                statusColor = 'orange';
-                                                statusIcon = '📋';
-                                                statusBg = 'bg-orange-100 text-orange-800 border-orange-300';
-                                            } else if (statusLower.includes('pending')) {
-                                                statusColor = 'yellow';
-                                                statusIcon = '⏳';
-                                                statusBg = 'bg-yellow-100 text-yellow-800 border-yellow-300';
-                                            }
-
-                                            // Payment status
                                             const paymentLower = (order.paymentStatus || '').toLowerCase();
                                             const isPaid = ['paid', 'confirmed', 'delivered', 'completed'].includes(paymentLower);
+                                            const statusInfo = getStatusPresentation(order.status);
 
                                             const dateInfo = formatOrderDate(order.date);
 
                                             return (
                                                 <motion.div
                                                     key={order._id}
-                                                    className={`bg-white rounded-xl border-2 transition-all hover:shadow-lg overflow-hidden ${statusColor === 'green' ? 'border-green-200' : statusColor === 'blue' ? 'border-blue-200' : statusColor === 'orange' ? 'border-orange-200' : 'border-gray-200'}`}
+                                                    className="bg-white rounded-2xl border border-gray-200 shadow-sm transition-all hover:shadow-md"
                                                     initial={{ opacity: 0, y: 20 }}
                                                     animate={{ opacity: 1, y: 0 }}
                                                     transition={{ duration: 0.3, delay: index * 0.08 }}
                                                 >
-                                                    {/* Status Bar */}
-                                                    <div className={`h-1 ${statusColor === 'green' ? 'bg-green-500' : statusColor === 'blue' ? 'bg-blue-500' : statusColor === 'orange' ? 'bg-orange-500' : 'bg-gray-400'}`}></div>
-
                                                     {/* Card Content */}
                                                     <div className="p-5 sm:p-6">
-                                                        {/* Top Section: Order Info & Status */}
-                                                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-5 pb-5 border-b border-gray-100">
+                                                        {/* Top Section: Order Info & Total */}
+                                                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 pb-4 border-b border-gray-100">
                                                             <div>
                                                                 <p className="text-xs text-gray-500 font-semibold uppercase tracking-wide mb-1">Order #</p>
                                                                 <h3 className="text-lg sm:text-xl font-bold text-gray-900">{order._id?.substring(order._id.length - 6).toUpperCase() || `Order ${index + 1}`}</h3>
                                                                 <p className="text-sm text-gray-600 mt-2">{dateInfo.formatted} <span className="text-gray-400 text-xs">({dateInfo.relative})</span></p>
                                                             </div>
-                                                            <div className="flex flex-col gap-2 items-start sm:items-end">
-                                                                <div className={`px-3 py-1.5 rounded-full border font-semibold text-sm flex items-center gap-2 ${statusBg}`}>
-                                                                    <span>{statusIcon}</span>
-                                                                    {order.status || 'Processing'}
-                                                                </div>
-                                                                {isPaid && (
-                                                                    <span className="text-xs font-medium text-green-700 bg-green-50 px-3 py-1 rounded-full border border-green-200">✓ Paid ({order.paymentMethod || 'COD'})</span>
-                                                                )}
-                                                                {!isPaid && (
-                                                                    <span className="text-xs font-medium text-orange-700 bg-orange-50 px-3 py-1 rounded-full border border-orange-200">Pending {order.paymentMethod || 'COD'}</span>
-                                                                )}
+                                                            <div className="text-right">
+                                                                <p className="text-xs text-gray-500 font-semibold uppercase">Order Total</p>
+                                                                <p className="text-xl sm:text-2xl font-bold text-gray-900 mt-1">{currency}{(order.amount || 0).toFixed(2)}</p>
                                                             </div>
+                                                        </div>
+
+                                                        <div className="flex flex-wrap gap-2 mt-3">
+                                                            <span className={`px-3 py-1 rounded-full border text-xs font-semibold ${getStatusBadgeClasses(statusInfo.tone)}`}>
+                                                                {statusInfo.label}
+                                                            </span>
+                                                            <span className={`px-3 py-1 rounded-full border text-xs font-semibold ${getPaymentBadgeClasses(isPaid)}`}>
+                                                                {isPaid ? 'Paid' : 'Payment Pending'}
+                                                            </span>
                                                         </div>
 
                                                         {/* Products Section */}
@@ -556,7 +598,7 @@ const MyOrders = () => {
                                                             <p className="text-xs text-gray-500 font-semibold uppercase tracking-wide mb-3">Items ({Array.isArray(order.items) ? order.items.length : 0})</p>
                                                             <div className="space-y-2">
                                                                 {Array.isArray(order.items) && order.items.slice(0, 2).map((item, idx) => (
-                                                                    <div key={idx} className="flex gap-3 bg-gray-50 rounded-lg p-3">
+                                                                    <div key={idx} className="flex gap-3 bg-gray-50 rounded-lg p-2.5">
                                                                         {/* Product Image */}
                                                                         <div className="flex-shrink-0">
                                                                             {(() => {
@@ -566,9 +608,9 @@ const MyOrders = () => {
                                                                                             <Image
                                                                                                 src={item.customDesignImage}
                                                                                                 alt="Custom Design"
-                                                                                                width={56}
-                                                                                                height={56}
-                                                                                                className="rounded-md object-cover w-14 h-14 shadow-sm"
+                                                                                                width={48}
+                                                                                                height={48}
+                                                                                                className="rounded-md object-cover w-12 h-12"
                                                                                             />
                                                                                         );
                                                                                     } else if (item.product?.image?.[0]) {
@@ -576,37 +618,34 @@ const MyOrders = () => {
                                                                                             <Image
                                                                                                 src={item.product.image[0]}
                                                                                                 alt={item.product.name || "Product"}
-                                                                                                width={56}
-                                                                                                height={56}
-                                                                                                className="rounded-md object-cover w-14 h-14 shadow-sm"
+                                                                                                width={48}
+                                                                                                height={48}
+                                                                                                className="rounded-md object-cover w-12 h-12"
                                                                                             />
                                                                                         );
                                                                                     } else {
                                                                                         return (
-                                                                                            <div className="w-14 h-14 bg-gray-300 rounded-md flex items-center justify-center text-xs text-gray-600">No image</div>
+                                                                                            <div className="w-12 h-12 bg-gray-200 rounded-md flex items-center justify-center text-xs text-gray-500">No image</div>
                                                                                         );
                                                                                     }
                                                                                 } catch (err) {
-                                                                                    return <div className="w-14 h-14 bg-gray-300 rounded-md"></div>;
+                                                                                    return <div className="w-12 h-12 bg-gray-200 rounded-md"></div>;
                                                                                 }
                                                                             })()}
                                                                         </div>
 
                                                                         {/* Product Details */}
                                                                         <div className="flex-1 min-w-0">
-                                                                            <p className="font-semibold text-gray-900 text-sm truncate">
+                                                                            <p className="font-semibold text-gray-900 text-sm leading-5 max-h-10 overflow-hidden">
                                                                                 {item.isCustomDesign ? (item.designName || 'Custom Design') : (item.product?.name || 'Product')}
                                                                                 {item.isCustomDesign && <span className="ml-2 px-2 py-0.5 rounded bg-blue-100 text-blue-700 text-xs font-medium">CUSTOM</span>}
                                                                             </p>
-                                                                            <div className="flex flex-wrap gap-2 mt-1.5">
-                                                                                {item.size && <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded border border-orange-200">Size: {item.size}</span>}
-                                                                                {item.quantity && <span className="text-xs text-gray-600">Qty: {item.quantity}</span>}
-                                                                            </div>
+                                                                            <p className="text-xs text-gray-600 mt-1">{item.size ? `Size: ${item.size}` : 'Size: —'} • Qty: {item.quantity || 1}</p>
                                                                         </div>
 
                                                                         {/* Price */}
                                                                         <div className="text-right flex-shrink-0">
-                                                                            <p className="font-bold text-gray-900">
+                                                                            <p className="font-semibold text-gray-900">
                                                                                 {currency}{(() => {
                                                                                     let unitPrice = 0;
                                                                                     if (item.price) {
@@ -633,20 +672,16 @@ const MyOrders = () => {
 
                                                         {/* Footer: Total & Actions */}
                                                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-5 border-t border-gray-100">
-                                                            <div>
-                                                                <p className="text-xs text-gray-500 font-semibold uppercase mb-1">Order Total</p>
-                                                                <p className="text-2xl font-bold text-orange-600">{currency}{(order.amount || 0).toFixed(2)}</p>
-                                                            </div>
-                                                            <div className="flex gap-3 flex-wrap">
+                                                            <div className="flex gap-3 w-full sm:w-auto">
                                                                 <Link
                                                                     href={`/track-order?orderId=${order._id}`}
-                                                                    className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition font-medium text-sm flex items-center gap-2"
+                                                                    className="flex-1 sm:flex-none h-11 px-4 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition font-semibold text-sm text-center flex items-center justify-center"
                                                                 >
-                                                                    <span>📍</span>Track Order
+                                                                    Track Order
                                                                 </Link>
                                                                 <button
                                                                     onClick={() => window.location.href = `/order-details?id=${order._id}`}
-                                                                    className="px-4 py-2 border-2 border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium text-sm"
+                                                                    className="flex-1 sm:flex-none h-11 px-4 border border-orange-600 text-orange-600 rounded-lg hover:bg-orange-50 transition font-semibold text-sm flex items-center justify-center"
                                                                 >
                                                                     View Details
                                                                 </button>

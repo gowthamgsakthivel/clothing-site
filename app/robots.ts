@@ -9,7 +9,7 @@ export default function robots(): MetadataRoute.Robots {
             allow: '/',
             disallow: [
                 '/api/',
-                '/seller/',
+                '/owner/',
                 '/add-address/',
                 '/order-placed/',
             ],

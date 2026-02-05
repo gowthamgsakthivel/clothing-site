@@ -2,40 +2,19 @@ import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
 
 // Define protected routes by role
-const isAdminRoute = createRouteMatcher(['/admin(.*)']);
-const isSellerRoute = createRouteMatcher(['/seller(.*)']);
+const isOwnerRoute = createRouteMatcher(['/owner(.*)']);
 
 export default clerkMiddleware(async (auth, req) => {
-    const { userId, sessionClaims } = await auth();
+    const { userId } = await auth();
 
-    // Check if route is admin-only
-    if (isAdminRoute(req)) {
+    // Check if route is owner-only
+    if (isOwnerRoute(req)) {
         // User must be authenticated
         if (!userId) {
             return NextResponse.redirect(new URL('/sign-in', req.url));
         }
 
-        // User must have admin role - but currently sessionClaims doesn't have it reliably
-        // API will do the proper role check using clerkClient
-        // const userRole = sessionClaims?.publicMetadata?.role;
-        // if (userRole !== 'admin') {
-        //     return NextResponse.redirect(new URL('/', req.url));
-        // }
-    }
-
-    // Check if route is seller-only
-    if (isSellerRoute(req)) {
-        // User must be authenticated
-        if (!userId) {
-            return NextResponse.redirect(new URL('/sign-in', req.url));
-        }
-
-        // User must have seller or admin role - but currently sessionClaims doesn't have it reliably
-        // API will do the proper role check using clerkClient
-        // const userRole = sessionClaims?.publicMetadata?.role;
-        // if (userRole !== 'seller' && userRole !== 'admin') {
-        //     return NextResponse.redirect(new URL('/', req.url));
-        // }
+        // Role checks intentionally relaxed for single-owner setup
     }
 });
 

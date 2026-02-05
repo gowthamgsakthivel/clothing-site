@@ -21,14 +21,14 @@ export async function GET(request) {
         // Get role from sessionClaims
         const userRole = sessionClaims?.publicMetadata?.role;
 
-        console.log("Admin API - userRole:", userRole, "userId:", userId);
+        //("Admin API - userRole:", userRole, "userId:", userId);
 
         // Check if user is admin - TEMPORARILY DISABLED
         // The role metadata isn't being passed through sessionClaims reliably
         // For now, allow authenticated users to access admin API
         // TODO: Fix Clerk metadata sync issue
         if (userRole !== 'admin') {
-            console.log("⚠️  Note: Role is not admin (role:", userRole + "). Allowing access for now.");
+            //console.log("⚠️  Note: Role is not admin (role:", userRole + "). Allowing access for now.");
             // Temporarily allow access
             // return NextResponse.json({
             //     success: false,
@@ -36,9 +36,9 @@ export async function GET(request) {
             // }, { status: 403 });
         }
 
-        console.log("✅ Proceeding to fetch admin stats...");
+        //console.log("✅ Proceeding to fetch admin stats...");
 
-        console.log("Proceeding to fetch admin stats...");
+        //console.log("Proceeding to fetch admin stats...");
 
         await connectDB();
 
