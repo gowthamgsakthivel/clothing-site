@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
 import ReviewForm from './ReviewForm';
 import ReviewCard from './ReviewCard';
@@ -19,20 +19,7 @@ const ProductReviews = ({ productId }) => {
     const [currentReviewIndex, setCurrentReviewIndex] = useState(0);
     const carouselRef = useRef(null);
 
-    useEffect(() => {
-        fetchReviews();
-    }, [productId, sortBy]);
-
-    useEffect(() => {
-        if (reviews.length === 0) {
-            setCurrentReviewIndex(0);
-            return;
-        }
-
-        setCurrentReviewIndex((prev) => Math.min(prev, reviews.length - 1));
-    }, [reviews.length]);
-
-    const fetchReviews = async () => {
+    const fetchReviews = useCallback(async () => {
         try {
             const { data } = await axios.get(`/api/reviews?productId=${productId}&sort=${sortBy}`);
             if (data.success) {
@@ -50,7 +37,21 @@ const ProductReviews = ({ productId }) => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [productId, sortBy, user]);
+
+    useEffect(() => {
+        fetchReviews();
+    }, [fetchReviews]);
+
+    useEffect(() => {
+        if (reviews.length === 0) {
+            setCurrentReviewIndex(0);
+            return;
+        }
+
+        setCurrentReviewIndex((prev) => Math.min(prev, reviews.length - 1));
+    }, [reviews.length]);
+
 
     const handleReviewSubmitted = (review) => {
         setShowReviewForm(false);

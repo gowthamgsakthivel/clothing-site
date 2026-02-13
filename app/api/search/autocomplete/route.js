@@ -3,9 +3,8 @@ import connectDB from '@/config/db';
 import Product from '@/models/Product';
 import { rateLimit, escapeRegex } from '@/lib/rateLimit';
 
-// ✅ PRODUCTION FIX 1: Cache autocomplete results for 60 seconds
-// Autocomplete data doesn't need to be real-time
-export const revalidate = 60;
+// Ensure Next.js does not attempt static rendering for this route.
+export const dynamic = 'force-dynamic';
 
 // ✅ PRODUCTION FIX 3: Rate limiting to prevent abuse
 const limiter = rateLimit({ limit: 60, window: 60 }); // 60 requests per minute

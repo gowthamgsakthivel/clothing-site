@@ -103,7 +103,7 @@ const SellerNegotiationResponse = ({ design, getToken, onResponseSubmitted }) =>
                             </p>
                             {lastCustomerOffer.message && (
                                 <p className="mt-1 text-sm text-gray-700 font-medium italic">
-                                    "{lastCustomerOffer.message}"
+                                    &quot;{lastCustomerOffer.message}&quot;
                                 </p>
                             )}
                         </div>
@@ -199,7 +199,7 @@ const SellerNegotiationResponse = ({ design, getToken, onResponseSubmitted }) =>
                                     required
                                 />
                                 <p className="mt-1 text-xs text-blue-600">
-                                    Customer's offer: ₹{lastCustomerOffer.amount} | Original quote: ₹{design.quote.amount}
+                                    Customer&apos;s offer: ₹{lastCustomerOffer.amount} | Original quote: ₹{design.quote.amount}
                                 </p>
                             </div>
 

@@ -1,5 +1,5 @@
 'use client'
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { Suspense, useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Navbar from '@/components/Navbar'
@@ -62,7 +62,7 @@ const formatOrderDate = (timestamp) => {
     }
 }
 
-const OrderDetailsPage = () => {
+const OrderDetailsContent = () => {
     const { currency } = useAppContext()
     const router = useRouter()
     const searchParams = useSearchParams()
@@ -317,5 +317,17 @@ const OrderDetailsPage = () => {
         </>
     )
 }
+
+const OrderDetailsPage = () => (
+    <Suspense
+        fallback={
+            <div className="min-h-screen pt-20 md:pt-24 px-4 sm:px-6 md:px-16 lg:px-32">
+                <Loading />
+            </div>
+        }
+    >
+        <OrderDetailsContent />
+    </Suspense>
+)
 
 export default OrderDetailsPage

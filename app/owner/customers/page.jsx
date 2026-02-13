@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useAppContext } from '@/context/AppContext';
 import Link from 'next/link';
@@ -15,11 +15,7 @@ const OwnerCustomers = () => {
     const [isUpdating, setIsUpdating] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
 
-    useEffect(() => {
-        fetchUsers();
-    }, [filterRole]);
-
-    const fetchUsers = async () => {
+    const fetchUsers = useCallback(async () => {
         try {
             setLoading(true);
             const token = await getToken();
@@ -40,7 +36,11 @@ const OwnerCustomers = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [filterRole, getToken]);
+
+    useEffect(() => {
+        fetchUsers();
+    }, [fetchUsers]);
 
     const handleRoleChange = async (userId, role) => {
         try {

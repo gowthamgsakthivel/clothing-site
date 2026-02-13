@@ -1,5 +1,6 @@
 import React from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { assets } from "@/assets/assets";
 import { Facebook, Instagram, Twitter } from "lucide-react";
 
@@ -54,11 +55,11 @@ const Footer = () => {
                 <span className="text-gray-400">+</span>
               </summary>
               <ul className="px-4 pb-3 space-y-2 text-sm">
-                <li><a href="/" className="block py-2">Home</a></li>
-                <li><a href="/about" className="block py-2">About Us</a></li>
-                <li><a href="/all-products" className="block py-2">Products</a></li>
-                <li><a href="/contact" className="block py-2">Contact</a></li>
-                <li><a href="/privacy-policy" className="block py-2">Privacy Policy</a></li>
+                <li><Link href="/" className="block py-2">Home</Link></li>
+                <li><Link href="/about" className="block py-2">About Us</Link></li>
+                <li><Link href="/all-products" className="block py-2">Products</Link></li>
+                <li><Link href="/contact" className="block py-2">Contact</Link></li>
+                <li><Link href="/privacy-policy" className="block py-2">Privacy Policy</Link></li>
               </ul>
             </details>
           </div>
@@ -71,10 +72,10 @@ const Footer = () => {
                 <span className="text-gray-400">+</span>
               </summary>
               <ul className="px-4 pb-3 space-y-2 text-sm">
-                <li><a href="/profile" className="block py-2">My Account</a></li>
-                <li><a href="/orders" className="block py-2">Orders</a></li>
-                <li><a href="/returns" className="block py-2">Returns</a></li>
-                <li><a href="/faq" className="block py-2">FAQs</a></li>
+                <li><Link href="/profile" className="block py-2">My Account</Link></li>
+                <li><Link href="/orders" className="block py-2">Orders</Link></li>
+                <li><Link href="/returns" className="block py-2">Returns</Link></li>
+                <li><Link href="/faq" className="block py-2">FAQs</Link></li>
               </ul>
             </details>
           </div>
@@ -83,11 +84,11 @@ const Footer = () => {
           <nav className="hidden lg:block" aria-label="Company">
             <h3 className="text-gray-900 font-semibold mb-4">Company</h3>
             <ul className="space-y-2 text-sm">
-              <li><a href="/" className="block py-2">Home</a></li>
-              <li><a href="/about" className="block py-2">About Us</a></li>
-              <li><a href="/all-products" className="block py-2">Products</a></li>
-              <li><a href="/contact" className="block py-2">Contact</a></li>
-              <li><a href="/privacy-policy" className="block py-2">Privacy Policy</a></li>
+              <li><Link href="/" className="block py-2">Home</Link></li>
+              <li><Link href="/about" className="block py-2">About Us</Link></li>
+              <li><Link href="/all-products" className="block py-2">Products</Link></li>
+              <li><Link href="/contact" className="block py-2">Contact</Link></li>
+              <li><Link href="/privacy-policy" className="block py-2">Privacy Policy</Link></li>
             </ul>
           </nav>
 
@@ -95,10 +96,10 @@ const Footer = () => {
           <nav className="hidden lg:block" aria-label="Support">
             <h3 className="text-gray-900 font-semibold mb-4">Support</h3>
             <ul className="space-y-2 text-sm">
-              <li><a href="/profile" className="block py-2">My Account</a></li>
-              <li><a href="/orders" className="block py-2">Orders</a></li>
-              <li><a href="/returns" className="block py-2">Returns</a></li>
-              <li><a href="/faq" className="block py-2">FAQs</a></li>
+              <li><Link href="/profile" className="block py-2">My Account</Link></li>
+              <li><Link href="/orders" className="block py-2">Orders</Link></li>
+              <li><Link href="/returns" className="block py-2">Returns</Link></li>
+              <li><Link href="/faq" className="block py-2">FAQs</Link></li>
             </ul>
           </nav>
 

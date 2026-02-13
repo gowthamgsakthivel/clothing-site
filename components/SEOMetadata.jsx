@@ -31,6 +31,10 @@ export default function SEOMetadata({
         url: "https://sparrow-sports.vercel.app"
     }
 }) {
+    const organizationName = organization?.name;
+    const organizationLogo = organization?.logo;
+    const organizationUrl = organization?.url;
+
     useEffect(() => {
         // Update the document title
         if (title) {
@@ -100,9 +104,9 @@ export default function SEOMetadata({
         let schemaData = {
             "@context": "https://schema.org",
             "@type": "Organization",
-            "name": organization.name,
-            "logo": organization.logo.startsWith('/') ? `${window.location.origin}${organization.logo}` : organization.logo,
-            "url": organization.url.startsWith('/') ? `${window.location.origin}${organization.url}` : organization.url,
+            "name": organizationName,
+            "logo": organizationLogo.startsWith('/') ? `${window.location.origin}${organizationLogo}` : organizationLogo,
+            "url": organizationUrl.startsWith('/') ? `${window.location.origin}${organizationUrl}` : organizationUrl,
             "sameAs": [
                 "https://www.facebook.com/sparrowsports",
                 "https://www.instagram.com/sparrowsports",
@@ -156,7 +160,7 @@ export default function SEOMetadata({
                 document.head.removeChild(scriptTag);
             }
         };
-    }, [title, description, keywords, url, noindex, product]);
+    }, [title, description, keywords, url, noindex, product, organizationName, organizationLogo, organizationUrl]);
 
     // This component doesn't render anything visible
     return null;

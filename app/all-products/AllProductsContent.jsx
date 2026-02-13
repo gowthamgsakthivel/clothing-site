@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import { useAppContext } from "@/context/AppContext";
 import { useSearchParams, useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
@@ -44,14 +44,7 @@ function AllProductsContent() {
 
     const searchParams = useSearchParams();
 
-    useEffect(() => {
-        const q = searchParams.get("search") || "";
-        const page = parseInt(searchParams.get("page") || "1");
-        setSearchTerm(q);
-        fetchProducts(page);
-    }, [searchParams]);
-
-    const fetchProducts = async (page = 1) => {
+    const fetchProducts = useCallback(async (page = 1) => {
         setLoading(true);
         try {
             const { data } = await axios.get(`/api/product/list?page=${page}&limit=${pagination.limit}`);
@@ -80,7 +73,14 @@ function AllProductsContent() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [pagination.limit]);
+
+    useEffect(() => {
+        const q = searchParams.get("search") || "";
+        const page = parseInt(searchParams.get("page") || "1");
+        setSearchTerm(q);
+        fetchProducts(page);
+    }, [searchParams, fetchProducts]);
 
     const changePage = (newPage) => {
         if (newPage > 0 && newPage <= pagination.totalPages) {

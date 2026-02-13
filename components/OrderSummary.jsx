@@ -1,5 +1,5 @@
 import { useAppContext } from "@/context/AppContext";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
 import LoadingButton from "./LoadingButton";
@@ -36,7 +36,7 @@ const OrderSummary = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [userAddresses, setUserAddresses] = useState([]);
 
-  const fetchUserAddresses = async () => {
+  const fetchUserAddresses = useCallback(async () => {
     try {
       setLoadingStates(prev => ({ ...prev, addressFetching: true }));
       const { data } = await axios.get('/api/user/get-address');
@@ -54,7 +54,7 @@ const OrderSummary = () => {
     } finally {
       setLoadingStates(prev => ({ ...prev, addressFetching: false }));
     }
-  };
+  }, [setLoadingStates]);
 
   const handleAddressSelect = (address) => {
     setSelectedAddress(address);
@@ -192,7 +192,7 @@ const OrderSummary = () => {
     if (user) {
       fetchUserAddresses();
     }
-  }, [user]);
+  }, [user, fetchUserAddresses]);
 
   return (
     <div className="w-full md:w-96 bg-gray-500/5 p-5 relative">

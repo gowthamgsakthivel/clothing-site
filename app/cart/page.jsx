@@ -1,5 +1,5 @@
 'use client'
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { assets } from "@/assets/assets";
 import OrderSummary from "@/components/OrderSummary";
 import Image from "next/image";
@@ -28,7 +28,7 @@ const Cart = () => {
   const [designData, setDesignData] = React.useState({});
 
   // Function to fetch actual design data from database
-  const fetchDesignData = async (designId) => {
+  const fetchDesignData = useCallback(async (designId) => {
     try {
       const response = await axios.get('/api/custom-design/list');
       if (response.data.success && response.data.designRequests) {
@@ -45,24 +45,24 @@ const Cart = () => {
       console.error('Error fetching design data:', error);
     }
     return null;
-  };
+  }, []);
 
   // Effect to fetch design data for all custom designs in cart
-  React.useEffect(() => {
-    const fetchAllDesignData = async () => {
-      const customDesignKeys = Object.keys(cartItems).filter(key => key.startsWith('custom_'));
-      for (const key of customDesignKeys) {
-        const designId = key.replace('custom_', '');
-        if (!designData[designId]) {
-          await fetchDesignData(designId);
-        }
+  const fetchAllDesignData = useCallback(async () => {
+    const customDesignKeys = Object.keys(cartItems).filter(key => key.startsWith('custom_'));
+    for (const key of customDesignKeys) {
+      const designId = key.replace('custom_', '');
+      if (!designData[designId]) {
+        await fetchDesignData(designId);
       }
-    };
+    }
+  }, [cartItems, designData, fetchDesignData]);
 
+  useEffect(() => {
     if (Object.keys(cartItems).length > 0) {
       fetchAllDesignData();
     }
-  }, [cartItems]);
+  }, [cartItems, fetchAllDesignData]);
 
   // Function to refresh custom design price
   const refreshDesignPrice = async (designId, itemKey) => {

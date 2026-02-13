@@ -1,5 +1,5 @@
 'use client'
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import { useAppContext } from '@/context/AppContext';
 import { useSearchParams } from 'next/navigation';
 import { toast } from 'react-hot-toast';
@@ -18,20 +18,7 @@ const OwnerInventory = () => {
     const [isSaving, setIsSaving] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
 
-    useEffect(() => {
-        fetchProducts();
-    }, []);
-
-    useEffect(() => {
-        if (selectedProductId && products.length > 0) {
-            const matchedProduct = products.find(product => product._id === selectedProductId);
-            if (matchedProduct) {
-                handleSelectProduct(matchedProduct);
-            }
-        }
-    }, [selectedProductId, products]);
-
-    const fetchProducts = async () => {
+    const fetchProducts = useCallback(async () => {
         try {
             setIsLoading(true);
             const token = await getToken();
@@ -48,7 +35,20 @@ const OwnerInventory = () => {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [getToken]);
+
+    useEffect(() => {
+        fetchProducts();
+    }, [fetchProducts]);
+
+    useEffect(() => {
+        if (selectedProductId && products.length > 0) {
+            const matchedProduct = products.find(product => product._id === selectedProductId);
+            if (matchedProduct) {
+                handleSelectProduct(matchedProduct);
+            }
+        }
+    }, [selectedProductId, products]);
 
     const handleSelectProduct = (product) => {
         setSelectedProduct(product);

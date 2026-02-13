@@ -1,5 +1,5 @@
 'use client'
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useAppContext } from '@/context/AppContext';
 import Navbar from '@/components/Navbar';
@@ -90,7 +90,10 @@ const SearchResults = () => {
     }, [results]);
 
     // Function to perform the search with all filters
-    const performSearch = async (page = 1) => {
+    const performSearch = useCallback(async (page = 1, overrideQuery) => {
+        const activeQuery = (overrideQuery ?? query).trim();
+        if (!activeQuery) return;
+
         const options = {
             page,
             limit: 20,
@@ -125,19 +128,19 @@ const SearchResults = () => {
             options.sortOrder = 'desc';
         }
 
-        const result = await searchProducts(query, options);
+        const result = await searchProducts(activeQuery, options);
         if (result) {
             setResults(result.products);
             setPagination(result.pagination);
         }
-    };
+    }, [query, selectedCategories, genderFilter, sortOption, priceRange, searchProducts]);
 
     // Initial search on component mount or when filters change
     useEffect(() => {
         if (query) {
             performSearch();
         }
-    }, [query, selectedCategories, genderFilter, sortOption, priceRange]);
+    }, [query, performSearch]);
 
     // Handle search from the search bar
     const handleSearch = (newQuery) => {
@@ -146,7 +149,7 @@ const SearchResults = () => {
             '',
             `/search?q=${encodeURIComponent(newQuery)}`
         );
-        performSearch();
+        performSearch(1, newQuery);
     };
 
     // Generate dynamic metadata based on search query and filters
@@ -196,7 +199,7 @@ const SearchResults = () => {
             <div className="container mx-auto px-4 sm:px-6 md:px-8 lg:px-32 py-6 md:py-8 pt-20 md:pt-24">
                 <div className="mb-6">
                     <h1 className="text-2xl font-medium mb-2">
-                        Search Results for "{query}"
+                        Search Results for &quot;{query}&quot;
                     </h1>
                     <SearchBar
                         onSearch={handleSearch}

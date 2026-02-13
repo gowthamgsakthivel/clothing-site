@@ -1,5 +1,6 @@
 'use client';
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
+import Image from "next/image";
 import { useAppContext } from "@/context/AppContext";
 import Footer from "@/components/seller/Footer";
 import Loading from "@/components/Loading";
@@ -79,7 +80,7 @@ const Orders = () => {
         }
     };
 
-    const fetchOwnerOrders = async (status = 'all', sort = 'date-desc') => {
+    const fetchOwnerOrders = useCallback(async (status = 'all', sort = 'date-desc') => {
         try {
             setLoading(true);
             setError(null);
@@ -166,7 +167,7 @@ const Orders = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [getToken, user]);
 
     useEffect(() => {
         if (user?.id) {
@@ -175,7 +176,7 @@ const Orders = () => {
             setLoading(false);
             setError("Please sign in to view your orders");
         }
-    }, [user, getToken, statusFilter, sortBy]); return (
+    }, [user, statusFilter, sortBy, fetchOwnerOrders]); return (
         <div className="w-full h-screen overflow-auto flex flex-col justify-between text-sm bg-gray-50">
             {!user ? (
                 <div className="md:p-10 p-4">
@@ -283,9 +284,11 @@ const Orders = () => {
                                                             {Array.isArray(order.items) && order.items.length > 0 ? (
                                                                 <>
                                                                     {order.items[0].product?.image?.[0] ? (
-                                                                        <img
+                                                                        <Image
                                                                             src={order.items[0].product.image[0]}
                                                                             alt={order.items[0].product?.name || 'Product'}
+                                                                            width={48}
+                                                                            height={48}
                                                                             className="w-12 h-12 object-cover rounded border"
                                                                         />
                                                                     ) : (
@@ -453,9 +456,11 @@ const Orders = () => {
                                         <tr key={idx}>
                                             <td className="px-2 py-1">
                                                 {item.product?.image?.[0] ? (
-                                                    <img
+                                                    <Image
                                                         src={item.product.image[0]}
                                                         alt={item.product?.name || 'Product'}
+                                                        width={32}
+                                                        height={32}
                                                         className="w-8 h-8 object-cover rounded border"
                                                     />
                                                 ) : (

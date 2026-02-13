@@ -246,7 +246,7 @@ const SizeRecommendation = ({ sizeChart }) => {
               💡 This recommendation is based on your measurements and fit preference.
             </p>
             <p>
-              If you're between sizes or unsure, we recommend trying both sizes or contacting customer service.
+              If you&apos;re between sizes or unsure, we recommend trying both sizes or contacting customer service.
             </p>
           </div>
         </div>
@@ -259,7 +259,7 @@ const SizeRecommendation = ({ sizeChart }) => {
             <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
           </svg>
           <p className="text-xs text-blue-700">
-            For best results, enter all available measurements. Not sure how to measure? Check the "How to Measure" tab in the size guide.
+            For best results, enter all available measurements. Not sure how to measure? Check the &quot;How to Measure&quot; tab in the size guide.
           </p>
         </div>
       </div>

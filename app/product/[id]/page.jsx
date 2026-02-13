@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { assets } from "@/assets/assets";
 import ProductCard from "@/components/ProductCard";
 import Navbar from "@/components/Navbar";
@@ -37,7 +37,7 @@ const Product = () => {
     const [showSizeRecommendation, setShowSizeRecommendation] = useState(false);
     const [sizeChart, setSizeChart] = useState(null);
 
-    const fetchProductData = async () => {
+    const fetchProductData = useCallback(async () => {
         // Safely find product and handle if products array is undefined
         if (Array.isArray(products)) {
             const product = products.find(product => product?._id === id);
@@ -80,7 +80,7 @@ const Product = () => {
                 }
             }
         }
-    }
+    }, [products, id]);
 
     useEffect(() => {
         fetchProductData();
@@ -88,12 +88,14 @@ const Product = () => {
         if (id) {
             addToRecentlyViewed(id);
         }
-        // Load size chart based on product category
+    }, [id, fetchProductData]);
+
+    useEffect(() => {
         if (productData) {
             const chart = getSizeChart(productData.category, productData.subCategory);
             setSizeChart(chart);
         }
-    }, [id, products, productData?.category, productData?.subCategory]);
+    }, [productData]);
 
     // Check URL parameters for notify flag
     useEffect(() => {

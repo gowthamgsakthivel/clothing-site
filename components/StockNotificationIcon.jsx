@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAppContext } from '@/context/AppContext';
 import Image from 'next/image';
 import { assets } from '@/assets/assets';
@@ -11,13 +11,7 @@ const StockNotificationIcon = () => {
     const [loading, setLoading] = useState(false);
 
     // Fetch notification count when user loads
-    useEffect(() => {
-        if (user) {
-            fetchNotificationCount();
-        }
-    }, [user]);
-
-    const fetchNotificationCount = async () => {
+    const fetchNotificationCount = useCallback(async () => {
         if (!user) return;
 
         try {
@@ -41,7 +35,13 @@ const StockNotificationIcon = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [getToken, user]);
+
+    useEffect(() => {
+        if (user) {
+            fetchNotificationCount();
+        }
+    }, [user, fetchNotificationCount]);
 
     const handleClick = () => {
         if (!user) {

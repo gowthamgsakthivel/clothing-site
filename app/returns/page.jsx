@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAppContext } from '@/context/AppContext';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
@@ -74,15 +74,7 @@ const ReturnsPage = () => {
         'Other'
     ];
 
-    useEffect(() => {
-        if (!user) {
-            router.push('/sign-in');
-            return;
-        }
-        fetchData();
-    }, [user]);
-
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         try {
             const [ordersRes, returnsRes] = await Promise.all([
                 axios.get('/api/user/orders'),
@@ -106,7 +98,15 @@ const ReturnsPage = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        if (!user) {
+            router.push('/sign-in');
+            return;
+        }
+        fetchData();
+    }, [user, router, fetchData]);
 
     const handleImageUpload = async (e) => {
         const files = Array.from(e.target.files);
@@ -645,7 +645,7 @@ const ReturnsPage = () => {
                                         No Return Requests
                                     </h3>
                                     <p className="text-gray-600">
-                                        You haven't submitted any return requests yet
+                                        You haven&apos;t submitted any return requests yet
                                     </p>
                                 </div>
                             )}

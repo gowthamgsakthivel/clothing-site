@@ -1,6 +1,7 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
+import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ProductCard from '@/components/ProductCard';
@@ -15,20 +16,7 @@ const SharedWishlistPage = () => {
   const [error, setError] = useState(null);
   const [sharedProducts, setSharedProducts] = useState([]);
 
-  useEffect(() => {
-    fetchSharedWishlist();
-  }, [shareId]);
-
-  useEffect(() => {
-    if (wishlistData && products.length > 0) {
-      const filteredProducts = products.filter(product =>
-        wishlistData.productIds.includes(product._id)
-      );
-      setSharedProducts(filteredProducts);
-    }
-  }, [wishlistData, products]);
-
-  const fetchSharedWishlist = async () => {
+  const fetchSharedWishlist = useCallback(async () => {
     try {
       const response = await fetch(`/api/wishlist/share?shareId=${shareId}`);
       const data = await response.json();
@@ -44,7 +32,20 @@ const SharedWishlistPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [shareId]);
+
+  useEffect(() => {
+    fetchSharedWishlist();
+  }, [fetchSharedWishlist]);
+
+  useEffect(() => {
+    if (wishlistData && products.length > 0) {
+      const filteredProducts = products.filter(product =>
+        wishlistData.productIds.includes(product._id)
+      );
+      setSharedProducts(filteredProducts);
+    }
+  }, [wishlistData, products]);
 
   return (
     <>
@@ -64,12 +65,12 @@ const SharedWishlistPage = () => {
               <p className="text-gray-600 mb-6">
                 This wishlist may have been removed or the link has expired.
               </p>
-              <a
+              <Link
                 href="/"
                 className="inline-block px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition"
               >
                 Browse Products
-              </a>
+              </Link>
             </div>
           ) : (
             <>
@@ -83,7 +84,7 @@ const SharedWishlistPage = () => {
                   </div>
                   <div>
                     <h1 className="text-2xl font-bold text-gray-900">
-                      {wishlistData?.userName}'s Wishlist
+                      {wishlistData?.userName}&apos;s Wishlist
                     </h1>
                     <p className="text-sm text-gray-600 mt-1">
                       {sharedProducts.length} {sharedProducts.length === 1 ? 'product' : 'products'} • 
@@ -95,7 +96,7 @@ const SharedWishlistPage = () => {
                 {wishlistData?.message && (
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                     <p className="text-sm text-blue-900">
-                      <span className="font-medium">"{wishlistData.message}"</span>
+                      <span className="font-medium">&quot;{wishlistData.message}&quot;</span>
                     </p>
                   </div>
                 )}
