@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useAppContext } from '@/context/AppContext';
 import Link from 'next/link';
@@ -20,13 +20,7 @@ const OwnerDashboard = () => {
         ordersByStatus: {},
     });
 
-    useEffect(() => {
-        if (user) {
-            fetchOwnerStats();
-        }
-    }, [user]);
-
-    const fetchOwnerStats = async () => {
+    const fetchOwnerStats = useCallback(async () => {
         try {
             setLoading(true);
             const token = await getToken();
@@ -46,7 +40,13 @@ const OwnerDashboard = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [getToken]);
+
+    useEffect(() => {
+        if (user) {
+            fetchOwnerStats();
+        }
+    }, [user, fetchOwnerStats]);
 
     const StatCard = ({ label, value, icon, color = 'blue' }) => {
         const colorClasses = {

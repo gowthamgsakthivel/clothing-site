@@ -58,16 +58,19 @@ export async function GET(request) {
 
             console.log(`Found ${orders.length} orders, processing product references...`);
 
-            // Get all product IDs that need to be populated (filtering out string products)
+            // Get all product IDs that need to be populated (string or ObjectId)
             const productIds = [];
             orders.forEach(order => {
                 if (Array.isArray(order.items)) {
                     order.items.forEach(item => {
-                        // Only collect IDs that look like MongoDB ObjectIds (24 hex chars)
-                        if (item.product && !item.isCustomDesign &&
-                            typeof item.product === 'string' &&
-                            /^[0-9a-fA-F]{24}$/.test(item.product)) {
-                            productIds.push(item.product);
+                        if (item.product && !item.isCustomDesign) {
+                            const productId = typeof item.product === 'string'
+                                ? item.product
+                                : item.product.toString?.();
+
+                            if (productId && /^[0-9a-fA-F]{24}$/.test(productId)) {
+                                productIds.push(productId);
+                            }
                         }
                     });
                 }
@@ -121,12 +124,13 @@ export async function GET(request) {
                                     };
                                 }
 
-                                // If it's a regular product with an ObjectId reference
-                                if (item.product && typeof item.product === 'string' &&
-                                    /^[0-9a-fA-F]{24}$/.test(item.product)) {
+                                // If it's a regular product with an ObjectId or string reference
+                                const productId = typeof item.product === 'string'
+                                    ? item.product
+                                    : item.product?.toString?.();
 
-                                    // Look up in our product map
-                                    const productData = productMap[item.product];
+                                if (productId && /^[0-9a-fA-F]{24}$/.test(productId)) {
+                                    const productData = productMap[productId];
                                     if (productData) {
                                         return {
                                             ...item,

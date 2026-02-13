@@ -118,6 +118,16 @@
   animation-delay: 1.3s;
 }
 
+/* Toast sizing for mobile */
+@media (max-width: 640px) {
+  .app-toast {
+    max-width: 90vw !important;
+    padding: 10px 12px !important;
+    font-size: 12px !important;
+    border-radius: 10px !important;
+  }
+}
+
 .sparkle-11 {
   left: 65%;
   top: 60%;

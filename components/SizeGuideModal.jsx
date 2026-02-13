@@ -117,8 +117,8 @@ const SizeGuideModal = ({ isOpen, onClose, sizeChart, productName, fitType = 're
                   <div>
                     <p className="text-sm font-medium text-blue-900">Sizing Tip</p>
                     <p className="text-sm text-blue-700 mt-1">
-                      If you're between sizes, we recommend sizing up for a more comfortable fit.
-                      Check the fit guide tab for more information about this product's fit.
+                      If you&apos;re between sizes, we recommend sizing up for a more comfortable fit.
+                      Check the fit guide tab for more information about this product&apos;s fit.
                     </p>
                   </div>
                 </div>
@@ -167,7 +167,7 @@ const SizeGuideModal = ({ isOpen, onClose, sizeChart, productName, fitType = 're
                   </li>
                   <li className="flex items-start">
                     <span className="text-orange-600 mr-2">•</span>
-                    Don't pull the tape too tight - it should be snug but comfortable
+                    Don&apos;t pull the tape too tight - it should be snug but comfortable
                   </li>
                   <li className="flex items-start">
                     <span className="text-orange-600 mr-2">•</span>

@@ -1,5 +1,5 @@
 'use client'
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import Image from "next/image";
 import { useAppContext } from "@/context/AppContext";
 import Footer from "@/components/seller/Footer";
@@ -15,7 +15,7 @@ const OwnerProductList = () => {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
 
-  const fetchOwnerProducts = async () => {
+  const fetchOwnerProducts = useCallback(async () => {
     try {
       const token = await getToken();
 
@@ -34,13 +34,13 @@ const OwnerProductList = () => {
     } finally {
       setLoading(false);
     }
-  }
+  }, [getToken]);
 
   useEffect(() => {
     if (user) {
       fetchOwnerProducts();
     }
-  }, [user])
+  }, [user, fetchOwnerProducts])
 
   const filteredProducts = products.filter(product =>
     product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -199,7 +199,7 @@ const OwnerProductList = () => {
                       <td colSpan="6" className="px-4 py-8 text-center text-gray-500">
                         {searchTerm ? (
                           <div>
-                            <p>No products found matching "{searchTerm}"</p>
+                            <p>No products found matching &quot;{searchTerm}&quot;</p>
                             <button
                               onClick={() => setSearchTerm('')}
                               className="mt-2 text-orange-600 hover:text-orange-700 text-sm"

@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import Image from 'next/image';
@@ -25,7 +25,7 @@ const CustomDesignsPage = () => {
     const [responseForm, setResponseForm] = useState({ message: '' });
     const [convertingToOrder, setConvertingToOrder] = useState(false);
 
-    const fetchDesignRequests = async (page = 1, status = 'all') => {
+    const fetchDesignRequests = useCallback(async (page = 1, status = 'all') => {
         try {
             setLoading(true);
             const token = await getToken();
@@ -75,7 +75,7 @@ const CustomDesignsPage = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [getToken]);
 
     const submitQuote = async (designRequestId) => {
         if (!quoteForm.amount || isNaN(Number(quoteForm.amount)) || Number(quoteForm.amount) <= 0) {
@@ -224,7 +224,7 @@ const CustomDesignsPage = () => {
 
     useEffect(() => {
         fetchDesignRequests(1, 'all');
-    }, []);
+    }, [fetchDesignRequests]);
 
     const formatDate = (dateString) => {
         const date = new Date(dateString);

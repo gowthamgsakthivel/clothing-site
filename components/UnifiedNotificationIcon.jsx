@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAppContext } from '@/context/AppContext';
 import Image from 'next/image';
 import { assets } from '@/assets/assets';
@@ -11,13 +11,7 @@ const UnifiedNotificationIcon = () => {
     const [designNotificationCount, setDesignNotificationCount] = useState(0);
     const [loading, setLoading] = useState(false);
 
-    useEffect(() => {
-        if (user) {
-            fetchAllNotifications();
-        }
-    }, [user]);
-
-    const fetchAllNotifications = async () => {
+    const fetchAllNotifications = useCallback(async () => {
         if (!user) return;
 
         try {
@@ -64,7 +58,13 @@ const UnifiedNotificationIcon = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [getToken, user]);
+
+    useEffect(() => {
+        if (user) {
+            fetchAllNotifications();
+        }
+    }, [user, fetchAllNotifications]);
 
     const totalNotifications = stockNotificationCount + designNotificationCount;
 

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAppContext } from '@/context/AppContext';
 import ProductCard from './ProductCard';
 
@@ -8,11 +8,7 @@ const RecentlyViewed = ({ currentProductId = null, maxItems = 10 }) => {
     const { products } = useAppContext();
     const [recentProducts, setRecentProducts] = useState([]);
 
-    useEffect(() => {
-        loadRecentlyViewed();
-    }, [products]);
-
-    const loadRecentlyViewed = () => {
+    const loadRecentlyViewed = useCallback(() => {
         try {
             const stored = localStorage.getItem('recentlyViewed');
             if (!stored || !Array.isArray(products) || products.length === 0) {
@@ -32,7 +28,11 @@ const RecentlyViewed = ({ currentProductId = null, maxItems = 10 }) => {
         } catch (error) {
             console.error('Error loading recently viewed:', error);
         }
-    };
+    }, [currentProductId, maxItems, products]);
+
+    useEffect(() => {
+        loadRecentlyViewed();
+    }, [loadRecentlyViewed]);
 
     if (recentProducts.length === 0) {
         return null;

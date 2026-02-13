@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAppContext } from '@/context/AppContext';
 import { toast } from 'react-hot-toast';
 import axios from 'axios';
@@ -14,7 +14,7 @@ const CustomDesignPaymentButton = ({ design, variant = 'primary', size = 'md', t
     const router = useRouter();
 
     // Function to add the custom design to cart
-    const addToCart = async () => {
+    const addToCart = useCallback(async () => {
         try {
             setIsLoading(true);
             console.log('Adding custom design to cart:', design._id);
@@ -63,7 +63,9 @@ const CustomDesignPaymentButton = ({ design, variant = 'primary', size = 'md', t
             toast.error('Something went wrong. Please try again.');
             setIsLoading(false);
         }
-    };    // Create global function to add to cart on component mount
+    }, [cartItems, design, getToken, router, setCartItems]);
+
+    // Create global function to add to cart on component mount
     useEffect(() => {
         if (typeof window !== 'undefined') {
             // Define the global function for adding design to cart (keeps same name for compatibility)
@@ -156,7 +158,7 @@ const CustomDesignPaymentButton = ({ design, variant = 'primary', size = 'md', t
 
         // No cleanup needed for this simplified version
         return () => { };
-    }, [design._id, router, cartItems, getToken, setCartItems]);
+    }, [design._id, addToCart]);
 
     // Set button style based on variant
     const getButtonClass = () => {

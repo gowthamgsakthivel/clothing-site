@@ -1,5 +1,5 @@
 'use client';
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { assets } from "@/assets/assets";
 import Image from "next/image";
 import { useAppContext } from "@/context/AppContext";
@@ -65,7 +65,7 @@ const MyOrders = () => {
             : 'bg-gray-100 text-gray-600 border-gray-200';
     };
 
-    const fetchOrders = async () => {
+    const fetchOrders = useCallback(async () => {
         try {
             setLoading(true);
             setError(null); // Reset error state
@@ -234,7 +234,7 @@ const MyOrders = () => {
         } finally {
             setLoading(false);
         }
-    }
+    }, [getToken, router, user]);
 
     useEffect(() => {
         // Redirect to home if not authenticated
@@ -248,7 +248,7 @@ const MyOrders = () => {
         if (user) {
             fetchOrders();
         }
-    }, [user]);
+    }, [user, router, fetchOrders]);
 
     // Auto-refresh orders every 30 seconds if any are pending/in-transit
     useEffect(() => {
@@ -268,7 +268,7 @@ const MyOrders = () => {
         }, 30000); // Refresh every 30 seconds
 
         return () => clearInterval(refreshInterval);
-    }, [allOrders, autoRefreshEnabled]);
+    }, [allOrders, autoRefreshEnabled, fetchOrders]);
 
     // Catch any errors during rendering
     const renderOrderSafely = (order, index) => {
@@ -559,7 +559,7 @@ const MyOrders = () => {
                                             const isPaid = ['paid', 'confirmed', 'delivered', 'completed'].includes(paymentLower);
                                             const statusInfo = getStatusPresentation(order.status);
 
-                                            const dateInfo = formatOrderDate(order.date);
+                                            const dateInfo = formatOrderDate(order.date || order.createdAt);
 
                                             return (
                                                 <motion.div

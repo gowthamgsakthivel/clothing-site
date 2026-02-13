@@ -1,5 +1,5 @@
 'use client';
-import React, { useMemo, useState } from 'react';
+import React, { Suspense, useMemo, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Navbar from '@/components/Navbar';
@@ -80,7 +80,7 @@ const OrderItem = ({ item }) => (
     </div>
 );
 
-const TrackOrderPage = () => {
+const TrackOrderContent = () => {
     const searchParams = useSearchParams();
     const router = useRouter();
     const initialOrderId = searchParams.get('orderId') || '';
@@ -193,5 +193,21 @@ const TrackOrderPage = () => {
         </>
     );
 };
+
+const TrackOrderPage = () => (
+    <Suspense
+        fallback={
+            <div className="min-h-screen bg-gray-50 pt-20 md:pt-24 pb-16">
+                <div className="px-4 sm:px-6 md:px-16 lg:px-32 max-w-5xl mx-auto">
+                    <div className="rounded-2xl border border-gray-200 bg-white p-10 text-center">
+                        <p className="text-gray-700 font-semibold">Loading tracking details…</p>
+                    </div>
+                </div>
+            </div>
+        }
+    >
+        <TrackOrderContent />
+    </Suspense>
+);
 
 export default TrackOrderPage;

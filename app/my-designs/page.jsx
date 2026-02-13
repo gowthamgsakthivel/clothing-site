@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import Image from 'next/image';
@@ -21,7 +21,7 @@ const MyDesignsPage = () => {
     const [notificationsChecked, setNotificationsChecked] = useState({});
 
     // Fetch user's design requests
-    const fetchDesignRequests = async () => {
+    const fetchDesignRequests = useCallback(async () => {
         try {
             setLoading(true);
             const token = await getToken();
@@ -56,7 +56,7 @@ const MyDesignsPage = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [getToken]);
 
     // View request details and mark notification as read
     const viewRequestDetails = (request) => {
@@ -88,7 +88,7 @@ const MyDesignsPage = () => {
             // Redirect if not logged in
             router.push('/login');
         }
-    }, [user]);
+    }, [user, router, fetchDesignRequests]);
 
     // Check for new responses/updates
     const hasNewResponse = (request) => {
@@ -144,7 +144,7 @@ const MyDesignsPage = () => {
                         <div className="bg-white rounded-lg shadow p-8 text-center">
                             <div className="text-5xl text-gray-300 mb-4">🖌️</div>
                             <h2 className="text-xl font-medium text-gray-700 mb-2">No Design Requests Yet</h2>
-                            <p className="text-gray-500 mb-6">You haven't submitted any custom t-shirt design requests.</p>
+                            <p className="text-gray-500 mb-6">You haven&apos;t submitted any custom t-shirt design requests.</p>
                             <Link href="/custom-design">
                                 <button className="px-6 py-3 bg-orange-600 text-white font-medium rounded-lg hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500">
                                     Create Your First Design
@@ -638,33 +638,33 @@ const MyDesignsPage = () => {
 
                                 {activeRequest.status === 'pending' && (
                                     <p className="text-sm text-gray-700">
-                                        Your design request is currently being reviewed by our team. We'll provide a quote soon.
+                                        Your design request is currently being reviewed by our team. We&apos;ll provide a quote soon.
                                     </p>
                                 )}
 
                                 {activeRequest.status === 'quoted' && (
                                     <p className="text-sm text-gray-700">
-                                        We've provided a quote for your design. Please review and accept it to proceed with production.
+                                        We&apos;ve provided a quote for your design. Please review and accept it to proceed with production.
                                         You can also negotiate the price or request changes if needed.
                                     </p>
                                 )}
 
                                 {activeRequest.status === 'negotiating' && (
                                     <p className="text-sm text-gray-700">
-                                        You've submitted a counter offer for this design. The seller will review your price and respond
+                                        You&apos;ve submitted a counter offer for this design. The seller will review your price and respond
                                         with an acceptance, rejection, or a new quote. Please check back soon for updates.
                                     </p>
                                 )}
 
                                 {activeRequest.status === 'approved' && (
                                     <p className="text-sm text-gray-700">
-                                        Your design has been approved and is now in production. We'll update you when it's ready.
+                                        Your design has been approved and is now in production. We&apos;ll update you when it&apos;s ready.
                                     </p>
                                 )}
 
                                 {activeRequest.status === 'rejected' && (
                                     <p className="text-sm text-gray-700">
-                                        Unfortunately, we couldn't proceed with your design request. Please check the seller's response
+                                        Unfortunately, we couldn&apos;t proceed with your design request. Please check the seller&apos;s response
                                         for details or submit a new design.
                                     </p>
                                 )}

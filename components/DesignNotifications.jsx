@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAppContext } from '@/context/AppContext';
 import axios from 'axios';
 import Link from 'next/link';
@@ -13,7 +13,7 @@ const DesignNotifications = () => {
     const [showNotifications, setShowNotifications] = useState(false);
 
     // Fetch user's design requests to check for notifications
-    const fetchDesignRequests = async (retryCount = 0) => {
+    const fetchDesignRequests = useCallback(async (retryCount = 0) => {
         if (!user) return;
 
         try {
@@ -113,7 +113,7 @@ const DesignNotifications = () => {
                 setLoading(false);
             }
         }
-    };
+    }, [getToken, user]);
 
     // Check for unread notifications
     const checkForUnreadNotifications = (requests) => {
@@ -221,7 +221,7 @@ const DesignNotifications = () => {
         }, 60000);
 
         return () => clearInterval(interval);
-    }, [user]);
+    }, [user, loading, fetchDesignRequests]);
 
     if (!user || loading) return null;
 

@@ -331,7 +331,7 @@ const CustomDesignPage = () => {
                     <div className="text-center mb-12">
                         <h1 className="text-4xl font-bold text-gray-900 mb-4">Design Your Custom T-Shirt</h1>
                         <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-                            Upload your design, tell us about your requirements, and we'll create a custom t-shirt just for you!
+                            Upload your design, tell us about your requirements, and we&apos;ll create a custom t-shirt just for you!
                         </p>
                     </div>
 
@@ -568,7 +568,7 @@ const CustomDesignPage = () => {
                                     </svg>
                                 </div>
                                 <h3 className="text-lg font-semibold mb-2">4. Receive Your Custom T-Shirt</h3>
-                                <p className="text-gray-600">We'll produce and ship your custom t-shirt after payment is confirmed.</p>
+                                <p className="text-gray-600">We&apos;ll produce and ship your custom t-shirt after payment is confirmed.</p>
                             </div>
                         </div>
                     </div>
@@ -587,20 +587,20 @@ const CustomDesignPage = () => {
                                     <dd className="mt-2 text-gray-600">We typically respond within 24-48 hours with a quote for your custom design.</dd>
                                 </div>
                                 <div className="px-6 py-4">
-                                    <dt className="text-lg font-semibold text-gray-900">What's the minimum order quantity?</dt>
+                                    <dt className="text-lg font-semibold text-gray-900">What&apos;s the minimum order quantity?</dt>
                                     <dd className="mt-2 text-gray-600">Our minimum order is 1 t-shirt for custom designs.</dd>
                                 </div>
                                 <div className="px-6 py-4">
                                     <dt className="text-lg font-semibold text-gray-900">Can I see a preview before production?</dt>
-                                    <dd className="mt-2 text-gray-600">Yes, we'll send you a digital preview of your design for approval before production begins.</dd>
+                                    <dd className="mt-2 text-gray-600">Yes, we&apos;ll send you a digital preview of your design for approval before production begins.</dd>
                                 </div>
                                 <div className="px-6 py-4">
                                     <dt className="text-lg font-semibold text-gray-900">When do I need to pay?</dt>
-                                    <dd className="mt-2 text-gray-600">After we provide a quote, you'll need to accept and pay before we begin production. You can pay online or choose cash on delivery.</dd>
+                                    <dd className="mt-2 text-gray-600">After we provide a quote, you&apos;ll need to accept and pay before we begin production. You can pay online or choose cash on delivery.</dd>
                                 </div>
                                 <div className="px-6 py-4">
                                     <dt className="text-lg font-semibold text-gray-900">What if I want changes to the quote?</dt>
-                                    <dd className="mt-2 text-gray-600">You can request changes to the design or quote by using the "Request Changes" option, and our team will review your feedback.</dd>
+                                    <dd className="mt-2 text-gray-600">You can request changes to the design or quote by using the &quot;Request Changes&quot; option, and our team will review your feedback.</dd>
                                 </div>
                             </dl>
                         </div>

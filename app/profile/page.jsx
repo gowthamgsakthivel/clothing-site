@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAppContext } from '@/context/AppContext';
 import { useUser } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
@@ -29,16 +29,7 @@ const ProfilePage = () => {
         isDefault: false
     });
 
-    useEffect(() => {
-        if (!isLoaded) return;
-        if (!user) {
-            router.push('/sign-in');
-            return;
-        }
-        fetchUserData();
-    }, [user, isLoaded]);
-
-    const fetchUserData = async () => {
+    const fetchUserData = useCallback(async () => {
         setLoading(true);
         try {
             const [addressRes, ordersRes] = await Promise.all([
@@ -59,7 +50,16 @@ const ProfilePage = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        if (!isLoaded) return;
+        if (!user) {
+            router.push('/sign-in');
+            return;
+        }
+        fetchUserData();
+    }, [user, isLoaded, router, fetchUserData]);
 
     const handleAddressSubmit = async (e) => {
         e.preventDefault();
