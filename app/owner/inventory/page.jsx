@@ -17,6 +17,19 @@ const OwnerInventory = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const [newColorName, setNewColorName] = useState('');
+    const [newColorCode, setNewColorCode] = useState('#000000');
+    const [newColorStock, setNewColorStock] = useState({
+        XS: 0,
+        S: 0,
+        M: 0,
+        L: 0,
+        XL: 0,
+        XXL: 0
+    });
+    const [isAddingColor, setIsAddingColor] = useState(false);
+
+    const availableSizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
 
     const fetchProducts = useCallback(async () => {
         try {
@@ -59,6 +72,87 @@ const OwnerInventory = () => {
         const newStock = [...stockData];
         newStock[colorIndex].sizeStock[sizeIndex].quantity = parseInt(value) || 0;
         setStockData(newStock);
+    };
+
+    const handleNewColorStockChange = (size, value) => {
+        setNewColorStock(prev => ({
+            ...prev,
+            [size]: parseInt(value) || 0
+        }));
+    };
+
+    const resetNewColorForm = () => {
+        setNewColorName('');
+        setNewColorCode('#000000');
+        setNewColorStock({
+            XS: 0,
+            S: 0,
+            M: 0,
+            L: 0,
+            XL: 0,
+            XXL: 0
+        });
+    };
+
+    const handleAddColor = async () => {
+        if (!selectedProduct) return;
+
+        const trimmedName = newColorName.trim();
+        if (!trimmedName) {
+            toast.error('Color name is required');
+            return;
+        }
+
+        if (trimmedName.startsWith('#')) {
+            toast.error('Please enter a color name (not a hex code)');
+            return;
+        }
+
+        if (newColorCode.toLowerCase() === '#000000' && trimmedName.toLowerCase() !== 'black') {
+            toast.error('Please pick a color code (default black is not selected)');
+            return;
+        }
+
+        const existingNames = (stockData || [])
+            .map(item => item.color?.name?.toLowerCase())
+            .filter(Boolean);
+
+        if (existingNames.includes(trimmedName.toLowerCase())) {
+            toast.error(`Color "${trimmedName}" already exists`);
+            return;
+        }
+
+        try {
+            setIsAddingColor(true);
+            const token = await getToken();
+            const response = await axios.post(
+                '/api/admin/products/add-color',
+                {
+                    productId: selectedProduct._id,
+                    colorName: trimmedName,
+                    colorCode: newColorCode,
+                    quantities: newColorStock
+                },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+
+            if (response.data.success) {
+                toast.success(response.data.message || 'Color added');
+                setStockData(response.data.product?.inventory || stockData);
+                setSelectedProduct(prev => prev ? {
+                    ...prev,
+                    inventory: response.data.product?.inventory || prev.inventory
+                } : prev);
+                resetNewColorForm();
+            } else {
+                toast.error(response.data.message || 'Failed to add color');
+            }
+        } catch (error) {
+            console.error('Error adding color:', error);
+            toast.error('Failed to add color');
+        } finally {
+            setIsAddingColor(false);
+        }
     };
 
     const handleSaveStock = async () => {
@@ -206,7 +300,9 @@ const OwnerInventory = () => {
                                                             min="0"
                                                             value={sizeData.quantity || 0}
                                                             onChange={(e) => handleStockChange(colorIdx, sizeIdx, e.target.value)}
-                                                            className="w-12 px-2 py-1 border border-gray-300 rounded text-center focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                                                            className={`w-12 px-2 py-1 border rounded text-center focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
+                                                                (sizeData.quantity || 0) < 5 ? 'bg-yellow-100 border-yellow-400' : 'border-gray-300'
+                                                            }`}
                                                         />
                                                     </td>
                                                 ))}
@@ -214,6 +310,69 @@ const OwnerInventory = () => {
                                         ))}
                                     </tbody>
                                 </table>
+                            </div>
+
+                            <div className="mt-6 border border-gray-200 rounded-lg p-4 bg-gray-50">
+                                <div className="flex items-center justify-between gap-3 flex-wrap">
+                                    <div>
+                                        <h4 className="text-sm font-semibold text-gray-900">Add new color</h4>
+                                        <p className="text-xs text-gray-500">Create a new color variant and set starting stock</p>
+                                    </div>
+                                </div>
+                                <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+                                    <input
+                                        type="text"
+                                        placeholder="Color name (e.g., Red)"
+                                        value={newColorName}
+                                        onChange={(e) => setNewColorName(e.target.value)}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                                    />
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="color"
+                                            value={newColorCode}
+                                            onChange={(e) => setNewColorCode(e.target.value)}
+                                            className="h-10 w-12 border border-gray-300 rounded"
+                                        />
+                                        <input
+                                            type="text"
+                                            value={newColorCode}
+                                            onChange={(e) => setNewColorCode(e.target.value)}
+                                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                                        />
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={handleAddColor}
+                                            disabled={isAddingColor}
+                                            className="flex-1 bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 disabled:bg-gray-400 transition font-medium"
+                                        >
+                                            {isAddingColor ? 'Adding...' : 'Add Color'}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={resetNewColorForm}
+                                            className="flex-1 bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300 transition font-medium"
+                                        >
+                                            Reset
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="mt-4 grid grid-cols-3 md:grid-cols-6 gap-2">
+                                    {availableSizes.map(size => (
+                                        <label key={size} className="text-xs text-gray-600">
+                                            <span className="block mb-1 font-medium">{size}</span>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                value={newColorStock[size] ?? 0}
+                                                onChange={(e) => handleNewColorStockChange(size, e.target.value)}
+                                                className="w-full px-2 py-1 border border-gray-300 rounded text-center focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                                            />
+                                        </label>
+                                    ))}
+                                </div>
                             </div>
 
                             <div className="mt-6 flex gap-3">

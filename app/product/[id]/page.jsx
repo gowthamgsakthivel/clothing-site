@@ -651,12 +651,12 @@ const Product = () => {
                                         </span>
                                         {(() => {
                                             const remaining = getColorSizeStock(selectedColor, selectedSize) - quantity;
-                                            if (remaining > 0 && remaining <= 2) {
-                                                return (
-                                                    <span className="text-red-600 font-medium">Only {remaining} left</span>
-                                                );
-                                            }
-                                            if (remaining > 0) {
+                                            if (remaining > 0 && remaining < 10) {
+                                                if (remaining <= 2) {
+                                                    return (
+                                                        <span className="text-red-600 font-medium">Only {remaining} left</span>
+                                                    );
+                                                }
                                                 return <span className="text-gray-500">{remaining} left</span>;
                                             }
                                             return null;

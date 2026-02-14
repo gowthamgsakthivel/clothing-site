@@ -186,6 +186,12 @@ export const AppContextProvider = (props) => {
     // Add to cart with color and size support
     const addToCart = async (itemId, options = {}) => {
         try {
+            if (!user) {
+                toast.error('Please sign in to add items to cart');
+                router.push('/sign-in');
+                return;
+            }
+
             setLoadingStates(prev => ({ ...prev, cart: true }));
 
             // options: { color, size, quantity }
@@ -210,22 +216,16 @@ export const AppContextProvider = (props) => {
             // Update local state immediately for responsive UI
             setCartItems(cartData);
 
-            if (user) {
-                const token = await getToken();
-                const response = await axios.post('/api/cart/update',
-                    { cartData },
-                    { headers: { Authorization: `Bearer ${token}` } }
-                );
+            const token = await getToken();
+            const response = await axios.post('/api/cart/update',
+                { cartData },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
 
-                if (response.data.success) {
-                    toast.success(quantity > 1 ? `${quantity} items added to cart` : 'Item added to cart');
-                } else {
-                    toast.error(response.data.message || 'Failed to update cart');
-                }
-            } else {
-                // For non-logged in users, store in localStorage
-                localStorage.setItem('sparrow-cart', JSON.stringify(cartData));
+            if (response.data.success) {
                 toast.success(quantity > 1 ? `${quantity} items added to cart` : 'Item added to cart');
+            } else {
+                toast.error(response.data.message || 'Failed to update cart');
             }
         } catch (error) {
             console.error("Error adding to cart:", error);
@@ -238,6 +238,12 @@ export const AppContextProvider = (props) => {
     // Update cart quantity with color support
     const updateCartQuantity = async (itemKey, quantity) => {
         try {
+            if (!user) {
+                toast.error('Please sign in to update your cart');
+                router.push('/sign-in');
+                return;
+            }
+
             setLoadingStates(prev => ({ ...prev, cart: true }));
 
             let cartData = structuredClone(cartItems);
@@ -250,21 +256,16 @@ export const AppContextProvider = (props) => {
             // Update local state immediately for responsive UI
             setCartItems(cartData);
 
-            if (user) {
-                const token = await getToken();
-                const response = await axios.post('/api/cart/update',
-                    { cartData },
-                    { headers: { Authorization: `Bearer ${token}` } }
-                );
+            const token = await getToken();
+            const response = await axios.post('/api/cart/update',
+                { cartData },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
 
-                if (response.data.success) {
-                    toast.success('Cart updated');
-                } else {
-                    toast.error(response.data.message || 'Failed to update cart');
-                }
+            if (response.data.success) {
+                toast.success('Cart updated');
             } else {
-                // For non-logged in users, store in localStorage
-                localStorage.setItem('sparrow-cart', JSON.stringify(cartData));
+                toast.error(response.data.message || 'Failed to update cart');
             }
         } catch (error) {
             console.error("Error updating cart:", error);
