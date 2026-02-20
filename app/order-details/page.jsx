@@ -82,7 +82,7 @@ const OrderDetailsContent = () => {
 
             try {
                 setLoading(true)
-                const { data } = await axios.get('/api/order/list', {
+                const { data } = await axios.get('/api/orders-v2/list', {
                     withCredentials: true,
                     headers: { 'Content-Type': 'application/json' }
                 })
@@ -284,7 +284,7 @@ const OrderDetailsContent = () => {
                         <h2 className="text-lg font-semibold text-gray-900">Actions</h2>
                         <div className="mt-4 grid grid-cols-1 gap-3">
                             <button
-                                onClick={() => router.push(`/track-order?orderId=${order._id}`)}
+                                onClick={() => router.push(`/order-placed?orderId=${order._id}#tracking`)}
                                 disabled={!canTrack}
                                 className={`h-11 rounded-lg font-semibold text-sm ${canTrack ? 'bg-orange-600 text-white' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
                             >

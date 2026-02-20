@@ -8,7 +8,7 @@
  * - Pagination metadata calculation
  * - Error handling
  * 
- * The tests mock the database connection and Product model to isolate
+ * The tests mock the database connection and v2 models to isolate
  * the API handler logic from the actual database operations.
  */
 
@@ -16,7 +16,9 @@
 import '../mocks/nextjs';
 import { NextRequest } from 'next/server';
 import { GET } from '@/app/api/product/list/route';
-import Product from '@/models/Product';
+import ProductV2 from '@/models/v2/Product';
+import ProductVariant from '@/models/v2/ProductVariant';
+import Inventory from '@/models/v2/Inventory';
 
 // Mock the database connection to avoid actual DB operations during tests
 jest.mock('@/config/db', () => {
@@ -27,11 +29,23 @@ jest.mock('@/config/db', () => {
     };
 });
 
-// Mock the Product model to control its behavior during tests
-jest.mock('@/models/Product', () => {
+// Mock the v2 models to control their behavior during tests
+jest.mock('@/models/v2/Product', () => {
     return {
         find: jest.fn(),
         countDocuments: jest.fn(),
+    };
+});
+
+jest.mock('@/models/v2/ProductVariant', () => {
+    return {
+        find: jest.fn(),
+    };
+});
+
+jest.mock('@/models/v2/Inventory', () => {
+    return {
+        find: jest.fn(),
     };
 });
 
@@ -41,29 +55,61 @@ describe('Product List API', () => {
     });
 
     test('returns products with default pagination (page 1, limit 10)', async () => {
-        // Create mock data for 10 products
         const mockProducts = Array.from({ length: 10 }, (_, i) => ({
             _id: `product-${i + 1}`,
             name: `Product ${i + 1}`,
-            price: 100 + i,
-            offerPrice: 90 + i,
-            images: [`image${i + 1}.jpg`],
-            stock: 10 + i,
+            description: `Desc ${i + 1}`,
+            category: 'Category',
+            brand: 'Brand',
+            genderCategory: 'Unisex',
+            createdAt: new Date('2024-01-01T00:00:00Z'),
+            status: 'active',
+            slug: `product-${i + 1}`
         }));
 
-        // Setup mock implementations
+        const mockVariants = mockProducts.flatMap((product) => ([
+            {
+                _id: `${product._id}-variant-1`,
+                productId: product._id,
+                color: 'Red',
+                size: 'M',
+                sku: `${product._id}-sku-1`,
+                originalPrice: 120,
+                offerPrice: 90,
+                visibility: 'visible',
+                images: [`${product._id}-image.jpg`]
+            }
+        ]));
+
+        const mockInventory = mockVariants.map((variant) => ({
+            variantId: variant._id,
+            sku: variant.sku,
+            totalStock: 10,
+            reservedStock: 0,
+            lowStockThreshold: 5
+        }));
+
+        const limitMock = jest.fn().mockReturnValue({
+            lean: jest.fn().mockResolvedValue(mockProducts)
+        });
+        const skipMock = jest.fn().mockReturnValue({
+            limit: limitMock
+        });
         const sortMock = jest.fn().mockReturnValue({
-            skip: jest.fn().mockReturnValue({
-                limit: jest.fn().mockResolvedValue(mockProducts),
-            }),
+            skip: skipMock
         });
 
-        Product.find.mockReturnValue({
-            sort: sortMock,
+        ProductV2.find.mockReturnValue({
+            sort: sortMock
         });
 
-        // Mock total count for pagination
-        Product.countDocuments.mockResolvedValue(30);
+        ProductV2.countDocuments.mockResolvedValue(30);
+        ProductVariant.find.mockReturnValue({
+            lean: jest.fn().mockResolvedValue(mockVariants)
+        });
+        Inventory.find.mockReturnValue({
+            lean: jest.fn().mockResolvedValue(mockInventory)
+        });
 
         // Create mock request with default pagination (no query params)
         const req = new NextRequest('http://localhost:3000/api/product/list');
@@ -75,7 +121,7 @@ describe('Product List API', () => {
         // Assertions
         expect(response.status).toBe(200);
         expect(data.success).toBe(true);
-        expect(data.products).toEqual(mockProducts);
+        expect(data.products).toHaveLength(10);
 
         // Check pagination metadata
         expect(data.pagination).toEqual({
@@ -88,36 +134,66 @@ describe('Product List API', () => {
         });
 
         // Verify the find call was made correctly
-        expect(Product.find).toHaveBeenCalledWith({});
-        expect(sortMock).toHaveBeenCalledWith({ date: -1 });
-        expect(sortMock().skip).toHaveBeenCalledWith(0);
-        expect(sortMock().skip().limit).toHaveBeenCalledWith(10);
+        expect(ProductV2.find).toHaveBeenCalledWith({ status: 'active' });
+        expect(sortMock).toHaveBeenCalledWith({ createdAt: -1 });
+        expect(skipMock).toHaveBeenCalledWith(0);
+        expect(limitMock).toHaveBeenCalledWith(10);
     });
 
     test('handles custom pagination parameters correctly', async () => {
-        // Create mock data for 5 products on page 3
         const mockProducts = Array.from({ length: 5 }, (_, i) => ({
             _id: `product-${i + 21}`,
             name: `Product ${i + 21}`,
-            price: 100 + i,
-            offerPrice: 90 + i,
-            images: [`image${i + 21}.jpg`],
-            stock: 10 + i,
+            description: `Desc ${i + 21}`,
+            category: 'Category',
+            brand: 'Brand',
+            genderCategory: 'Unisex',
+            createdAt: new Date('2024-01-01T00:00:00Z'),
+            status: 'active',
+            slug: `product-${i + 21}`
         }));
 
-        // Setup mock implementations
+        const mockVariants = mockProducts.map((product) => ({
+            _id: `${product._id}-variant-1`,
+            productId: product._id,
+            color: 'Black',
+            size: 'L',
+            sku: `${product._id}-sku-1`,
+            originalPrice: 140,
+            offerPrice: 110,
+            visibility: 'visible',
+            images: [`${product._id}-image.jpg`]
+        }));
+
+        const mockInventory = mockVariants.map((variant) => ({
+            variantId: variant._id,
+            sku: variant.sku,
+            totalStock: 8,
+            reservedStock: 0,
+            lowStockThreshold: 5
+        }));
+
+        const limitMock = jest.fn().mockReturnValue({
+            lean: jest.fn().mockResolvedValue(mockProducts)
+        });
+        const skipMock = jest.fn().mockReturnValue({
+            limit: limitMock
+        });
         const sortMock = jest.fn().mockReturnValue({
-            skip: jest.fn().mockReturnValue({
-                limit: jest.fn().mockResolvedValue(mockProducts),
-            }),
+            skip: skipMock
         });
 
-        Product.find.mockReturnValue({
-            sort: sortMock,
+        ProductV2.find.mockReturnValue({
+            sort: sortMock
         });
 
-        // Mock total count for pagination
-        Product.countDocuments.mockResolvedValue(25);
+        ProductV2.countDocuments.mockResolvedValue(25);
+        ProductVariant.find.mockReturnValue({
+            lean: jest.fn().mockResolvedValue(mockVariants)
+        });
+        Inventory.find.mockReturnValue({
+            lean: jest.fn().mockResolvedValue(mockInventory)
+        });
 
         // Create mock request with custom pagination
         const req = new NextRequest('http://localhost:3000/api/product/list?page=3&limit=5');
@@ -129,7 +205,7 @@ describe('Product List API', () => {
         // Assertions
         expect(response.status).toBe(200);
         expect(data.success).toBe(true);
-        expect(data.products).toEqual(mockProducts);
+        expect(data.products).toHaveLength(5);
 
         // Check pagination metadata
         expect(data.pagination).toEqual({
@@ -142,24 +218,33 @@ describe('Product List API', () => {
         });
 
         // Verify the pagination parameters were used correctly
-        expect(sortMock().skip).toHaveBeenCalledWith(10); // (page-1) * limit = (3-1) * 5 = 10
-        expect(sortMock().skip().limit).toHaveBeenCalledWith(5);
+        expect(skipMock).toHaveBeenCalledWith(10); // (page-1) * limit = (3-1) * 5 = 10
+        expect(limitMock).toHaveBeenCalledWith(5);
     });
 
     test('returns empty array when no products exist', async () => {
         // Setup mock implementations for empty results
+        const limitMock = jest.fn().mockReturnValue({
+            lean: jest.fn().mockResolvedValue([])
+        });
+        const skipMock = jest.fn().mockReturnValue({
+            limit: limitMock
+        });
         const sortMock = jest.fn().mockReturnValue({
-            skip: jest.fn().mockReturnValue({
-                limit: jest.fn().mockResolvedValue([]),
-            }),
+            skip: skipMock
         });
 
-        Product.find.mockReturnValue({
-            sort: sortMock,
+        ProductV2.find.mockReturnValue({
+            sort: sortMock
         });
 
-        // Mock zero total count
-        Product.countDocuments.mockResolvedValue(0);
+        ProductV2.countDocuments.mockResolvedValue(0);
+        ProductVariant.find.mockReturnValue({
+            lean: jest.fn().mockResolvedValue([])
+        });
+        Inventory.find.mockReturnValue({
+            lean: jest.fn().mockResolvedValue([])
+        });
 
         // Create mock request
         const req = new NextRequest('http://localhost:3000/api/product/list');
@@ -186,7 +271,7 @@ describe('Product List API', () => {
 
     test('handles database errors gracefully', async () => {
         // Setup mock to throw an error
-        Product.find.mockImplementation(() => {
+        ProductV2.find.mockImplementation(() => {
             throw new Error('Database connection failed');
         });
 

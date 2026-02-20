@@ -14,9 +14,10 @@
 
 // Import nextjs mocks first to define global Request and Response
 import '../mocks/nextjs';
-import { NextRequest } from 'next/server';
 import { GET } from '@/app/api/product/search/route';
-import Product from '@/models/Product';
+import ProductV2 from '@/models/v2/Product';
+import Inventory from '@/models/v2/Inventory';
+import { mapV2ProductToLegacy } from '@/lib/v2ProductMapper';
 
 // Mock the database connection to avoid actual DB operations during tests
 jest.mock('@/config/db', () => {
@@ -29,12 +30,17 @@ jest.mock('@/config/db', () => {
 
 // Mock the Product model to control its behavior during tests
 // This allows us to simulate different database responses
-jest.mock('@/models/Product', () => {
-    return {
-        find: jest.fn(),
-        countDocuments: jest.fn(),
-    };
-});
+jest.mock('@/models/v2/Product', () => ({
+    aggregate: jest.fn(),
+}));
+
+jest.mock('@/models/v2/Inventory', () => ({
+    find: jest.fn(),
+}));
+
+jest.mock('@/lib/v2ProductMapper', () => ({
+    mapV2ProductToLegacy: jest.fn(),
+}));
 
 describe('Product Search API', () => {
     beforeEach(() => {
@@ -48,27 +54,41 @@ describe('Product Search API', () => {
                 _id: 'product-1',
                 name: 'Test Product 1',
                 description: 'This is test product 1',
-                price: 99.99,
-                offerPrice: 89.99,
-                images: ['image1.jpg'],
+                brand: 'Brand X',
                 category: 'category-1',
-                genderCategory: 'gender-1',
-                stock: 10,
+                slug: 'test-product-1',
+                variants: [
+                    { _id: 'variant-1', offerPrice: 89.99 }
+                ]
             }
         ];
 
-        // Setup the mock implementation for find
-        Product.find.mockImplementation(() => ({
-            limit: jest.fn().mockReturnValue({
-                skip: jest.fn().mockResolvedValue(mockProducts),
-            }),
+        ProductV2.aggregate.mockResolvedValue([
+            { data: mockProducts, total: [{ count: 1 }] }
+        ]);
+
+        Inventory.find.mockReturnValue({
+            lean: jest.fn().mockResolvedValue([
+                { variantId: 'variant-1', totalStock: 5, reservedStock: 0 }
+            ])
+        });
+
+        mapV2ProductToLegacy.mockImplementation(({ product }) => ({
+            _id: product._id,
+            name: product.name,
+            image: ['image1.jpg'],
+            offerPrice: 89.99,
+            price: 99.99,
+            brand: product.brand,
+            category: product.category,
+            slug: product.slug
         }));
 
-        // Setup mock for countDocuments
-        Product.countDocuments.mockResolvedValue(1);
-
         // Create mock request with search query
-        const req = new NextRequest('http://localhost:3000/api/product/search?q=test');
+        const req = {
+            url: 'http://localhost:3000/api/product/search?q=test',
+            headers: { get: () => null },
+        };
         const { searchParams } = new URL(req.url);
 
         // Call the API route handler
@@ -77,31 +97,26 @@ describe('Product Search API', () => {
 
         // Assertions
         expect(response.status).toBe(200);
-        expect(data.products).toEqual(mockProducts);
-        expect(data.pagination.totalResults).toBe(1);
-        expect(Product.find).toHaveBeenCalledWith(
+        expect(data.products).toEqual([
             expect.objectContaining({
-                $or: [
-                    { name: expect.objectContaining({ $regex: 'test', $options: 'i' }) },
-                    { description: expect.objectContaining({ $regex: 'test', $options: 'i' }) },
-                ],
+                _id: 'product-1',
+                name: 'Test Product 1',
             })
-        );
+        ]);
+        expect(data.pagination.totalResults).toBe(1);
+        expect(ProductV2.aggregate).toHaveBeenCalledTimes(1);
     });
 
     test('returns empty array when no results found', async () => {
-        // Setup the mock implementation for empty results
-        Product.find.mockImplementation(() => ({
-            limit: jest.fn().mockReturnValue({
-                skip: jest.fn().mockResolvedValue([]),
-            }),
-        }));
-
-        // Setup mock for countDocuments with zero results
-        Product.countDocuments.mockResolvedValue(0);
+        ProductV2.aggregate.mockResolvedValue([
+            { data: [], total: [] }
+        ]);
 
         // Create mock request with search query
-        const req = new NextRequest('http://localhost:3000/api/product/search?q=nonexistent');
+        const req = {
+            url: 'http://localhost:3000/api/product/search?q=nonexistent',
+            headers: { get: () => null },
+        };
         const { searchParams } = new URL(req.url);
 
         // Call the API route handler
@@ -121,28 +136,41 @@ describe('Product Search API', () => {
                 _id: 'product-2',
                 name: 'Test Product 2',
                 description: 'This is test product 2',
-                price: 129.99,
-                offerPrice: 119.99,
-                images: ['image2.jpg'],
+                brand: 'Brand Y',
                 category: 'category-2',
-                genderCategory: 'gender-2',
-                stock: 5,
+                slug: 'test-product-2',
+                variants: [
+                    { _id: 'variant-2', offerPrice: 119.99 }
+                ]
             }
         ];
 
-        // Setup mock functions
-        const limitMock = jest.fn().mockReturnValue({
-            skip: jest.fn().mockResolvedValue(mockProducts),
+        ProductV2.aggregate.mockResolvedValue([
+            { data: mockProducts, total: [{ count: 20 }] }
+        ]);
+
+        Inventory.find.mockReturnValue({
+            lean: jest.fn().mockResolvedValue([
+                { variantId: 'variant-2', totalStock: 5, reservedStock: 0 }
+            ])
         });
 
-        Product.find.mockImplementation(() => ({
-            limit: limitMock,
+        mapV2ProductToLegacy.mockImplementation(({ product }) => ({
+            _id: product._id,
+            name: product.name,
+            image: ['image2.jpg'],
+            offerPrice: 119.99,
+            price: 129.99,
+            brand: product.brand,
+            category: product.category,
+            slug: product.slug
         }));
 
-        Product.countDocuments.mockResolvedValue(20);
-
         // Create mock request with pagination
-        const req = new NextRequest('http://localhost:3000/api/product/search?q=test&page=2&limit=10');
+        const req = {
+            url: 'http://localhost:3000/api/product/search?q=test&page=2&limit=10',
+            headers: { get: () => null },
+        };
         const { searchParams } = new URL(req.url);
 
         // Call the API route handler
@@ -151,27 +179,29 @@ describe('Product Search API', () => {
 
         // Assertions
         expect(response.status).toBe(200);
-        expect(data.products).toEqual(mockProducts);
+        expect(data.products).toEqual([
+            expect.objectContaining({
+                _id: 'product-2',
+                name: 'Test Product 2',
+            })
+        ]);
         expect(data.pagination).toEqual({
+            currentPage: 2,
             totalResults: 20,
             totalPages: 2,
-            currentPage: 2,
-            limit: 10,
+            hasMore: false,
         });
-
-        // Verify pagination parameters were used correctly
-        expect(limitMock).toHaveBeenCalledWith(10);
-        expect(limitMock().skip).toHaveBeenCalledWith(10);
     });
 
     test('handles database errors gracefully', async () => {
         // Setup mock to throw an error
-        Product.find.mockImplementation(() => {
-            throw new Error('Database connection failed');
-        });
+        ProductV2.aggregate.mockRejectedValue(new Error('Database connection failed'));
 
         // Create mock request
-        const req = new NextRequest('http://localhost:3000/api/product/search?q=test');
+        const req = {
+            url: 'http://localhost:3000/api/product/search?q=test',
+            headers: { get: () => null },
+        };
         const { searchParams } = new URL(req.url);
 
         // Call the API route handler
@@ -180,6 +210,6 @@ describe('Product Search API', () => {
 
         // Assertions
         expect(response.status).toBe(500);
-        expect(data.error).toBe('Failed to search products');
+        expect(data.message).toBe('Failed to search products');
     });
 });

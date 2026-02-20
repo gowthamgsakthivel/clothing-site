@@ -92,7 +92,7 @@ const MyDesignsPage = () => {
 
     // Check for new responses/updates
     const hasNewResponse = (request) => {
-        return request.sellerResponse && !notificationsChecked[request._id];
+        return request.adminResponse && !notificationsChecked[request._id];
     };
 
     // Get status label class
@@ -119,7 +119,7 @@ const MyDesignsPage = () => {
         <>
             <SEOMetadata
                 title="My Custom Design Requests | Sparrow Sports"
-                description="View your custom t-shirt design requests and check seller responses, quotes, and order status."
+                description="View your custom t-shirt design requests and check admin responses, quotes, and order status."
                 keywords="custom designs, t-shirt designs, design requests, custom apparel, my designs"
                 url="/my-designs"
             />
@@ -177,6 +177,7 @@ const MyDesignsPage = () => {
                                                         alt="Design"
                                                         fill
                                                         className="object-contain"
+                                                        sizes="160px"
                                                     />
                                                 ) : (
                                                     <div className="w-full h-full flex items-center justify-center bg-gray-200 rounded text-gray-400">
@@ -240,12 +241,12 @@ const MyDesignsPage = () => {
                                                 </div>
                                             )}
 
-                                            {request.sellerResponse && request.sellerResponse.message && (
+                                            {request.adminResponse && request.adminResponse.message && (
                                                 <div className="mt-4">
-                                                    <p className="text-sm font-medium text-gray-900">Seller Response:</p>
-                                                    <p className="mt-1 text-sm text-gray-700">{request.sellerResponse.message.length > 100
-                                                        ? `${request.sellerResponse.message.substring(0, 100)}...`
-                                                        : request.sellerResponse.message}
+                                                    <p className="text-sm font-medium text-gray-900">Admin Response:</p>
+                                                    <p className="mt-1 text-sm text-gray-700">{request.adminResponse.message.length > 100
+                                                        ? `${request.adminResponse.message.substring(0, 100)}...`
+                                                        : request.adminResponse.message}
                                                     </p>
                                                 </div>
                                             )}
@@ -608,13 +609,13 @@ const MyDesignsPage = () => {
                                         </div>
                                     )}
 
-                                    {/* Seller Response */}
-                                    {activeRequest.sellerResponse && activeRequest.sellerResponse.message && (
+                                    {/* Admin Response */}
+                                    {activeRequest.adminResponse && activeRequest.adminResponse.message && (
                                         <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-100 mb-4">
-                                            <h4 className="font-medium text-gray-900 mb-2">Seller Response</h4>
-                                            <p className="text-sm text-gray-700 whitespace-pre-line">{activeRequest.sellerResponse.message}</p>
+                                            <h4 className="font-medium text-gray-900 mb-2">Admin Response</h4>
+                                            <p className="text-sm text-gray-700 whitespace-pre-line">{activeRequest.adminResponse.message}</p>
                                             <p className="text-xs text-gray-500 mt-1">
-                                                Responded on {formatDate(activeRequest.sellerResponse.timestamp)}
+                                                Responded on {formatDate(activeRequest.adminResponse.timestamp)}
                                             </p>
                                         </div>
                                     )}
@@ -651,7 +652,7 @@ const MyDesignsPage = () => {
 
                                 {activeRequest.status === 'negotiating' && (
                                     <p className="text-sm text-gray-700">
-                                        You&apos;ve submitted a counter offer for this design. The seller will review your price and respond
+                                        You&apos;ve submitted a counter offer for this design. The admin team will review your price and respond
                                         with an acceptance, rejection, or a new quote. Please check back soon for updates.
                                     </p>
                                 )}
@@ -664,7 +665,7 @@ const MyDesignsPage = () => {
 
                                 {activeRequest.status === 'rejected' && (
                                     <p className="text-sm text-gray-700">
-                                        Unfortunately, we couldn&apos;t proceed with your design request. Please check the seller&apos;s response
+                                        Unfortunately, we couldn&apos;t proceed with your design request. Please check the admin response
                                         for details or submit a new design.
                                     </p>
                                 )}

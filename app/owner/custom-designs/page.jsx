@@ -4,7 +4,7 @@ import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import Image from 'next/image';
 import { useAppContext } from '@/context/AppContext';
-import SellerNegotiationResponse from '@/components/seller/SellerNegotiationResponse';
+import AdminNegotiationResponse from '@/components/AdminNegotiationResponse';
 import NegotiationHistory from '@/components/NegotiationHistory';
 
 const CustomDesignsPage = () => {
@@ -31,7 +31,7 @@ const CustomDesignsPage = () => {
             const token = await getToken();
 
             const response = await axios.get(
-                `/api/custom-design/seller?page=${page}&status=${status}`,
+                `/api/custom-design/admin?page=${page}&status=${status}`,
                 {
                     headers: { Authorization: `Bearer ${token}` }
                 }
@@ -87,7 +87,7 @@ const CustomDesignsPage = () => {
             const token = await getToken();
 
             const { data } = await axios.post(
-                '/api/custom-design/seller',
+                '/api/custom-design/admin',
                 {
                     designRequestId,
                     action: 'quote',
@@ -122,7 +122,7 @@ const CustomDesignsPage = () => {
             const token = await getToken();
 
             const { data } = await axios.post(
-                '/api/custom-design/seller',
+                '/api/custom-design/admin',
                 {
                     designRequestId,
                     action: 'respond',
@@ -151,7 +151,7 @@ const CustomDesignsPage = () => {
             const token = await getToken();
 
             const { data } = await axios.post(
-                '/api/custom-design/seller',
+                '/api/custom-design/admin',
                 {
                     designRequestId,
                     action: 'update_status',
@@ -307,6 +307,7 @@ const CustomDesignsPage = () => {
                                                     alt="Design"
                                                     fill
                                                     className="object-cover"
+                                                    sizes="64px"
                                                 />
                                             </div>
                                         </td>
@@ -628,7 +629,7 @@ const CustomDesignsPage = () => {
 
                                     {activeRequest.status === 'negotiating' && (
                                         <div className="mt-6">
-                                            <SellerNegotiationResponse
+                                            <AdminNegotiationResponse
                                                 design={activeRequest}
                                                 getToken={getToken}
                                                 onResponseSubmitted={(updatedDesign) => {
@@ -667,12 +668,12 @@ const CustomDesignsPage = () => {
                                         </div>
                                     )}
 
-                                    {activeRequest.sellerResponse && activeRequest.sellerResponse.message && (
+                                    {activeRequest.adminResponse && activeRequest.adminResponse.message && (
                                         <div className="mt-6 p-4 bg-gray-50 rounded-lg">
                                             <h4 className="font-medium text-gray-900 mb-2">Previous Response</h4>
-                                            <p className="text-sm text-gray-700 whitespace-pre-line">{activeRequest.sellerResponse.message}</p>
+                                            <p className="text-sm text-gray-700 whitespace-pre-line">{activeRequest.adminResponse.message}</p>
                                             <p className="text-xs text-gray-500 mt-1">
-                                                Sent on {formatDate(activeRequest.sellerResponse.timestamp)}
+                                                Sent on {formatDate(activeRequest.adminResponse.timestamp)}
                                             </p>
                                         </div>
                                     )}

@@ -1,31 +1,23 @@
-'use client'
 import React from 'react'
-import { useAppContext } from '@/context/AppContext'
-import Loading from '@/components/Loading'
+import { auth, currentUser } from '@clerk/nextjs/server'
+import { redirect } from 'next/navigation'
 import OwnerLayout from '@/components/OwnerLayout'
 
-const Layout = ({ children }) => {
-  const { user } = useAppContext();
-
-  if (user === undefined) {
-    return <Loading />;
+const Layout = async ({ children }) => {
+  const { userId } = await auth()
+  if (!userId) {
+    redirect('/sign-in')
   }
 
-  if (!user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="bg-white p-8 rounded-lg shadow-md text-center">
-          <h2 className="text-xl font-medium mb-4">Authentication Required</h2>
-          <p className="text-gray-600 mb-4">Please sign in to access the owner dashboard.</p>
-          <a href="/sign-in" className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
-            Sign In
-          </a>
-        </div>
-      </div>
-    );
+  const user = await currentUser()
+  const rawRole = user?.publicMetadata?.role
+  const role = rawRole === 'customer' ? 'user' : (rawRole || 'user')
+
+  if (role !== 'admin') {
+    redirect('/')
   }
 
-  return <OwnerLayout>{children}</OwnerLayout>;
+  return <OwnerLayout>{children}</OwnerLayout>
 }
 
 export default Layout

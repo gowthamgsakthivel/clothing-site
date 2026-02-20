@@ -19,6 +19,7 @@ const customJestConfig = {
         '^@/models/(.*)$': '<rootDir>/models/$1',
         '^@/assets/(.*)$': '<rootDir>/assets/$1',
         '^@/context/(.*)$': '<rootDir>/context/$1',
+        '^@/services/(.*)$': '<rootDir>/services/$1',
     },
     testPathIgnorePatterns: [
         '<rootDir>/node_modules/',

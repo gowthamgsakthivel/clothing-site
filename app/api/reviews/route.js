@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import connectDB from "@/config/db";
 import Review from "@/models/Review";
-import Order from "@/models/Orders";
+import OrderV2 from "@/models/v2/Order";
+import ProductVariant from "@/models/v2/ProductVariant";
 
 // GET - Fetch reviews for a product
 export async function GET(req) {
@@ -120,20 +121,23 @@ export async function POST(req) {
         // Check if this is a verified purchase
         let verifiedPurchase = false;
         if (orderId) {
-            const order = await Order.findOne({
+            const order = await OrderV2.findOne({
                 _id: orderId,
-                userId,
-                status: 'Delivered'
-            });
-            verifiedPurchase = !!order;
+                userId
+            }).lean();
+            const normalizedStatus = (order?.status || '').toString().toLowerCase();
+            verifiedPurchase = !!order && normalizedStatus === 'delivered';
         } else {
-            // Check if user has any delivered order with this product
-            const orders = await Order.find({
-                userId,
-                status: 'Delivered',
-                'items.product': productId
-            });
-            verifiedPurchase = orders.length > 0;
+            const variants = await ProductVariant.find({ productId }, '_id').lean();
+            const variantIds = variants.map((variant) => variant._id).filter(Boolean);
+            if (variantIds.length) {
+                const orders = await OrderV2.find({
+                    userId,
+                    status: { $in: ['delivered', 'Delivered'] },
+                    'items.variantId': { $in: variantIds }
+                }).lean();
+                verifiedPurchase = orders.length > 0;
+            }
         }
 
         const newReview = new Review({

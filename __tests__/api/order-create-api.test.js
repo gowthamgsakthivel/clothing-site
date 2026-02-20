@@ -1,328 +1,238 @@
 /**
- * Order Creation API Tests
- * 
- * This test suite verifies the functionality of the order creation API endpoint.
- * It tests:
- * - Order creation process
- * - Stock updates for ordered products
- * - Validation of order data
- * - Authentication requirements
- * - Error handling
- * 
- * The tests mock authentication, database models, and the Inngest service
- * to isolate the API handler logic from actual external dependencies.
+ * Order Creation API Tests (v2)
  */
 
-// Import nextjs mocks first
 import '../mocks/nextjs';
-import { NextRequest } from 'next/server';
-import { POST } from '@/app/api/order/create/route';
+
+import ProductV2 from '@/models/v2/Product';
+import ProductVariant from '@/models/v2/ProductVariant';
 import Product from '@/models/Product';
-import User from '@/models/User';
-import Order from '@/models/Orders';
+import CustomDesign from '@/models/CustomDesign';
+import { createOrder } from '@/services/orders/OrderService';
 
-// Mock database connection
-jest.mock('@/config/db', () => {
-    return {
-        __esModule: true,
-        default: jest.fn().mockResolvedValue(true),
-        connectDB: jest.fn().mockResolvedValue(true),
-    };
-});
+jest.mock('@/config/db', () => ({
+  __esModule: true,
+  default: jest.fn().mockResolvedValue(true),
+  connectDB: jest.fn().mockResolvedValue(true)
+}));
 
-// Mock Clerk authentication
 jest.mock('@clerk/nextjs/server', () => ({
-    getAuth: jest.fn(),
+  getAuth: jest.fn()
 }));
 
-// Mock Inngest service
-jest.mock('@/config/inngest', () => ({
-    inngest: {
-        send: jest.fn().mockResolvedValue(true),
-    },
+jest.mock('@/services/orders/OrderService', () => ({
+  createOrder: jest.fn()
 }));
 
-// Mock database models
+jest.mock('@/models/v2/Product', () => ({
+  findById: jest.fn(),
+  findOne: jest.fn()
+}));
+
+jest.mock('@/models/v2/ProductVariant', () => ({
+  findOne: jest.fn()
+}));
+
 jest.mock('@/models/Product', () => ({
-    findById: jest.fn(),
+  findById: jest.fn()
 }));
 
-jest.mock('@/models/User', () => ({
-    findById: jest.fn(),
-}));
-
-jest.mock('@/models/Orders', () => ({
-    create: jest.fn(),
+jest.mock('@/models/CustomDesign', () => ({
+  findById: jest.fn(),
+  updateMany: jest.fn()
 }));
 
 import { getAuth } from '@clerk/nextjs/server';
+const { POST } = require('@/app/api/orders-v2/create/route');
 
-describe('Order Creation API', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
+const mockLean = (value) => ({
+  lean: jest.fn().mockResolvedValue(value)
+});
 
-    test('creates a new order successfully', async () => {
-        // Mock authenticated user ID
-        const mockUserId = 'user-123';
-        getAuth.mockReturnValue({ userId: mockUserId });
+describe('Order Creation API (v2)', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
 
-        // Mock product data
-        const mockProduct = {
-            _id: 'product-1',
-            name: 'Test Product',
-            offerPrice: 100,
-            stock: 10,
-            save: jest.fn().mockResolvedValue(true),
-        };
+  test('creates a new order successfully with v2 product id', async () => {
+    getAuth.mockReturnValue({ userId: 'user-123' });
 
-        // Setup Product.findById to return the mock product
-        Product.findById.mockResolvedValue(mockProduct);
+    ProductV2.findById.mockReturnValue(mockLean({ _id: 'prod-v2-1', name: 'V2 Product' }));
+    ProductVariant.findOne.mockReturnValue(mockLean({
+      _id: 'variant-1',
+      productId: 'prod-v2-1',
+      sku: 'SKU-1',
+      offerPrice: 120,
+      originalPrice: 150
+    }));
 
-        // Mock user data with cart items
-        const mockUser = {
-            _id: mockUserId,
-            cartItems: { 'product-1': 2 },
-            save: jest.fn().mockResolvedValue(true),
-        };
+    createOrder.mockResolvedValue({ order: { _id: 'order-1' } });
 
-        // Setup User.findById to return the mock user
-        User.findById.mockResolvedValue(mockUser);
+    const req = {
+      json: async () => ({
+        address: 'address-1',
+        items: [{ product: 'prod-v2-1', quantity: 2 }],
+        paymentMethod: 'Razorpay',
+        paymentStatus: 'Paid'
+      })
+    };
 
-        // Order data for the request
-        const orderData = {
-            address: {
-                street: '123 Main St',
-                city: 'Test City',
-                state: 'Test State',
-                pincode: '12345',
-            },
-            items: [
-                { product: 'product-1', quantity: 2 },
-            ],
-            paymentMethod: 'COD',
-            paymentStatus: 'Pending',
-        };
+    const response = await POST(req);
+    const data = await response.json();
 
-        // Create mock request with order data
-        const req = new NextRequest('http://localhost:3000/api/order/create', {
-            method: 'POST',
-            body: JSON.stringify(orderData),
-            headers: {
-                'Content-Type': 'application/json',
-            },
-        });
+    expect(response.status).toBe(201);
+    expect(data.success).toBe(true);
+    expect(data.data.orderId).toBe('order-1');
 
-        // Call the API handler
-        const response = await POST(req);
-        const data = await response.json();
+    expect(createOrder).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 'user-123',
+        paymentMethod: 'Razorpay',
+        paymentStatus: 'Paid',
+        shippingAddressId: 'address-1',
+        items: [
+          expect.objectContaining({
+            variantId: 'variant-1',
+            sku: 'SKU-1',
+            quantity: 2,
+            unitPrice: 120,
+            totalPrice: 240
+          })
+        ]
+      })
+    );
+  });
 
-        // Assertions
-        expect(response.status).toBe(200);
-        expect(data.success).toBe(true);
-        expect(data.message).toBe('Order Placed');
+  test('returns error when required data is missing', async () => {
+    getAuth.mockReturnValue({ userId: 'user-123' });
 
-        // Verify product stock was updated
-        expect(mockProduct.stock).toBe(8); // 10 - 2
-        expect(mockProduct.save).toHaveBeenCalled();
+    const reqWithoutAddress = {
+      json: async () => ({
+        items: [{ product: 'prod-v2-1', quantity: 2 }]
+      })
+    };
 
-        // Verify user cart was cleared
-        expect(mockUser.cartItems).toEqual({});
-        expect(mockUser.save).toHaveBeenCalled();
+    const response1 = await POST(reqWithoutAddress);
+    const data1 = await response1.json();
 
-        // Verify order was created with correct data
-        expect(Order.create).toHaveBeenCalledWith({
-            userId: mockUserId,
-            address: orderData.address,
-            items: [
-                { product: 'product-1', quantity: 2, color: undefined, size: undefined },
-            ],
-            amount: 204, // 100 * 2 + 2% = 204
-            paymentMethod: 'COD',
-            paymentStatus: 'Pending',
-            date: expect.any(Number),
-        });
-    });
+    expect(response1.status).toBe(400);
+    expect(data1.success).toBe(false);
+    expect(data1.message).toBe('Invalid data');
 
-    test('handles product with color and size options correctly', async () => {
-        // Mock authenticated user ID
-        const mockUserId = 'user-123';
-        getAuth.mockReturnValue({ userId: mockUserId });
+    const reqWithEmptyItems = {
+      json: async () => ({
+        address: 'address-1',
+        items: []
+      })
+    };
 
-        // Mock product data with color options
-        const mockProduct = {
-            _id: 'product-1',
-            name: 'Test Product',
-            offerPrice: 100,
-            stock: 20,
-            color: [
-                { color: '#FF0000', stock: 10 }, // Red
-                { color: '#0000FF', stock: 5 },  // Blue
-            ],
-            save: jest.fn().mockResolvedValue(true),
-        };
+    const response2 = await POST(reqWithEmptyItems);
+    const data2 = await response2.json();
 
-        // Setup Product.findById to return the mock product
-        Product.findById.mockResolvedValue(mockProduct);
+    expect(response2.status).toBe(400);
+    expect(data2.success).toBe(false);
+    expect(data2.message).toBe('Invalid data');
+  });
 
-        // Mock user data
-        const mockUser = {
-            _id: mockUserId,
-            cartItems: {},
-            save: jest.fn().mockResolvedValue(true),
-        };
+  test('returns error when product not found', async () => {
+    getAuth.mockReturnValue({ userId: 'user-123' });
+    ProductV2.findById.mockReturnValue(mockLean(null));
+    ProductV2.findOne.mockReturnValue(mockLean(null));
 
-        // Setup User.findById to return the mock user
-        User.findById.mockResolvedValue(mockUser);
+    const req = {
+      json: async () => ({
+        address: 'address-1',
+        items: [{ product: 'prod-v2-1', quantity: 1 }]
+      })
+    };
 
-        // Order data with color and size
-        const orderData = {
-            address: {
-                street: '123 Main St',
-                city: 'Test City',
-                state: 'Test State',
-                pincode: '12345',
-            },
-            items: [
-                { product: 'product-1_#FF0000_L', quantity: 3 },
-            ],
-            paymentMethod: 'Online',
-            paymentStatus: 'Paid',
-        };
+    const response = await POST(req);
+    const data = await response.json();
 
-        // Create mock request
-        const req = new NextRequest('http://localhost:3000/api/order/create', {
-            method: 'POST',
-            body: JSON.stringify(orderData),
-            headers: {
-                'Content-Type': 'application/json',
-            },
-        });
+    expect(response.status).toBe(404);
+    expect(data.success).toBe(false);
+    expect(data.message).toBe('Product not found');
+  });
 
-        // Call the API handler
-        const response = await POST(req);
-        const data = await response.json();
+  test('returns error for invalid quantity', async () => {
+    getAuth.mockReturnValue({ userId: 'user-123' });
 
-        // Assertions
-        expect(response.status).toBe(200);
-        expect(data.success).toBe(true);
+    ProductV2.findById.mockReturnValue(mockLean({ _id: 'prod-v2-1', name: 'V2 Product' }));
+    ProductVariant.findOne.mockReturnValue(mockLean({
+      _id: 'variant-1',
+      productId: 'prod-v2-1',
+      sku: 'SKU-1',
+      offerPrice: 120,
+      originalPrice: 150
+    }));
 
-        // Verify both overall stock and color-specific stock were updated
-        expect(mockProduct.stock).toBe(17); // 20 - 3
-        expect(mockProduct.color[0].stock).toBe(7); // 10 - 3 (Red color)
-        expect(mockProduct.color[1].stock).toBe(5); // Blue color unchanged
-        expect(mockProduct.save).toHaveBeenCalled();
+    const req = {
+      json: async () => ({
+        address: 'address-1',
+        items: [{ product: 'prod-v2-1', quantity: 0 }]
+      })
+    };
 
-        // Verify order was created with correct color and size
-        expect(Order.create).toHaveBeenCalledWith(
-            expect.objectContaining({
-                items: [
-                    {
-                        product: 'product-1',
-                        quantity: 3,
-                        color: '#FF0000',
-                        size: 'L'
-                    },
-                ],
-                paymentMethod: 'Online',
-                paymentStatus: 'Paid',
-            })
-        );
-    });
+    const response = await POST(req);
+    const data = await response.json();
 
-    test('returns error when required data is missing', async () => {
-        // Mock authenticated user ID
-        const mockUserId = 'user-123';
-        getAuth.mockReturnValue({ userId: mockUserId });
+    expect(response.status).toBe(400);
+    expect(data.success).toBe(false);
+    expect(data.message).toBe('Invalid quantity');
+  });
 
-        // Create mock request with missing address
-        const reqWithoutAddress = new NextRequest('http://localhost:3000/api/order/create', {
-            method: 'POST',
-            body: JSON.stringify({
-                items: [{ product: 'product-1', quantity: 2 }],
-                paymentMethod: 'COD',
-            }),
-            headers: {
-                'Content-Type': 'application/json',
-            },
-        });
+  test('returns error for unapproved custom design', async () => {
+    getAuth.mockReturnValue({ userId: 'user-123' });
 
-        // Call the API handler
-        const response1 = await POST(reqWithoutAddress);
-        const data1 = await response1.json();
+    CustomDesign.findById.mockReturnValue(mockLean({
+      _id: 'custom-123',
+      user: 'user-123',
+      status: 'quoted',
+      quote: { amount: 250 },
+      quantity: 1
+    }));
 
-        // Assertions for missing address
-        expect(response1.status).toBe(200);
-        expect(data1.success).toBe(false);
-        expect(data1.message).toBe('Invalid data');
+    const req = {
+      json: async () => ({
+        address: 'address-1',
+        items: [{ product: 'custom_123', quantity: 1 }]
+      })
+    };
 
-        // Create mock request with empty items array
-        const reqWithEmptyItems = new NextRequest('http://localhost:3000/api/order/create', {
-            method: 'POST',
-            body: JSON.stringify({
-                address: { street: '123 Main St' },
-                items: [],
-                paymentMethod: 'COD',
-            }),
-            headers: {
-                'Content-Type': 'application/json',
-            },
-        });
+    const response = await POST(req);
+    const data = await response.json();
 
-        // Call the API handler
-        const response2 = await POST(reqWithEmptyItems);
-        const data2 = await response2.json();
+    expect(response.status).toBe(400);
+    expect(data.success).toBe(false);
+    expect(data.message).toBe('Custom design is not approved yet.');
+  });
 
-        // Assertions for empty items
-        expect(response2.status).toBe(200);
-        expect(data2.success).toBe(false);
-        expect(data2.message).toBe('Invalid data');
+  test('handles service errors gracefully', async () => {
+    getAuth.mockReturnValue({ userId: 'user-123' });
 
-        // Verify that no order was created
-        expect(Order.create).not.toHaveBeenCalled();
-    });
+    ProductV2.findById.mockReturnValue(mockLean({ _id: 'prod-v2-1', name: 'V2 Product' }));
+    ProductVariant.findOne.mockReturnValue(mockLean({
+      _id: 'variant-1',
+      productId: 'prod-v2-1',
+      sku: 'SKU-1',
+      offerPrice: 120,
+      originalPrice: 150
+    }));
 
-    test('handles database errors gracefully', async () => {
-        // Mock authenticated user ID
-        const mockUserId = 'user-123';
-        getAuth.mockReturnValue({ userId: mockUserId });
+    createOrder.mockRejectedValue({ message: 'Database connection failed', status: 500 });
 
-        // Setup Product.findById to throw an error
-        Product.findById.mockRejectedValue(new Error('Database connection failed'));
+    const req = {
+      json: async () => ({
+        address: 'address-1',
+        items: [{ product: 'prod-v2-1', quantity: 1 }]
+      })
+    };
 
-        // Order data for the request
-        const orderData = {
-            address: {
-                street: '123 Main St',
-                city: 'Test City',
-                state: 'Test State',
-                pincode: '12345',
-            },
-            items: [
-                { product: 'product-1', quantity: 2 },
-            ],
-            paymentMethod: 'COD',
-        };
+    const response = await POST(req);
+    const data = await response.json();
 
-        // Create mock request
-        const req = new NextRequest('http://localhost:3000/api/order/create', {
-            method: 'POST',
-            body: JSON.stringify(orderData),
-            headers: {
-                'Content-Type': 'application/json',
-            },
-        });
-
-        // Call the API handler
-        const response = await POST(req);
-        const data = await response.json();
-
-        // Assertions
-        expect(response.status).toBe(200);
-        expect(data.success).toBe(false);
-        expect(data.message).toBe('Database connection failed');
-
-        // Verify that no order was created
-        expect(Order.create).not.toHaveBeenCalled();
-    });
+    expect(response.status).toBe(500);
+    expect(data.success).toBe(false);
+    expect(data.message).toBe('Database connection failed');
+  });
 });

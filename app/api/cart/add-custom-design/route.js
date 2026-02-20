@@ -48,7 +48,7 @@ export async function POST(request) {
         if (!latestDesign.quote || !latestDesign.quote.amount || latestDesign.status !== 'approved') {
             return NextResponse.json({
                 success: false,
-                message: "This design cannot be added to cart. Please wait for seller approval and quote."
+                message: "This design cannot be added to cart. Please wait for admin approval and quote."
             });
         }
 

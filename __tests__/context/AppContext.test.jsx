@@ -24,9 +24,11 @@ jest.mock('@clerk/nextjs', () => ({
 }));
 
 jest.mock('axios');
+const mockPush = jest.fn();
+
 jest.mock('next/navigation', () => ({
     useRouter: () => ({
-        push: jest.fn(),
+        push: mockPush,
     }),
 }));
 
@@ -66,23 +68,43 @@ describe('AppContext', () => {
         });
 
         // Mock axios
-        axios.get.mockResolvedValue({
-            data: {
-                success: true,
-                products: [
-                    {
-                        _id: 'product-1',
-                        name: 'Test Product',
-                        price: 1000,
-                        offerPrice: 800,
-                        image: ['https://example.com/image.jpg'],
+        axios.get.mockImplementation((url) => {
+            if (url.startsWith('/api/user/data')) {
+                return Promise.resolve({
+                    data: {
+                        success: true,
+                        user: { cartItems: {} },
                     },
-                ],
-                pagination: {
-                    currentPage: 1,
-                    totalPages: 1,
+                });
+            }
+
+            if (url.startsWith('/api/user/favorite')) {
+                return Promise.resolve({
+                    data: {
+                        success: true,
+                        favorites: [],
+                    },
+                });
+            }
+
+            return Promise.resolve({
+                data: {
+                    success: true,
+                    products: [
+                        {
+                            _id: 'product-1',
+                            name: 'Test Product',
+                            price: 1000,
+                            offerPrice: 800,
+                            image: ['https://example.com/image.jpg'],
+                        },
+                    ],
+                    pagination: {
+                        currentPage: 1,
+                        totalPages: 1,
+                    },
                 },
-            },
+            });
         });
 
         axios.post.mockResolvedValue({
@@ -131,7 +153,10 @@ describe('AppContext', () => {
         // Wait for the initial fetch products call
         await waitFor(() => {
             expect(axios.get).toHaveBeenCalledWith(
-                expect.stringContaining('/api/product/list')
+                expect.stringContaining('/api/product/list'),
+                expect.objectContaining({
+                    signal: expect.any(Object)
+                })
             );
         });
     });
@@ -158,12 +183,15 @@ describe('AppContext', () => {
         // Check if API was called
         await waitFor(() => {
             expect(axios.get).toHaveBeenCalledWith(
-                expect.stringContaining('/api/product/list')
+                expect.stringContaining('/api/product/list'),
+                expect.objectContaining({
+                    signal: expect.any(Object)
+                })
             );
         });
     });
 
-    test('addToCart stores cart items in localStorage when user is not logged in', async () => {
+    test('addToCart redirects to sign-in when user is not logged in', async () => {
         await act(async () => {
             render(
                 <AppContextProvider>
@@ -179,11 +207,11 @@ describe('AppContext', () => {
             addButton.click();
         });
 
-        // For non-logged in users, should use localStorage
+        // For non-logged in users, should redirect and not call API
         await waitFor(() => {
-            expect(window.localStorage.setItem).toHaveBeenCalled();
+            expect(mockPush).toHaveBeenCalledWith('/sign-in');
         });
-        // And should not call API
+        expect(window.localStorage.setItem).not.toHaveBeenCalled();
         expect(axios.post).not.toHaveBeenCalled();
     });
 

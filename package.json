@@ -17,6 +17,7 @@
     "chart.js": "^4.5.0",
     "cloudinary": "^2.7.0",
     "date-fns": "^4.1.0",
+    "dotenv": "^16.4.7",
     "framer-motion": "^12.23.16",
     "inngest": "^3.40.1",
     "lucide-react": "^0.563.0",

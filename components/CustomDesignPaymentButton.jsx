@@ -9,13 +9,19 @@ import { useRouter } from 'next/navigation';
  * Can be used in any part of the application where custom design purchase is needed
  */
 const CustomDesignPaymentButton = ({ design, variant = 'primary', size = 'md', text }) => {
-    const { getToken, setCartItems, cartItems } = useAppContext();
+    const { getToken, setCartItems, cartItems, user } = useAppContext();
     const [isLoading, setIsLoading] = useState(false);
     const router = useRouter();
 
     // Function to add the custom design to cart
     const addToCart = useCallback(async () => {
         try {
+            if (!user) {
+                toast.error('Please sign in to add items to cart');
+                router.push('/sign-in');
+                return;
+            }
+
             setIsLoading(true);
             console.log('Adding custom design to cart:', design._id);
 
@@ -63,7 +69,7 @@ const CustomDesignPaymentButton = ({ design, variant = 'primary', size = 'md', t
             toast.error('Something went wrong. Please try again.');
             setIsLoading(false);
         }
-    }, [cartItems, design, getToken, router, setCartItems]);
+    }, [cartItems, design, getToken, router, setCartItems, user]);
 
     // Create global function to add to cart on component mount
     useEffect(() => {

@@ -11,7 +11,7 @@ const OwnerCustomers = () => {
     const [users, setUsers] = useState([]);
     const [filterRole, setFilterRole] = useState('all');
     const [selectedUser, setSelectedUser] = useState(null);
-    const [newRole, setNewRole] = useState('customer');
+    const [newRole, setNewRole] = useState('user');
     const [isUpdating, setIsUpdating] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -75,9 +75,7 @@ const OwnerCustomers = () => {
         switch (role) {
             case 'admin':
                 return 'bg-red-100 text-red-800';
-            case 'seller':
-                return 'bg-purple-100 text-purple-800';
-            case 'customer':
+            case 'user':
                 return 'bg-blue-100 text-blue-800';
             default:
                 return 'bg-gray-100 text-gray-800';
@@ -101,8 +99,8 @@ const OwnerCustomers = () => {
                             ← Owner Dashboard
                         </Link>
                     </div>
-                    <h1 className="text-3xl md:text-4xl font-bold text-gray-900">Customer Management</h1>
-                    <p className="text-gray-600 mt-2">Manage customer accounts and roles</p>
+                    <h1 className="text-3xl md:text-4xl font-bold text-gray-900">User Management</h1>
+                    <p className="text-gray-600 mt-2">Manage user accounts and roles</p>
                 </div>
 
                 <div className="mb-6 space-y-4">
@@ -120,8 +118,7 @@ const OwnerCustomers = () => {
                             className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                         >
                             <option value="all">All Roles</option>
-                            <option value="customer">Customers</option>
-                            <option value="seller">Sellers</option>
+                            <option value="user">Users</option>
                             <option value="admin">Admins</option>
                         </select>
                     </div>
@@ -157,7 +154,7 @@ const OwnerCustomers = () => {
                                             </td>
                                             <td className="px-6 py-4 text-sm">
                                                 <span className={`px-3 py-1 rounded-full text-xs font-medium ${getRoleColor(u.role || 'customer')}`}>
-                                                    {u.role || 'customer'}
+                                                    {u.role || 'user'}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 text-sm text-gray-600">
@@ -167,7 +164,7 @@ const OwnerCustomers = () => {
                                                 <button
                                                     onClick={() => {
                                                         setSelectedUser(u);
-                                                        setNewRole(u.role || 'customer');
+                                                        setNewRole(u.role || 'user');
                                                     }}
                                                     className="text-orange-600 hover:text-orange-700 font-medium"
                                                 >
@@ -203,8 +200,7 @@ const OwnerCustomers = () => {
                                     onChange={(e) => setNewRole(e.target.value)}
                                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                                 >
-                                    <option value="customer">Customer</option>
-                                    <option value="seller">Seller</option>
+                                    <option value="user">User</option>
                                     <option value="admin">Admin</option>
                                 </select>
                             </div>

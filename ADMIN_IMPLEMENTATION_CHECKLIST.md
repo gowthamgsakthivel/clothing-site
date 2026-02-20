@@ -1,17 +1,16 @@
-# Admin & Seller Dashboard - Implementation Checklist
+# Admin Dashboard - Implementation Checklist
 
 ## ✅ Phase 1: Complete
 
 ### Middleware & Security
 - [x] Create role-based access control middleware
   - [x] Admin routes protected (`/admin/*`)
-  - [x] Seller routes protected (`/seller/*`)
   - [x] Auto-redirects for unauthorized users
   - [x] Clerk integration for role verification
 
 ### Admin Dashboard (`/admin`)
 - [x] Dashboard homepage with statistics
-  - [x] Total users, sellers, orders, revenue
+  - [x] Total users, orders, revenue
   - [x] Recent orders table
   - [x] Orders by status breakdown
   - [x] Quick action buttons
@@ -29,7 +28,7 @@
 ### Admin Users (`/admin/users`)
 - [x] User management panel
   - [x] List all users with roles
-  - [x] Filter by role (customer, seller, admin)
+  - [x] Filter by role (user, admin)
   - [x] Search by name/email
   - [x] Edit user role modal
   - [x] Sync with Clerk on update
@@ -44,24 +43,12 @@
   - [x] Update order status
   - [x] APIs: `/api/admin/orders` + `/api/admin/orders/[id]`
 
-### Admin Sellers (`/admin/sellers`)
-- [x] Seller management panel
-  - [x] List all sellers with stats
-  - [x] Filter/search sellers
-  - [x] View seller details
-  - [x] Suspend/reactivate sellers
-  - [x] Display seller performance
-  - [x] APIs: `/api/admin/sellers` + `/api/admin/sellers/[id]`
-
 ---
 
 ## 🚀 Testing Checklist
 
 ### Authentication & Authorization
 - [ ] Non-admin user cannot access `/admin/*`
-- [ ] Non-seller user cannot access `/seller/*`
-- [ ] Admin can access both `/admin/*` and `/seller/*`
-- [ ] Seller can only access `/seller/*`
 - [ ] Unauthorized access redirects to home page
 
 ### Admin Dashboard
@@ -94,14 +81,6 @@
 - [ ] Can update order status
 - [ ] Status changes persist correctly
 
-### Seller Management
-- [ ] Can view all sellers with stats
-- [ ] Can search sellers
-- [ ] Can view seller details
-- [ ] Can suspend active seller
-- [ ] Can reactivate suspended seller
-- [ ] Seller stats calculate correctly
-
 ---
 
 ## 🎯 Files Created/Modified
@@ -117,7 +96,6 @@
 ✅ app/admin/contacts/page.jsx - Contact management
 ✅ app/admin/users/page.jsx - User management
 ✅ app/admin/orders/page.jsx - Order management
-✅ app/admin/sellers/page.jsx - Seller management
 ```
 
 ### Admin API Routes
@@ -129,13 +107,10 @@
 ✅ app/api/admin/users/[id]/route.js - Update user role
 ✅ app/api/admin/orders/route.js - List orders
 ✅ app/api/admin/orders/[id]/route.js - Update order status
-✅ app/api/admin/sellers/route.js - List sellers with stats
-✅ app/api/admin/sellers/[id]/route.js - Update seller status
 ```
 
 ### Documentation
 ```
-✅ ADMIN_SELLER_COMPLETION.md - Detailed feature documentation
 ✅ This checklist - Testing & implementation guide
 ```
 
@@ -144,19 +119,18 @@
 ## 🐛 Known Considerations
 
 ### For Next Phase
-1. **Seller Dashboard Consolidation** - Remove duplicate product add UIs
-2. **Seller Data Isolation** - Verify backend filters by userId
-3. **Email Notifications** - Notify sellers when suspended
+1. **Admin Dashboard Consolidation** - Remove duplicate product add UIs
+2. **Email Notifications** - Notify users when accounts are updated
 4. **Audit Logging** - Track admin actions
 5. **Pagination** - Add pagination to large tables
 6. **Bulk Actions** - Select multiple orders/users for batch operations
-7. **Export/Reports** - CSV export of orders, seller performance, etc.
+6. **Export/Reports** - CSV export of orders and performance, etc.
 
 ### Database Models
 - **User:** Already has `publicMetadata.role` and `status`
 - **Order:** Already has `status` field
 - **Contact:** Already has `status` field (new, read, replied, resolved)
-- **Product:** Already has `userId` for seller filtering
+- **Product:** Already has `userId` for admin ownership and auditing
 
 ---
 
@@ -187,7 +161,6 @@ All new admin panels are fully responsive:
 - [x] User role updates sync to Clerk
 - [x] Order status updates persist
 - [x] Contact status updates persist
-- [x] Seller status updates persist
 - [x] Stats calculated from source data
 - [x] No data duplication
 
@@ -231,7 +204,7 @@ Before deploying to production:
 ## 📞 Support
 
 For questions or issues:
-1. Check the detailed documentation in `ADMIN_SELLER_COMPLETION.md`
+1. Review the admin documentation in this repository
 2. Review the code comments in each file
 3. Check test coverage in `/(__tests__)`
 4. Review error messages in browser console
@@ -240,4 +213,4 @@ For questions or issues:
 
 **Status:** Phase 1 Complete ✅  
 **Date Completed:** January 10, 2026  
-**Next Phase:** Consolidate product management + verify seller data isolation
+**Next Phase:** Consolidate product management and add audit logging

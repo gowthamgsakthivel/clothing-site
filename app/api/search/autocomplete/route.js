@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/config/db';
-import Product from '@/models/Product';
+import ProductV2 from '@/models/v2/Product';
+import ProductVariant from '@/models/v2/ProductVariant';
+import Inventory from '@/models/v2/Inventory';
+import { mapV2ProductToLegacy } from '@/lib/v2ProductMapper';
 import { rateLimit, escapeRegex } from '@/lib/rateLimit';
 
 // Ensure Next.js does not attempt static rendering for this route.
@@ -56,27 +59,60 @@ export async function GET(request) {
         const containsRegex = new RegExp(escapedQuery, 'i');
 
         // ✅ Search with STRICT limits and minimal fields
-        const products = await Product
+        const matchingProducts = await ProductV2
             .find({
+                status: 'active',
                 $or: [
                     { name: prefixRegex },        // Prefix match (fastest)
                     { brand: prefixRegex },
                     { category: containsRegex },  // Category can be contains
-                    { subCategory: containsRegex },
                 ],
             })
-            .select('name image offerPrice category brand slug _id') // ✅ Minimal fields only
+            .select('name brand category slug') // ✅ Minimal fields only
             .limit(limit)
             .lean();
 
+        const productIds = matchingProducts.map((product) => product._id);
+        const variants = productIds.length
+            ? await ProductVariant.find({
+                productId: { $in: productIds },
+                visibility: { $ne: 'hidden' }
+            }).lean()
+            : [];
+
+        const variantIds = variants.map((variant) => variant._id);
+        const inventories = variantIds.length
+            ? await Inventory.find({ variantId: { $in: variantIds } }).lean()
+            : [];
+
+        const inventoryByVariantId = new Map();
+        inventories.forEach((inventory) => {
+            inventoryByVariantId.set(String(inventory.variantId), inventory);
+        });
+
+        const variantsByProductId = new Map();
+        variants.forEach((variant) => {
+            const key = String(variant.productId);
+            if (!variantsByProductId.has(key)) {
+                variantsByProductId.set(key, []);
+            }
+            variantsByProductId.get(key).push(variant);
+        });
+
+        const productSuggestions = matchingProducts.map((product) => mapV2ProductToLegacy({
+            product,
+            variants: variantsByProductId.get(String(product._id)) || [],
+            inventoryByVariantId
+        }));
+
         // Extract unique categories (limit to 3)
         const categories = [
-            ...new Set(products.map((p) => p.category).filter(Boolean)),
+            ...new Set(matchingProducts.map((product) => product.category).filter(Boolean)),
         ].slice(0, 3);
 
         // Extract unique brands (limit to 3)
         const brands = [
-            ...new Set(products.map((p) => p.brand).filter(Boolean)),
+            ...new Set(matchingProducts.map((product) => product.brand).filter(Boolean)),
         ].slice(0, 3);
 
         // Create suggestion items (max 6 total)
@@ -89,7 +125,7 @@ export async function GET(request) {
             success: true,
             query,
             suggestions,
-            products: products.slice(0, 5), // Max 5 products
+            products: productSuggestions.slice(0, 5), // Max 5 products
             categories,
         }, {
             headers: {

@@ -65,7 +65,7 @@ const CustomDesignSchema = new mongoose.Schema({
     negotiationHistory: [{
         offerBy: {
             type: String,
-            enum: ['seller', 'customer'],
+            enum: ['admin', 'customer'],
             required: true
         },
         amount: {
@@ -103,7 +103,7 @@ const CustomDesignSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
-    sellerResponse: {
+    adminResponse: {
         message: {
             type: String
         },

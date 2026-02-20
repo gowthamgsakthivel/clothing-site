@@ -16,8 +16,8 @@
 
 ### 1. **Authentication & Authorization**
 - ✅ **Clerk Integration** - Full user authentication (email, Google, Facebook, Apple OAuth)
-- ✅ **Seller Role Management** - User metadata distinguishes regular users from sellers
-- ✅ **Protected Routes** - Middleware-based route protection for seller/admin pages
+- ✅ **Role Management** - User metadata distinguishes admin users from standard users
+- ✅ **Protected Routes** - Middleware-based route protection for admin pages
 - ✅ **Social Login** - Setup guide exists for Google, Facebook, Apple integration
 
 ### 2. **Core E-Commerce Features**
@@ -62,17 +62,17 @@
   - File validation
   
 - ✅ **Quotation System**
-  - Sellers can provide quotes for custom designs
+  - Admin team can provide quotes for custom designs
   - Advance payment before final order
   - Quote timestamp tracking
 
 - ✅ **Negotiation System**
   - Customer can counter-offer
-  - Seller can negotiate back
+  - Admin team can negotiate back
   - Full negotiation history stored
   - Status tracking (pending → quoted → negotiating → approved/rejected → completed)
 
-- ✅ **Design Analytics** (Seller Dashboard)
+- ✅ **Design Analytics** (Admin Dashboard)
   - View custom design requests
   - Track quote conversion rates
   - Monitor negotiation patterns
@@ -101,8 +101,8 @@
   - Discount application on referral purchase
   - Referral earnings display
 
-### 8. **Seller Dashboard**
-- ✅ **Seller Features**
+### 8. **Admin Dashboard**
+- ✅ **Admin Features**
   - Product management (add/edit products)
   - Order management with custom designs
   - Design analytics and insights
@@ -170,7 +170,7 @@
 - ⚠️ **Unfinished:** Design conversion to final order
   - Quote accepted → Order creation flow unclear
   - File `/app/api/custom-design/convert-to-order` exists but may be incomplete
-  - Missing: Payment completion handling after seller approval
+  - Missing: Payment completion handling after admin approval
   - Missing: Inventory creation for custom designs
 
 ### 3. **Email Service**
@@ -390,7 +390,7 @@ NEXT_PUBLIC_CURRENCY=₹
 | Orders | ✅ Complete | 90% |
 | Custom Designs | ⚠️ Partial | 75% |
 | Admin Panel | ❌ Missing | 0% |
-| Seller Dashboard | ✅ Mostly | 85% |
+| Admin Dashboard | ✅ Mostly | 85% |
 | Notifications | ⚠️ Partial | 40% |
 | Analytics | ⚠️ Partial | 50% |
 | **Overall** | | **~80%** |

@@ -89,7 +89,7 @@ const Cart = () => {
       }
 
       if (!targetDesign.quote || !targetDesign.quote.amount) {
-        toast.error('This design does not have a quote yet. Please wait for seller to provide pricing.', { id: 'refresh-price' });
+        toast.error('This design does not have a quote yet. Please wait for the admin team to provide pricing.', { id: 'refresh-price' });
         return;
       }
 

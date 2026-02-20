@@ -184,7 +184,7 @@ export async function POST(request) {
                 timestamp: new Date()
             };
 
-            // Add customer response for the seller to see
+            // Add customer response for the admin team to see
             updates.customerResponse = {
                 message: message || `I'd like to negotiate. My counter offer is: ${counterOffer}`,
                 timestamp: new Date()

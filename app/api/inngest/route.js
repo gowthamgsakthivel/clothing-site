@@ -1,7 +1,6 @@
 
 import { serve } from "inngest/next";
-import { createUserOrder, inngest, syncUserCreation, syncUserDeletion, syncUserUpdation } from "@/config/inngest";
-import Order from "@/models/Orders"; // Ensure Order model is loaded for Inngest
+import { inngest, syncUserCreation, syncUserDeletion, syncUserUpdation } from "@/config/inngest";
 
 // Create an API that serves zero functions
 export const { GET, POST, PUT } = serve({
@@ -9,7 +8,6 @@ export const { GET, POST, PUT } = serve({
     functions: [
         syncUserCreation,
         syncUserUpdation,
-        syncUserDeletion,
-        createUserOrder
+        syncUserDeletion
     ],
 });  

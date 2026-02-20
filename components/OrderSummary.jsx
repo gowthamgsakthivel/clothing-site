@@ -127,12 +127,13 @@ const OrderSummary = () => {
               };
 
               // Place order in DB with Razorpay payment info
-              const orderRes = await axios.post('/api/order/create', orderPayload);
+              const orderRes = await axios.post('/api/orders-v2/create', orderPayload);
 
               if (orderRes.data.success) {
                 toast.success('Payment successful! Order placed.');
                 setCartItems({});
-                router.push('/order-placed');
+                const orderId = orderRes.data?.data?.orderId || orderRes.data?.orderId;
+                router.push(orderId ? `/order-placed?orderId=${orderId}` : '/order-placed');
               } else {
                 console.error('Order creation failed with response:', orderRes.data);
 

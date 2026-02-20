@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAuth } from "@clerk/nextjs/server";
-import authSeller from "@/lib/authSeller";
+import { requireAdmin } from "@/lib/authRoles";
 import CustomDesign from "@/models/CustomDesign";
 import connectDB from "@/config/db";
 import axios from "axios";
@@ -8,36 +7,7 @@ import axios from "axios";
 export async function GET(request) {
     // console.log("⭐ Starting download custom design image API route");
     try {
-        // Authenticate seller
-        const { userId } = getAuth(request);
-        // console.log("👤 Seller auth result:", { userId: userId || "undefined" });
-
-        if (!userId) {
-            // console.log("❌ No userId found in auth");
-            return NextResponse.json({
-                success: false,
-                message: 'Authentication required'
-            }, { status: 401 });
-        }
-
-        // console.log("🛡️ Checking if user is a seller");
-        try {
-            const isSeller = await authSeller(userId);
-            if (!isSeller) {
-                // console.log("❌ User is not authorized as seller");
-                return NextResponse.json({
-                    success: false,
-                    message: 'Not authorized as seller'
-                }, { status: 403 });
-            }
-            // console.log("✅ User is confirmed as seller");
-        } catch (authError) {
-            console.error("❌ Error checking seller status:", authError);
-            return NextResponse.json({
-                success: false,
-                message: 'Error checking seller status: ' + authError.message
-            }, { status: 500 });
-        }
+        await requireAdmin();
 
         // Get designId from query params
         const { searchParams } = new URL(request.url);
