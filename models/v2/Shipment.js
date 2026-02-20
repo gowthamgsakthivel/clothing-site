@@ -20,7 +20,7 @@ const shipmentSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-shipmentSchema.index({ shipmentId: 1 }, { unique: true });
+
 
 const Shipment = mongoose.models.Shipment || mongoose.model('Shipment', shipmentSchema, 'shipments');
 

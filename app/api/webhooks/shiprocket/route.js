@@ -86,7 +86,7 @@ export async function POST(request) {
 
   try {
     const secret = getWebhookSecret();
-    const tokenHeader = request.headers.get('x-shiprocket-token');
+    const tokenHeader = request.headers.get('x-shiprocket-token') || request.headers.get('x-api-key');
     const clientIp = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
 
     if (!checkRateLimit(clientIp)) {
