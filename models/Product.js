@@ -1,4 +1,3 @@
-import { products } from "@/assets/productData";
 import mongoose from "mongoose";
 
 const productSchema = new mongoose.Schema({

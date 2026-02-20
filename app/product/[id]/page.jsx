@@ -18,6 +18,7 @@ import { getSizeChart } from "@/lib/sizeGuideData";
 import ShareButton from "@/components/ShareButton";
 import React from "react";
 import toast from "react-hot-toast";
+import axios from "axios";
 
 const Product = () => {
 
@@ -38,45 +39,58 @@ const Product = () => {
     const [sizeChart, setSizeChart] = useState(null);
 
     const fetchProductData = useCallback(async () => {
-        // Safely find product and handle if products array is undefined
+        let product = null;
+
         if (Array.isArray(products)) {
-            const product = products.find(product => product?._id === id);
-            if (product) {
-                setProductData(product);
+            product = products.find(existing => existing?._id === id) || null;
+        }
 
-                // Reset color and size selection when product changes
-                setSelectedColor(null);
-                setSelectedSize(null);
+        if (!product && id) {
+            try {
+                const { data } = await axios.get(`/api/product/details/${id}`);
+                if (data.success) {
+                    product = data.product;
+                }
+            } catch (error) {
+                console.error('Failed to fetch product details:', error);
+            }
+        }
 
-                // Set default color if available - use a temporary function to avoid dependency issues
-                const getColorsFromProduct = (prod) => {
-                    // Try new inventory format first
-                    if (Array.isArray(prod.inventory) && prod.inventory.length > 0) {
-                        return prod.inventory.map(item => ({
-                            color: item.color.name,
-                            stock: item.sizeStock.reduce((sum, sizeStock) => sum + (sizeStock.quantity || 0), 0),
-                            _id: item._id || item.color.name
-                        }));
-                    }
+        if (product) {
+            setProductData(product);
 
-                    // Fallback to old format
-                    if (Array.isArray(prod.color)) {
-                        return prod.color;
-                    }
+            // Reset color and size selection when product changes
+            setSelectedColor(null);
+            setSelectedSize(null);
 
-                    return [];
-                };
+            // Set default color if available - use a temporary function to avoid dependency issues
+            const getColorsFromProduct = (prod) => {
+                // Try new inventory format first
+                if (Array.isArray(prod.inventory) && prod.inventory.length > 0) {
+                    return prod.inventory.map(item => ({
+                        color: item.color.name,
+                        stock: item.sizeStock.reduce((sum, sizeStock) => sum + (sizeStock.quantity || 0), 0),
+                        _id: item._id || item.color.name
+                    }));
+                }
 
-                const availableColors = getColorsFromProduct(product);
-                if (availableColors.length > 0) {
-                    // Find first color that has stock
-                    const inStockColor = availableColors.find(c => c.stock > 0);
-                    if (inStockColor) {
-                        setSelectedColor(inStockColor.color);
-                    } else {
-                        // If all colors are out of stock, just select the first one
-                        setSelectedColor(availableColors[0].color);
-                    }
+                // Fallback to old format
+                if (Array.isArray(prod.color)) {
+                    return prod.color;
+                }
+
+                return [];
+            };
+
+            const availableColors = getColorsFromProduct(product);
+            if (availableColors.length > 0) {
+                // Find first color that has stock
+                const inStockColor = availableColors.find(c => c.stock > 0);
+                if (inStockColor) {
+                    setSelectedColor(inStockColor.color);
+                } else {
+                    // If all colors are out of stock, just select the first one
+                    setSelectedColor(availableColors[0].color);
                 }
             }
         }

@@ -1,6 +1,9 @@
-import Product from "@/models/Product";
+import ProductV2 from "@/models/v2/Product";
+import ProductVariant from "@/models/v2/ProductVariant";
+import Inventory from "@/models/v2/Inventory";
 import { NextResponse } from "next/server";
 import connectDB from "@/config/db";
+import { mapV2ProductToLegacy } from "@/lib/v2ProductMapper";
 
 export async function GET(request) {
     try {
@@ -11,43 +14,51 @@ export async function GET(request) {
 
         await connectDB();
 
+        const filter = { status: 'active' };
+
         // Get total count for pagination info
-        const totalProducts = await Product.countDocuments({});
+        const totalProducts = await ProductV2.countDocuments(filter);
         const totalPages = Math.ceil(totalProducts / limit);
 
         // Get paginated products
-        const rawProducts = await Product.find({})
-            .sort({ date: -1 }) // Sort by newest first
+        const rawProducts = await ProductV2.find(filter)
+            .sort({ createdAt: -1 })
             .skip(skip)
-            .limit(limit);
+            .limit(limit)
+            .lean();
 
-        // Convert products to ensure backward compatibility
-        const products = rawProducts.map(product => {
-            const productObj = product.toObject();
+        const productIds = rawProducts.map((product) => product._id);
 
-            // If product has new inventory format but no color array, generate one for backward compatibility
-            if (productObj.inventory && productObj.inventory.length > 0 && (!productObj.color || productObj.color.length === 0)) {
-                productObj.color = productObj.inventory.map(item => ({
-                    color: item.color.name,
-                    stock: item.sizeStock.reduce((sum, sizeStock) => sum + (sizeStock.quantity || 0), 0)
-                }));
+        const variants = productIds.length
+            ? await ProductVariant.find({
+                productId: { $in: productIds },
+                visibility: { $ne: 'hidden' }
+            }).lean()
+            : [];
+        const variantIds = variants.map((variant) => variant._id);
+        const inventories = variantIds.length
+            ? await Inventory.find({ variantId: { $in: variantIds } }).lean()
+            : [];
 
-                // Generate sizes array if missing
-                if (!productObj.sizes || productObj.sizes.length === 0) {
-                    const allSizes = new Set();
-                    productObj.inventory.forEach(item => {
-                        item.sizeStock.forEach(sizeStock => {
-                            if (sizeStock.quantity > 0) {
-                                allSizes.add(sizeStock.size);
-                            }
-                        });
-                    });
-                    productObj.sizes = Array.from(allSizes);
-                }
+        const variantsByProduct = new Map();
+        variants.forEach((variant) => {
+            const key = String(variant.productId);
+            if (!variantsByProduct.has(key)) {
+                variantsByProduct.set(key, []);
             }
-
-            return productObj;
+            variantsByProduct.get(key).push(variant);
         });
+
+        const inventoryByVariantId = new Map();
+        inventories.forEach((inventory) => {
+            inventoryByVariantId.set(String(inventory.variantId), inventory);
+        });
+
+        const products = rawProducts.map((product) => mapV2ProductToLegacy({
+            product,
+            variants: variantsByProduct.get(String(product._id)) || [],
+            inventoryByVariantId
+        }));
 
         return NextResponse.json({
             success: true,

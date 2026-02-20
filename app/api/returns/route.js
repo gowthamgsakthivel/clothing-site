@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import connectDB from "@/config/db";
 import ReturnRequest from "@/models/ReturnRequest";
-import Order from "@/models/Orders";
+import OrderV2 from "@/models/v2/Order";
 
 // GET - Fetch return requests
 export async function GET(req) {
@@ -69,7 +69,7 @@ export async function POST(req) {
         }
 
         // Verify order exists and belongs to user
-        const order = await Order.findOne({ _id: orderId, userId });
+        const order = await OrderV2.findOne({ _id: orderId, userId });
         
         if (!order) {
             return NextResponse.json(
@@ -79,7 +79,8 @@ export async function POST(req) {
         }
 
         // Check if order is eligible for return (delivered within return window)
-        if (order.status !== 'Delivered') {
+        const normalizedStatus = (order.status || '').toString().toLowerCase();
+        if (normalizedStatus !== 'delivered') {
             return NextResponse.json(
                 { success: false, message: "Only delivered orders can be returned" },
                 { status: 400 }
@@ -112,7 +113,7 @@ export async function POST(req) {
         await newReturn.save();
 
         // Update order status to indicate return is in progress
-        order.status = 'Return Requested';
+        order.status = 'return_requested';
         await order.save();
 
         return NextResponse.json({

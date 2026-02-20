@@ -1,9 +1,8 @@
 'use client'
-import { productsDummyData, userDummyData } from "@/assets/assets";
 import { useAuth, useUser } from "@clerk/nextjs";
 import axios from "axios";
 import { useRouter } from "next/navigation";
-import { createContext, useContext, useEffect, useState, useCallback } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 import toast from "react-hot-toast";
 
 export const AppContext = createContext();
@@ -22,10 +21,10 @@ export const AppContextProvider = (props) => {
 
     const [products, setProducts] = useState([])
     const [userData, setUserData] = useState(false)
-    const [isSeller, setIsSeller] = useState(false)
     const [isAdmin, setIsAdmin] = useState(false)
     const [cartItems, setCartItems] = useState({})
     const [favorites, setFavorites] = useState([])
+    const productsRequestRef = useRef(null)
 
     // Loading states for different operations
     const [loadingStates, setLoadingStates] = useState({
@@ -48,7 +47,15 @@ export const AppContextProvider = (props) => {
             // Set loading state
             setLoadingStates(prev => ({ ...prev, products: true }));
 
-            const { data } = await axios.get(`/api/product/list?page=${page}&limit=${limit}`);
+            if (productsRequestRef.current) {
+                productsRequestRef.current.abort();
+            }
+            const controller = new AbortController();
+            productsRequestRef.current = controller;
+
+            const { data } = await axios.get(`/api/product/list?page=${page}&limit=${limit}`,
+                { signal: controller.signal }
+            );
 
             if (data.success) {
                 setProducts(data.products);
@@ -61,6 +68,9 @@ export const AppContextProvider = (props) => {
                 return null;
             }
         } catch (error) {
+            if (error?.name === 'CanceledError' || error?.code === 'ERR_CANCELED') {
+                return null;
+            }
             console.error("Error fetching products:", error);
             toast.error(error.message || "An error occurred while fetching products");
             return null;
@@ -76,7 +86,6 @@ export const AppContextProvider = (props) => {
 
             // Check role and set flags accordingly (reset to false if not matching)
             const userRole = user?.publicMetadata?.role;
-            setIsSeller(userRole === "seller");
             setIsAdmin(userRole === "admin");
 
             const token = await getToken();
@@ -346,6 +355,14 @@ export const AppContextProvider = (props) => {
     }, [])
 
     useEffect(() => {
+        return () => {
+            if (productsRequestRef.current) {
+                productsRequestRef.current.abort();
+            }
+        };
+    }, []);
+
+    useEffect(() => {
         if (user) {
             fetchUserData()
             fetchFavorites()
@@ -392,7 +409,6 @@ export const AppContextProvider = (props) => {
     const value = {
         user, getToken,
         currency, router,
-        isSeller, setIsSeller,
         isAdmin, setIsAdmin,
         userData, fetchUserData,
         products, fetchProductData,

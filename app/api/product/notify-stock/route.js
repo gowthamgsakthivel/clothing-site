@@ -2,7 +2,8 @@ import { getAuth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import connectDB from "@/config/db";
 import User from "@/models/User";
-import Product from "@/models/Product";
+import ProductV2 from "@/models/v2/Product";
+import ProductVariant from "@/models/v2/ProductVariant";
 
 export async function POST(request) {
     try {
@@ -48,18 +49,27 @@ export async function POST(request) {
 
         if (!productName || !image || !price) {
             // Check if product exists
-            const product = await Product.findById(productId);
-            if (!product) {
+            const product = await ProductV2.findById(productId).lean();
+            if (!product || product.status !== 'active') {
                 return NextResponse.json({
                     success: false,
                     message: 'Product not found'
                 }, { status: 404 });
             }
 
+            const variantFilter = { productId: product._id, color };
+            if (size) {
+                variantFilter.size = size;
+            }
+            let variant = await ProductVariant.findOne(variantFilter).lean();
+            if (!variant) {
+                variant = await ProductVariant.findOne({ productId: product._id }).lean();
+            }
+
             productInfo = {
                 name: product.name,
-                image: product.image && product.image.length > 0 ? product.image[0] : null,
-                price: product.offerPrice || product.price,
+                image: variant?.images && variant.images.length > 0 ? variant.images[0] : null,
+                price: variant?.offerPrice || variant?.originalPrice || 0,
                 brand: product.brand || '',
                 category: product.category || '',
             };

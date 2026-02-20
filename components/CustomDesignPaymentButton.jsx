@@ -69,7 +69,7 @@ const CustomDesignPaymentButton = ({ design, variant = 'primary', size = 'md', t
             toast.error('Something went wrong. Please try again.');
             setIsLoading(false);
         }
-    }, [cartItems, design, getToken, router, setCartItems]);
+    }, [cartItems, design, getToken, router, setCartItems, user]);
 
     // Create global function to add to cart on component mount
     useEffect(() => {

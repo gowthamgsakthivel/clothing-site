@@ -9,7 +9,7 @@
  * - Responsive behavior on different screen sizes
  * - User authentication state handling
  * - Search functionality
- * - Seller dashboard access
+ * - Owner dashboard access
  */
 
 import React from 'react';
@@ -46,6 +46,12 @@ jest.mock('@/components/SearchBar', () => {
     };
 });
 
+jest.mock('@/components/UnifiedNotificationIcon', () => {
+    return function DummyNotificationIcon() {
+        return <div data-testid="notifications" />;
+    };
+});
+
 // Mock next/image
 jest.mock('next/image', () => ({
     __esModule: true,
@@ -56,16 +62,17 @@ describe('Navbar', () => {
     // Default mocked values
     const mockRouter = { push: jest.fn() };
     const mockOpenSignIn = jest.fn();
+    const mockGetCartCount = jest.fn(() => 0);
 
     beforeEach(() => {
         jest.clearAllMocks();
 
         // Default context values for a regular user
         useAppContext.mockReturnValue({
-            isSeller: false,
             isAdmin: false,
             router: mockRouter,
             user: null,
+            getCartCount: mockGetCartCount,
         });
 
         useClerk.mockReturnValue({
@@ -77,7 +84,7 @@ describe('Navbar', () => {
         render(<Navbar />);
 
         // Check for main navigation links
-        expect(screen.getByText('Home')).toBeInTheDocument();
+        expect(screen.getAllByText('Home').length).toBeGreaterThan(0);
         expect(screen.getByText('Products')).toBeInTheDocument();
         expect(screen.getByText('About Us')).toBeInTheDocument();
         expect(screen.getByText('Contact')).toBeInTheDocument();
@@ -102,10 +109,10 @@ describe('Navbar', () => {
     test('shows user button when user is authenticated', () => {
         // Mock an authenticated user
         useAppContext.mockReturnValue({
-            isSeller: false,
             isAdmin: false,
             router: mockRouter,
             user: { id: 'user-123' },
+            getCartCount: mockGetCartCount,
         });
 
         render(<Navbar />);
@@ -123,18 +130,18 @@ describe('Navbar', () => {
         expect(orderActions.length).toBeGreaterThan(0);
     });
 
-    test('shows owner dashboard button for owners', () => {
-        // Mock an owner user
+    test('shows owner dashboard button for admins', () => {
+        // Mock an admin user
         useAppContext.mockReturnValue({
-            isSeller: true,
-            isAdmin: false,
+            isAdmin: true,
             router: mockRouter,
-            user: { id: 'owner-123' },
+            user: { id: 'admin-123' },
+            getCartCount: mockGetCartCount,
         });
 
         render(<Navbar />);
 
-        // Check for seller dashboard button
+        // Check for owner dashboard button
         const ownerButtons = screen.getAllByText('Owner Dashboard');
         expect(ownerButtons.length).toBeGreaterThan(0);
 
@@ -159,7 +166,7 @@ describe('Navbar', () => {
         expect(screen.queryAllByTestId('search-bar')).toHaveLength(1); // Only desktop search bar
 
         // Find and click the search button (mobile only)
-        const searchButton = screen.getByLabelText('Search');
+        const searchButton = screen.getByRole('button', { name: 'Search' });
         fireEvent.click(searchButton);
 
         // Now there should be two search bars (desktop and mobile)
@@ -196,10 +203,10 @@ describe('Navbar', () => {
     test('user menu actions navigate to correct pages', () => {
         // Mock an authenticated user
         useAppContext.mockReturnValue({
-            isSeller: false,
             isAdmin: false,
             router: mockRouter,
             user: { id: 'user-123' },
+            getCartCount: mockGetCartCount,
         });
 
         render(<Navbar />);

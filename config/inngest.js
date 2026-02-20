@@ -1,7 +1,6 @@
 import { Inngest } from "inngest";
 import connectDB from "./db";
 import User from "../models/User";
-import Order from "@/models/Orders";
 
 
 // Create a client to send and receive events
@@ -64,45 +63,5 @@ export const syncUserDeletion = inngest.createFunction(
 
         await connectDB()
         await User.findByIdAndDelete(id)
-    }
-)
-
-// Inngest function to create user's order in database
-export const createUserOrder = inngest.createFunction(
-    {
-        id: 'create-user-order',
-        batchEvents: {
-            maxSize: 5,
-            timeout: '5s'
-        }
-    },
-    {
-        event: 'order/created'
-    },
-    async ({ events }) => {
-        try {
-
-            const orders = events.map((event) => {
-                return {
-                    userId: event.data.userId,
-                    items: event.data.items,
-                    amount: event.data.amount,
-                    address: event.data.address,
-                    paymentMethod: event.data.paymentMethod || 'COD',
-                    paymentStatus: event.data.paymentStatus || 'Pending',
-                    date: event.data.date
-                }
-            })
-
-
-            await connectDB();
-            console.log('Inserting orders:', orders);
-            await Order.insertMany(orders);
-
-            return { success: true, processed: orders.length };
-        } catch (error) {
-            console.error('Inngest order creation failed:', error);
-            return { success: false, error: error.message };
-        }
     }
 )

@@ -4,8 +4,18 @@ import { NextResponse } from 'next/server';
 // Define protected routes by role
 const isOwnerRoute = createRouteMatcher(['/owner(.*)']);
 
+type SessionClaimsWithRole = {
+    publicMetadata?: {
+        role?: 'admin' | 'user';
+    };
+    metadata?: {
+        role?: 'admin' | 'user';
+    };
+    role?: 'admin' | 'user';
+};
+
 export default clerkMiddleware(async (auth, req) => {
-    const { userId } = await auth();
+    const { userId, sessionClaims } = await auth();
 
     // Check if route is owner-only
     if (isOwnerRoute(req)) {
@@ -14,8 +24,16 @@ export default clerkMiddleware(async (auth, req) => {
             return NextResponse.redirect(new URL('/sign-in', req.url));
         }
 
-        // Role checks intentionally relaxed for single-owner setup
+        const claims = sessionClaims as SessionClaimsWithRole;
+        const role = claims?.publicMetadata?.role
+            ?? claims?.metadata?.role
+            ?? claims?.role;
+        if (role && role !== 'admin') {
+            return NextResponse.redirect(new URL('/', req.url));
+        }
     }
+
+    return NextResponse.next();
 });
 
 export const config = {

@@ -96,7 +96,7 @@ jest.mock('@/components/PaymentMethodSelection', () => {
             </div>
         );
     };
-});
+}, { virtual: true });
 
 // Mock the context and axios
 jest.mock('@/context/AppContext', () => ({

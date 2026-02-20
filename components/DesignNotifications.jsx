@@ -120,8 +120,8 @@ const DesignNotifications = () => {
         let hasUnread = false;
 
         requests.forEach(request => {
-            // Check if there's a seller response and if it's been viewed
-            if (request.sellerResponse && request.sellerResponse.message) {
+            // Check if there's an admin response and if it's been viewed
+            if (request.adminResponse && request.adminResponse.message) {
                 const viewed = localStorage.getItem(`design_${request._id}_viewed`) === 'true';
                 if (!viewed) {
                     hasUnread = true;
@@ -169,8 +169,8 @@ const DesignNotifications = () => {
         const notifications = [];
 
         designRequests.forEach(request => {
-            // Check for unread seller responses
-            if (request.sellerResponse && request.sellerResponse.message) {
+            // Check for unread admin responses
+            if (request.adminResponse && request.adminResponse.message) {
                 const viewed = localStorage.getItem(`design_${request._id}_viewed`) === 'true';
                 if (!viewed) {
                     notifications.push({
@@ -178,7 +178,7 @@ const DesignNotifications = () => {
                         requestId: request._id,
                         type: 'response',
                         message: 'New response to your design request',
-                        date: request.sellerResponse.timestamp,
+                        date: request.adminResponse.timestamp,
                         status: request.status
                     });
                 }

@@ -110,7 +110,7 @@ const QuoteResponseButtons = ({ design, getToken, onQuoteResponded }) => {
 
             if (data.success) {
                 // console.log("Negotiation submitted successfully");
-                toast.success('Your counter offer has been submitted to the seller.');
+                toast.success('Your counter offer has been submitted to the admin team.');
 
                 // Update UI state
                 setShowNegotiationForm(false);

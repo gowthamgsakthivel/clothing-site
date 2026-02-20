@@ -52,7 +52,7 @@ const NegotiationHistory = ({ negotiationHistory = [], initialQuote }) => {
                                         ? 'text-blue-600'
                                         : 'text-orange-600'
                                     } font-medium`}>
-                                    {entry.offerBy === 'customer' ? 'You' : 'Seller'}
+                                    {entry.offerBy === 'customer' ? 'You' : 'Admin'}
                                 </span>
                                 {entry.message && (
                                     <p className="text-sm text-gray-600 mt-1">

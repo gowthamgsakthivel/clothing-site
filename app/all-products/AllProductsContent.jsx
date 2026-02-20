@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback, Suspense } from "react";
+import { useState, useEffect, useCallback, Suspense, useRef } from "react";
 import { useAppContext } from "@/context/AppContext";
 import { useSearchParams, useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
@@ -41,13 +41,24 @@ function AllProductsContent() {
     const [availableBrands, setAvailableBrands] = useState([]);
     const [availableColors, setAvailableColors] = useState([]);
     const [showMobileFilters, setShowMobileFilters] = useState(false);
+    const productsRequestRef = useRef(null);
 
     const searchParams = useSearchParams();
+    const searchQuery = searchParams.get("search") || "";
+    const pageParam = Number.parseInt(searchParams.get("page") || "1", 10);
 
     const fetchProducts = useCallback(async (page = 1) => {
         setLoading(true);
         try {
-            const { data } = await axios.get(`/api/product/list?page=${page}&limit=${pagination.limit}`);
+            if (productsRequestRef.current) {
+                productsRequestRef.current.abort();
+            }
+            const controller = new AbortController();
+            productsRequestRef.current = controller;
+
+            const { data } = await axios.get(`/api/product/list?page=${page}&limit=${pagination.limit}`,
+                { signal: controller.signal }
+            );
             if (data.success) {
                 setProducts(data.products);
                 setPagination(data.pagination);
@@ -69,6 +80,9 @@ function AllProductsContent() {
                 setAvailableColors(colors);
             }
         } catch (error) {
+            if (error?.name === 'CanceledError' || error?.code === 'ERR_CANCELED') {
+                return;
+            }
             console.error("Failed to fetch products:", error);
         } finally {
             setLoading(false);
@@ -76,11 +90,18 @@ function AllProductsContent() {
     }, [pagination.limit]);
 
     useEffect(() => {
-        const q = searchParams.get("search") || "";
-        const page = parseInt(searchParams.get("page") || "1");
-        setSearchTerm(q);
-        fetchProducts(page);
-    }, [searchParams, fetchProducts]);
+        const nextPage = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1;
+        setSearchTerm(searchQuery);
+        fetchProducts(nextPage);
+    }, [fetchProducts, pageParam, searchQuery]);
+
+    useEffect(() => {
+        return () => {
+            if (productsRequestRef.current) {
+                productsRequestRef.current.abort();
+            }
+        };
+    }, []);
 
     const changePage = (newPage) => {
         if (newPage > 0 && newPage <= pagination.totalPages) {

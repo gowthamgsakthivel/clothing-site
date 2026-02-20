@@ -1,7 +1,9 @@
 import connectDB from "@/config/db";
-import Product from "@/models/Product";
+import ProductV2 from "@/models/v2/Product";
+import Inventory from "@/models/v2/Inventory";
+import { mapV2ProductToLegacy } from "@/lib/v2ProductMapper";
 import { NextResponse } from "next/server";
-import { rateLimit } from "@/lib/rateLimit";
+import { rateLimit, escapeRegex } from "@/lib/rateLimit";
 
 // ✅ PRODUCTION FIX 3: Rate limiting for search endpoint
 const limiter = rateLimit({ limit: 120, window: 60 }); // 120 requests per minute
@@ -31,7 +33,7 @@ export async function GET(request) {
         const { searchParams } = new URL(request.url);
         const query = searchParams.get('q');
         const page = Math.max(1, parseInt(searchParams.get('page') || '1'));
-        const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 50); // ✅ Cap at 50
+        const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 50);
         const category = searchParams.get('category');
         const gender = searchParams.get('gender');
         const minPrice = Math.max(0, parseFloat(searchParams.get('minPrice') || '0'));
@@ -41,90 +43,97 @@ export async function GET(request) {
 
         await connectDB();
 
-        // Build the filter object
-        const filter = {
-            offerPrice: { $gte: minPrice, $lte: maxPrice }
-        };
-
-        // Add text search if query exists
-        if (query && query.trim() !== '') {
-            // ✅ Use text search (more efficient than regex for full search)
-            try {
-                await Product.collection.createIndex({
-                    name: "text",
-                    description: "text",
-                    brand: "text",
-                    category: "text"
-                }, { background: true });
-            } catch (error) {
-                // Index might already exist
-                if (process.env.NODE_ENV === 'development') {
-                    console.log("Index creation:", error.message);
-                }
-            }
-
-            filter.$text = { $search: query };
-        }
-
-        // Add category filter if provided
+        const filter = { status: 'active' };
         if (category) {
             filter.category = category;
         }
-
-        // Add gender filter if provided
         if (gender) {
-            filter.gender = gender;
+            filter.genderCategory = gender;
+        }
+        if (query && query.trim() !== '') {
+            const safeQuery = escapeRegex(query.trim());
+            const regex = new RegExp(safeQuery, 'i');
+            filter.$or = [
+                { name: regex },
+                { description: regex },
+                { brand: regex },
+                { category: regex }
+            ];
         }
 
-        // Count total products matching the filter (with timeout)
-        const totalProducts = await Product.countDocuments(filter).maxTimeMS(5000);
+        const safeOrder = sortOrder === 'asc' ? 1 : -1;
+        const sort = sortBy === 'price'
+            ? { minOfferPrice: safeOrder }
+            : sortBy === 'name'
+                ? { name: safeOrder }
+                : { createdAt: safeOrder };
 
-        // Calculate pagination
         const skip = (page - 1) * limit;
+
+        const [result] = await ProductV2.aggregate([
+            { $match: filter },
+            {
+                $lookup: {
+                    from: 'product_variants_v2',
+                    let: { productId: '$_id' },
+                    pipeline: [
+                        { $match: { $expr: { $eq: ['$productId', '$$productId'] } } },
+                        { $match: { visibility: { $ne: 'hidden' } } }
+                    ],
+                    as: 'variants'
+                }
+            },
+            {
+                $addFields: {
+                    minOfferPrice: { $min: '$variants.offerPrice' }
+                }
+            },
+            {
+                $match: {
+                    minOfferPrice: { $gte: minPrice, $lte: maxPrice }
+                }
+            },
+            { $sort: sort },
+            {
+                $facet: {
+                    data: [
+                        { $skip: skip },
+                        { $limit: limit }
+                    ],
+                    total: [
+                        { $count: 'count' }
+                    ]
+                }
+            }
+        ]);
+
+        const productsRaw = result?.data || [];
+        const totalProducts = result?.total?.[0]?.count || 0;
         const totalPages = Math.ceil(totalProducts / limit);
 
-        // Create sort object
-        const sort = {};
+        const variants = productsRaw.flatMap((product) => product.variants || []);
+        const variantIds = variants.map((variant) => variant._id);
+        const inventories = variantIds.length
+            ? await Inventory.find({ variantId: { $in: variantIds } }).lean()
+            : [];
 
-        // ✅ Optimize sorting
-        if (sortBy === 'price') {
-            sort.offerPrice = sortOrder === 'asc' ? 1 : -1;
-        } else if (sortBy === 'name') {
-            sort.name = sortOrder === 'asc' ? 1 : -1;
-        } else {
-            sort.createdAt = sortOrder === 'asc' ? 1 : -1;
-        }
+        const inventoryByVariantId = new Map();
+        inventories.forEach((inventory) => {
+            inventoryByVariantId.set(String(inventory.variantId), inventory);
+        });
 
-        // Get products with optimizations
-        let products;
-        if (query && query.trim() !== '') {
-            products = await Product.find(
-                filter,
-                { score: { $meta: "textScore" } } // Include text score
-            )
-                .sort({ score: { $meta: "textScore" }, ...sort })
-                .skip(skip)
-                .limit(limit)
-                .select('name image offerPrice price category brand slug description') // ✅ Limited fields
-                .lean()
-                .maxTimeMS(10000); // ✅ 10 second timeout
-        } else {
-            products = await Product.find(filter)
-                .sort(sort)
-                .skip(skip)
-                .limit(limit)
-                .select('name image offerPrice price category brand slug description') // ✅ Limited fields
-                .lean()
-                .maxTimeMS(10000); // ✅ 10 second timeout
-        }
+        const products = productsRaw.map((product) => mapV2ProductToLegacy({
+            product,
+            variants: product.variants || [],
+            inventoryByVariantId
+        }));
 
-        // Return response with products
         return NextResponse.json({
             success: true,
-            products: products,
+            products,
             pagination: {
                 currentPage: page,
-                totalPages: totalPages,
+                totalPages,
                 totalResults: totalProducts,
                 hasMore: page < totalPages
             },

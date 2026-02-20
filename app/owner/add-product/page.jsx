@@ -17,16 +17,12 @@ const AddProduct = () => {
         category: '',
         genderCategory: 'Unisex',
         brand: '',
-        inventory: [],
-        stockSettings: {
-            trackInventory: true,
-            allowBackorders: false,
-            globalLowStockThreshold: 10
-        }
+        variants: []
     });
 
-    const [images, setImages] = useState([]);
+    const [imageUrls, setImageUrls] = useState([]);
     const [imagePreviews, setImagePreviews] = useState([]);
+    const [isUploadingImages, setIsUploadingImages] = useState(false);
 
     const availableSizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
     const categories = ['T-Shirt', 'Shirt', 'Pants', 'Shorts', 'Hoodie', 'Jacket', 'Accessories'];
@@ -34,7 +30,7 @@ const AddProduct = () => {
     const addColorVariant = () => {
         setProductData(prev => ({
             ...prev,
-            inventory: [...prev.inventory, {
+            variants: [...prev.variants, {
                 color: {
                     name: '',
                     code: '#000000',
@@ -51,45 +47,75 @@ const AddProduct = () => {
 
     const updateColor = (colorIndex, field, value) => {
         setProductData(prev => {
-            const newInventory = [...prev.inventory];
-            newInventory[colorIndex].color[field] = value;
-            return { ...prev, inventory: newInventory };
+            const nextVariants = [...prev.variants];
+            nextVariants[colorIndex].color[field] = value;
+            return { ...prev, variants: nextVariants };
         });
     };
 
     const updateSizeStock = (colorIndex, sizeIndex, field, value) => {
         setProductData(prev => {
-            const newInventory = [...prev.inventory];
-            newInventory[colorIndex].sizeStock[sizeIndex][field] = parseInt(value) || 0;
-            return { ...prev, inventory: newInventory };
+            const nextVariants = [...prev.variants];
+            nextVariants[colorIndex].sizeStock[sizeIndex][field] = parseInt(value) || 0;
+            return { ...prev, variants: nextVariants };
         });
     };
 
     const removeColor = (colorIndex) => {
         setProductData(prev => ({
             ...prev,
-            inventory: prev.inventory.filter((_, index) => index !== colorIndex)
+            variants: prev.variants.filter((_, index) => index !== colorIndex)
         }));
     };
 
-    const handleImageChange = (e) => {
+    const uploadImage = async (file, token) => {
+        const formData = new FormData();
+        formData.append('image', file);
+        const response = await axios.post('/api/admin/uploads/image', formData, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'multipart/form-data'
+            }
+        });
+
+        if (!response.data?.success) {
+            throw new Error(response.data?.message || 'Image upload failed');
+        }
+
+        return response.data.url;
+    };
+
+    const handleImageChange = async (e) => {
         const files = Array.from(e.target.files);
         if (files.length === 0) return;
-        setImages(files);
-        const previews = files.map(file => URL.createObjectURL(file));
-        setImagePreviews(previews);
+
+        setIsUploadingImages(true);
+
+        try {
+            const token = await getToken();
+            const uploadedUrls = await Promise.all(files.map((file) => uploadImage(file, token)));
+            setImageUrls((prev) => {
+                const nextUrls = [...prev, ...uploadedUrls];
+                setImagePreviews(nextUrls);
+                return nextUrls;
+            });
+        } catch (error) {
+            toast.error(error.message || 'Failed to upload images');
+        } finally {
+            setIsUploadingImages(false);
+            e.target.value = '';
+        }
     };
 
     const removeImage = (indexToRemove) => {
-        const newImages = images.filter((_, index) => index !== indexToRemove);
+        const newUrls = imageUrls.filter((_, index) => index !== indexToRemove);
         const newPreviews = imagePreviews.filter((_, index) => index !== indexToRemove);
-        URL.revokeObjectURL(imagePreviews[indexToRemove]);
-        setImages(newImages);
+        setImageUrls(newUrls);
         setImagePreviews(newPreviews);
     };
 
     const calculateTotalStock = () => {
-        return productData.inventory.reduce((total, colorData) => {
+        return productData.variants.reduce((total, colorData) => {
             return total + colorData.sizeStock.reduce((colorTotal, sizeData) => {
                 return colorTotal + sizeData.quantity;
             }, 0);
@@ -104,13 +130,13 @@ const AddProduct = () => {
             return;
         }
 
-        if (productData.inventory.length === 0) {
+        if (productData.variants.length === 0) {
             toast.error('Please add at least one color variant');
             return;
         }
 
-        for (let i = 0; i < productData.inventory.length; i++) {
-            const colorVariant = productData.inventory[i];
+        for (let i = 0; i < productData.variants.length; i++) {
+            const colorVariant = productData.variants[i];
 
             const colorName = colorVariant.color.name?.trim();
             if (!colorName) {
@@ -130,7 +156,12 @@ const AddProduct = () => {
             }
         }
 
-        if (images.length === 0) {
+        if (isUploadingImages) {
+            toast.error('Please wait for image uploads to finish');
+            return;
+        }
+
+        if (imageUrls.length === 0) {
             toast.error('Please add at least one product image');
             return;
         }
@@ -138,53 +169,56 @@ const AddProduct = () => {
         setIsLoading(true);
 
         try {
-            const formData = new FormData();
-
-            Object.keys(productData).forEach(key => {
-                if (key !== 'inventory' && key !== 'stockSettings') {
-                    formData.append(key, productData[key]);
-                }
-            });
-
-            formData.append('inventory', JSON.stringify(productData.inventory));
-            formData.append('stockSettings', JSON.stringify(productData.stockSettings));
-            formData.append('totalStock', calculateTotalStock());
-
-            images.forEach((image, index) => {
-                formData.append(`image${index}`, image);
-            });
-            formData.append('imageCount', images.length);
-
             const token = await getToken();
-            const response = await axios.post('/api/admin/products/add', formData, {
+
+            const variants = productData.variants.flatMap((variant) => {
+                const colorName = variant.color.name?.trim();
+                return variant.sizeStock
+                    .filter((sizeData) => sizeData.quantity > 0)
+                    .map((sizeData) => ({
+                        color: colorName,
+                        size: sizeData.size,
+                        originalPrice: Number(productData.price),
+                        offerPrice: Number(productData.offerPrice),
+                        images: imageUrls,
+                        quantity: sizeData.quantity
+                    }));
+            });
+
+            const response = await axios.post('/api/admin/products-v2/full-create', {
+                product: {
+                    name: productData.name,
+                    description: productData.description,
+                    category: productData.category,
+                    genderCategory: productData.genderCategory,
+                    brand: productData.brand,
+                    status: 'active'
+                },
+                variants
+            }, {
                 headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'multipart/form-data'
+                    Authorization: `Bearer ${token}`
                 }
             });
 
-            if (response.data.success) {
-                toast.success('Product added successfully!');
-                setProductData({
-                    name: '',
-                    description: '',
-                    price: '',
-                    offerPrice: '',
-                    category: '',
-                    genderCategory: 'Unisex',
-                    brand: '',
-                    inventory: [],
-                    stockSettings: {
-                        trackInventory: true,
-                        allowBackorders: false,
-                        globalLowStockThreshold: 10
-                    }
-                });
-                setImages([]);
-                setImagePreviews([]);
-            } else {
+            if (!response.data.success) {
                 toast.error(response.data.message || 'Failed to add product');
+                return;
             }
+
+            toast.success('Product added successfully!');
+            setProductData({
+                name: '',
+                description: '',
+                price: '',
+                offerPrice: '',
+                category: '',
+                genderCategory: 'Unisex',
+                brand: '',
+                variants: []
+            });
+            setImageUrls([]);
+            setImagePreviews([]);
 
         } catch (error) {
             if (error.response) {
@@ -333,7 +367,6 @@ const AddProduct = () => {
                                 accept="image/*"
                                 onChange={handleImageChange}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-                                required
                             />
 
                             {imagePreviews.length > 0 && (
@@ -378,7 +411,7 @@ const AddProduct = () => {
                             </div>
 
                             <div className="space-y-6">
-                                {productData.inventory.map((colorData, colorIndex) => (
+                                {productData.variants.map((colorData, colorIndex) => (
                                     <ColorInventoryCard
                                         key={colorIndex}
                                         colorData={colorData}
@@ -404,10 +437,10 @@ const AddProduct = () => {
                         <div className="flex justify-end pt-6">
                             <button
                                 type="submit"
-                                disabled={isLoading}
+                                disabled={isLoading || isUploadingImages}
                                 className="bg-orange-600 text-white px-8 py-3 rounded-lg hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                             >
-                                {isLoading ? 'Adding Product...' : 'Add Product'}
+                                {isUploadingImages ? 'Uploading Images...' : (isLoading ? 'Adding Product...' : 'Add Product')}
                             </button>
                         </div>
                     </form>

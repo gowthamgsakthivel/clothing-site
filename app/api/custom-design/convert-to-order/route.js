@@ -1,17 +1,16 @@
 import { NextResponse } from "next/server";
-import { getAuth } from "@clerk/nextjs/server";
+import { requireUser } from "@/lib/authRoles";
 import CustomDesign from "@/models/CustomDesign";
-import Order from "@/models/Orders";
 import User from "@/models/User";
 import Address from "@/models/Address";
 import connectDB from "@/config/db";
-import authSeller from "@/lib/authSeller";
+import { createOrder } from "@/services/orders/OrderService";
 
 export async function POST(request) {
     // console.log("⭐ Starting convert custom design to order API route");
     try {
         // Authenticate user
-        const { userId } = getAuth(request);
+        const { userId, role } = await requireUser({ allowAdmin: true });
         // console.log("👤 User auth result:", { userId: userId || "undefined" });
 
         if (!userId) {
@@ -22,15 +21,7 @@ export async function POST(request) {
             }, { status: 401 });
         }
 
-        // Check if user is a seller (for logging purposes)
-        let isSeller = false;
-        try {
-            isSeller = await authSeller(userId);
-            // console.log("🛡️ User is a seller:", isSeller);
-        } catch (authError) {
-            console.error("⚠️ Error checking seller status (continuing):", authError);
-            // Continue without returning error - we'll check design ownership instead
-        }
+        const isAdmin = role === 'admin';
 
         // Connect to database
         console.log("🔌 Connecting to database...");
@@ -80,16 +71,16 @@ export async function POST(request) {
         // console.log("✅ Found design request");
 
         // Check if the user is authorized to convert this design to an order
-        // User must either be a seller OR the owner of the design
+        // User must either be an admin or the owner of the design
         // console.log("🔒 Auth check - User ID:", userId);
         // console.log("🔒 Auth check - Design owner:", designRequest.user);
-        // console.log("🔒 Auth check - Is seller:", isSeller);
+        // console.log("🔒 Auth check - Is admin:", isAdmin);
 
         // Fix potential string vs ObjectId comparison issue
         const designOwnerId = String(designRequest.user);
         const currentUserId = String(userId);
 
-        if (!isSeller && designOwnerId !== currentUserId) {
+        if (!isAdmin && designOwnerId !== currentUserId) {
             // console.log("❌ User is not authorized to convert this design to an order");
             return NextResponse.json({
                 success: false,
@@ -130,9 +121,9 @@ export async function POST(request) {
 
             // console.log("Address search result:", userAddress ? `Found (ID: ${userAddress._id})` : "Not found");
 
-            // If no address found but request is from seller, create a placeholder address
-            if (!userAddress && isSeller) {
-                // console.log("No address found for user, but seller is creating order. Creating placeholder address.");
+            // If no address found but request is from admin, create a placeholder address
+            if (!userAddress && isAdmin) {
+                // console.log("No address found for user, but admin is creating order. Creating placeholder address.");
 
                 // Try to get user details
                 const designUser = await User.findById(userIdString);
@@ -186,31 +177,35 @@ export async function POST(request) {
 
         let newOrder;
         try {
-            // Create order object
+            const quantity = Number(designRequest.quantity || 1);
+            const totalPrice = Number(designRequest.quote.amount || 0);
+            const unitPrice = quantity > 0 ? totalPrice / quantity : totalPrice;
+
             const orderData = {
                 userId: String(designRequest.user),
                 items: [{
-                    product: "Custom Design: " + designRequest.description,
-                    quantity: designRequest.quantity,
-                    size: designRequest.size,
-                    color: designRequest.preferredColor || "N/A",
-                    // Set custom design flag and reference
+                    sku: `custom_${designRequest._id}`,
+                    quantity,
+                    unitPrice,
+                    totalPrice,
                     isCustomDesign: true,
                     customDesignId: designRequest._id,
-                    customDesignImage: designRequest.designImage
+                    designName: designRequest.designName || designRequest.description || 'Custom Design',
+                    customDesignImage: designRequest.designImage,
+                    size: designRequest.size,
+                    color: designRequest.preferredColor || null
                 }],
-                amount: designRequest.quote.amount,
-                address: userAddress._id,
-                status: 'Order Placed',
-                paymentMethod: paymentMethod || 'COD',  // Use provided payment method or default to COD
+                paymentMethod: paymentMethod || 'COD',
                 paymentStatus: paymentStatus || 'Pending',
-                date: Math.floor(Date.now() / 1000),  // Use seconds format for consistency
-                paymentDetails: paymentDetails || null // Store payment details if provided
+                shippingAddressId: userAddress._id,
+                taxTotal: 0,
+                shippingTotal: 0,
+                discountTotal: 0,
+                grandTotal: totalPrice
             };
 
-            // console.log("Creating order with data:", JSON.stringify(orderData, null, 2));
-            newOrder = await Order.create(orderData);
-            // console.log("✅ Order created successfully:", newOrder._id);
+            const result = await createOrder(orderData);
+            newOrder = result?.order;
         } catch (orderError) {
             console.error("❌ Error creating order:", orderError);
             console.error("Error details:", orderError.message, orderError.stack);

@@ -509,7 +509,7 @@ const CustomDesignPage = () => {
                                             ></textarea>
                                         </div>
 
-                                        {/* Payment section removed - payment will happen after seller quote */}
+                                        {/* Payment section removed - payment will happen after admin quote */}
                                     </div>
 
 

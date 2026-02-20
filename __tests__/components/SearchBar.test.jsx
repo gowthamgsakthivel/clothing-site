@@ -16,6 +16,12 @@ import SearchBar from '@/components/SearchBar';
 import { mockProducts } from '../utils/test-utils';
 import { useAppContext } from '@/context/AppContext';
 
+const mockRouter = { push: jest.fn() };
+
+jest.mock('next/navigation', () => ({
+    useRouter: () => mockRouter,
+}));
+
 // Mock the AppContext to isolate the component for testing
 // This allows us to control the context values and verify interactions
 jest.mock('@/context/AppContext', () => ({
@@ -24,11 +30,17 @@ jest.mock('@/context/AppContext', () => ({
 
 describe('SearchBar', () => {
     const mockSearchProducts = jest.fn();
-    const mockRouter = { push: jest.fn() };
     const mockLoadingStates = { search: false };
 
     beforeEach(() => {
         jest.clearAllMocks();
+        global.fetch = jest.fn().mockResolvedValue({
+            json: jest.fn().mockResolvedValue({
+                success: true,
+                suggestions: [],
+                products: [],
+            }),
+        });
         mockSearchProducts.mockResolvedValue({
             products: mockProducts,
             pagination: { currentPage: 1, totalPages: 1, totalResults: mockProducts.length }
@@ -45,14 +57,14 @@ describe('SearchBar', () => {
     test('renders the search bar correctly', () => {
         render(<SearchBar />);
 
-        expect(screen.getByPlaceholderText('Search products...')).toBeInTheDocument();
-        expect(screen.getByRole('button')).toBeInTheDocument();
+        expect(screen.getByPlaceholderText('Search products, brands, categories...')).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /search/i })).toBeInTheDocument();
     });
 
     test('updates search query when input changes', () => {
         render(<SearchBar />);
 
-        const searchInput = screen.getByPlaceholderText('Search products...');
+        const searchInput = screen.getByPlaceholderText('Search products, brands, categories...');
         fireEvent.change(searchInput, { target: { value: 'shirt' } });
 
         expect(searchInput.value).toBe('shirt');
@@ -61,13 +73,13 @@ describe('SearchBar', () => {
     test('navigates to search page when search button is clicked', async () => {
         render(<SearchBar />);
 
-        const searchInput = screen.getByPlaceholderText('Search products...');
+        const searchInput = screen.getByPlaceholderText('Search products, brands, categories...');
         await act(async () => {
             fireEvent.change(searchInput, { target: { value: 'shirt' } });
         });
 
         await act(async () => {
-            const searchButton = screen.getByRole('button');
+            const searchButton = screen.getByRole('button', { name: /search/i });
             fireEvent.click(searchButton);
         });
 
@@ -80,7 +92,7 @@ describe('SearchBar', () => {
     test('navigates to search page when Enter key is pressed', async () => {
         render(<SearchBar />);
 
-        const searchInput = screen.getByPlaceholderText('Search products...');
+        const searchInput = screen.getByPlaceholderText('Search products, brands, categories...');
 
         await act(async () => {
             fireEvent.change(searchInput, { target: { value: 'pants' } });
@@ -116,14 +128,14 @@ describe('SearchBar', () => {
         const mockOnSearch = jest.fn();
         render(<SearchBar onSearch={mockOnSearch} />);
 
-        const searchInput = screen.getByPlaceholderText('Search products...');
+        const searchInput = screen.getByPlaceholderText('Search products, brands, categories...');
 
         await act(async () => {
             fireEvent.change(searchInput, { target: { value: 'jacket' } });
         });
 
         await act(async () => {
-            const searchButton = screen.getByRole('button');
+            const searchButton = screen.getByRole('button', { name: /search/i });
             fireEvent.click(searchButton);
         });
 
@@ -148,7 +160,7 @@ describe('SearchBar', () => {
 
         render(<SearchBar showResultsInline={true} />);
 
-        const searchInput = screen.getByPlaceholderText('Search products...');
+        const searchInput = screen.getByPlaceholderText('Search products, brands, categories...');
 
         await act(async () => {
             fireEvent.change(searchInput, { target: { value: 'test' } });
