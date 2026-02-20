@@ -11,6 +11,10 @@ let tokenCache = {
   expiresAt: 0
 };
 
+const clearTokenCache = () => {
+  tokenCache = { token: null, expiresAt: 0 };
+};
+
 const isTokenValid = () => {
   return tokenCache.token && Date.now() < tokenCache.expiresAt;
 };
@@ -146,7 +150,7 @@ const buildShiprocketPayload = async (order) => {
   };
 };
 
-const createShipment = async (order) => {
+const createShipment = async (order, retryOnce = false) => {
   try {
     const payloadResult = await buildShiprocketPayload(order);
     if (!payloadResult.success) {
@@ -170,6 +174,12 @@ const createShipment = async (order) => {
 
     return { success: true, data: response.data, payload: payloadResult.payload };
   } catch (error) {
+    const status = error?.response?.status;
+    if (status === 401 && !retryOnce) {
+      clearTokenCache();
+      logger.info('shiprocket.auth.refresh', { reason: 'unauthorized', scope: 'createShipment' });
+      return createShipment(order, true);
+    }
     logger.error('shiprocket.createShipment.error', { message: error?.message });
     return {
       success: false,
@@ -178,4 +188,40 @@ const createShipment = async (order) => {
   }
 };
 
-export { authenticate, createShipment };
+const assignAwb = async ({ shipmentId, courierCompanyId }, retryOnce = false) => {
+  try {
+    const auth = await authenticate();
+    if (!auth.success) {
+      return auth;
+    }
+
+    const response = await axios.post(
+      `${API_BASE}/courier/assign/awb`,
+      {
+        shipment_id: shipmentId,
+        courier_company_id: courierCompanyId
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${auth.data.token}`
+        }
+      }
+    );
+
+    return { success: true, data: response.data };
+  } catch (error) {
+    const status = error?.response?.status;
+    if (status === 401 && !retryOnce) {
+      clearTokenCache();
+      logger.info('shiprocket.auth.refresh', { reason: 'unauthorized', scope: 'assignAwb' });
+      return assignAwb({ shipmentId, courierCompanyId }, true);
+    }
+    logger.error('shiprocket.assignAwb.error', { message: error?.message });
+    return {
+      success: false,
+      error: error?.response?.data?.message || error?.message || 'Shiprocket AWB assignment error'
+    };
+  }
+};
+
+export { authenticate, createShipment, assignAwb };

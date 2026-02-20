@@ -194,24 +194,41 @@ export async function POST(request) {
     }
 
     const previousStatus = shipment.externalStatus || null;
-    const isIdempotent = previousStatus === externalStatus;
+    const isStatusIdempotent = previousStatus === externalStatus;
 
     logger.info('shiprocket.webhook.received', {
       shipmentId: shipment._id,
       orderId: shipment.orderId?.toString(),
       previous_status: previousStatus,
       new_status: externalStatus || rawStatus,
-      idempotent: isIdempotent,
+      idempotent: isStatusIdempotent,
       raw_payload: payload
     });
 
-    if (!isIdempotent) {
+    const hasTrackingUpdate = Boolean(
+      (trackingId && trackingId !== shipment.trackingId)
+      || (trackingUrl && trackingUrl !== shipment.trackingUrl)
+      || (awb && awb !== shipment.awb)
+      || (courier && courier !== shipment.courier)
+    );
+
+    if (!isStatusIdempotent || hasTrackingUpdate) {
       try {
-        shipment.externalStatus = externalStatus;
-        shipment.trackingId = trackingId || shipment.trackingId;
-        shipment.trackingUrl = trackingUrl || shipment.trackingUrl;
-        shipment.awb = awb || shipment.awb;
-        shipment.courier = courier || shipment.courier;
+        if (!isStatusIdempotent) {
+          shipment.externalStatus = externalStatus;
+        }
+        if (trackingId) {
+          shipment.trackingId = trackingId;
+        }
+        if (trackingUrl) {
+          shipment.trackingUrl = trackingUrl;
+        }
+        if (awb) {
+          shipment.awb = awb;
+        }
+        if (courier) {
+          shipment.courier = courier;
+        }
         shipment.externalError = null;
 
         await shipment.save();
@@ -239,7 +256,7 @@ export async function POST(request) {
       previousStatus,
       newStatus: externalStatus || rawStatus || 'unknown',
       rawPayload: payload,
-      errorReason: isIdempotent ? 'idempotent' : null
+      errorReason: isStatusIdempotent ? 'idempotent' : null
     });
 
     if (externalStatus === 'delivered' && previousStatus !== 'delivered') {

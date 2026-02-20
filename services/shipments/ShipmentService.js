@@ -4,7 +4,7 @@ import OrderV2 from '@/models/v2/Order';
 import Shipment from '@/models/v2/Shipment';
 import logger from '@/lib/logger';
 import { buildError } from '@/lib/errors';
-import { createShipment as createShiprocketShipment } from '@/services/shiprocket/ShiprocketService';
+import { assignAwb as assignShiprocketAwb, createShipment as createShiprocketShipment } from '@/services/shiprocket/ShiprocketService';
 
 const ensureOrder = (order) => {
   if (!order) {
@@ -90,18 +90,35 @@ const markAsPacked = async (orderId) => {
     const existingShipment = await Shipment.findOne({ orderId }).lean();
     if (existingShipment?.shiprocketShipmentId) {
       shiprocketSynced = true;
+      logger.info('shipments.v2.shiprocket.already_synced', { orderId, shipmentId: existingShipment._id });
     } else {
       const order = await OrderV2.findById(orderId).lean();
       const shiprocketResult = await createShiprocketShipment(order);
 
       if (shiprocketResult.success) {
         const data = shiprocketResult.data || {};
+        const shiprocketShipmentId = data.shipment_id || data.shipmentId || null;
+        let awb = data.awb_code || data.awb || null;
+        if (!awb && shiprocketShipmentId) {
+          const courierCompanyId = data.courier_company_id || data.courierCompanyId || null;
+          if (courierCompanyId) {
+            const awbResult = await assignShiprocketAwb({ shipmentId: shiprocketShipmentId, courierCompanyId });
+            if (awbResult.success) {
+              const awbData = awbResult.data || {};
+              awb = awbData.awb_code || awbData.awb || awb;
+            } else {
+              logger.warn('shipments.v2.shiprocket.awb_assign_failed', { orderId, error: awbResult.error });
+            }
+          } else {
+            logger.warn('shipments.v2.shiprocket.awb_assign_skipped', { orderId, reason: 'courier_company_id_missing' });
+          }
+        }
         shipment = await Shipment.findOneAndUpdate(
           { orderId },
           {
             $set: {
-              shiprocketShipmentId: data.shipment_id || data.shipmentId || null,
-              awb: data.awb_code || data.awb || null,
+              shiprocketShipmentId,
+              awb,
               courier: data.courier_name || data.courier || data.courier_company_id || null,
               trackingId: data.tracking_id || data.trackingId || null,
               trackingUrl: data.tracking_url || data.trackingUrl || null,
@@ -156,9 +173,10 @@ const retryShiprocketSync = async (shipmentId) => {
     throw buildError({ message: 'Shipment is not eligible for retry', status: 409, code: 'INVALID_STATUS' });
   }
 
-  if (shipment.shiprocketShipmentId) {
-    return { success: true, data: shipment, shiprocketSynced: true };
-  }
+    if (shipment.shiprocketShipmentId) {
+      logger.info('shipments.v2.shiprocket.already_synced', { shipmentId });
+      return { success: true, data: shipment, shiprocketSynced: true };
+    }
 
   let shiprocketSynced = false;
   try {
@@ -167,12 +185,28 @@ const retryShiprocketSync = async (shipmentId) => {
 
     if (shiprocketResult.success) {
       const data = shiprocketResult.data || {};
+      const shiprocketShipmentId = data.shipment_id || data.shipmentId || null;
+      let awb = data.awb_code || data.awb || null;
+      if (!awb && shiprocketShipmentId) {
+        const courierCompanyId = data.courier_company_id || data.courierCompanyId || null;
+        if (courierCompanyId) {
+          const awbResult = await assignShiprocketAwb({ shipmentId: shiprocketShipmentId, courierCompanyId });
+          if (awbResult.success) {
+            const awbData = awbResult.data || {};
+            awb = awbData.awb_code || awbData.awb || awb;
+          } else {
+            logger.warn('shipments.v2.shiprocket.awb_assign_failed', { shipmentId, error: awbResult.error });
+          }
+        } else {
+          logger.warn('shipments.v2.shiprocket.awb_assign_skipped', { shipmentId, reason: 'courier_company_id_missing' });
+        }
+      }
       const updated = await Shipment.findByIdAndUpdate(
         shipmentId,
         {
           $set: {
-            shiprocketShipmentId: data.shipment_id || data.shipmentId || null,
-            awb: data.awb_code || data.awb || null,
+            shiprocketShipmentId,
+            awb,
             courier: data.courier_name || data.courier || data.courier_company_id || null,
             trackingId: data.tracking_id || data.trackingId || null,
             trackingUrl: data.tracking_url || data.trackingUrl || null,
