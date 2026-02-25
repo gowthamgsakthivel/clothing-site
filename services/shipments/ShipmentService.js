@@ -93,7 +93,9 @@ const markAsPacked = async (orderId) => {
       logger.info('shipments.v2.shiprocket.already_synced', { orderId, shipmentId: existingShipment._id });
     } else {
       const order = await OrderV2.findById(orderId).lean();
+      console.log('Shiprocket block reached for order:', orderId);
       const shiprocketResult = await createShiprocketShipment(order);
+      console.log('Shiprocket result:', shiprocketResult);
 
       if (shiprocketResult.success) {
         const data = shiprocketResult.data || {};
