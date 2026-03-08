@@ -122,6 +122,15 @@ describe('Product List API', () => {
         expect(response.status).toBe(200);
         expect(data.success).toBe(true);
         expect(data.products).toHaveLength(10);
+        expect(data.products[0]).toEqual(
+            expect.objectContaining({
+                product: expect.objectContaining({
+                    _id: 'product-1'
+                }),
+                variants: expect.any(Array),
+                inventoryByVariantId: expect.any(Object)
+            })
+        );
 
         // Check pagination metadata
         expect(data.pagination).toEqual({
@@ -206,6 +215,13 @@ describe('Product List API', () => {
         expect(response.status).toBe(200);
         expect(data.success).toBe(true);
         expect(data.products).toHaveLength(5);
+        expect(data.products[0]).toEqual(
+            expect.objectContaining({
+                product: expect.objectContaining({
+                    _id: 'product-21'
+                })
+            })
+        );
 
         // Check pagination metadata
         expect(data.pagination).toEqual({

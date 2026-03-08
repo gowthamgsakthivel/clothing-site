@@ -34,7 +34,7 @@ const ProfilePage = () => {
         try {
             const [addressRes, ordersRes] = await Promise.all([
                 axios.get('/api/address'),
-                axios.get('/api/orders-v2/list')
+                axios.get('/api/orders/list')
             ]);
 
             if (addressRes.data.success) {

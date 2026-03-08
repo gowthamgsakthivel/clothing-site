@@ -77,7 +77,7 @@ const ReturnsPage = () => {
     const fetchData = useCallback(async () => {
         try {
             const [ordersRes, returnsRes] = await Promise.all([
-                axios.get('/api/orders-v2/list'),
+                axios.get('/api/orders/list'),
                 axios.get('/api/returns')
             ]);
 

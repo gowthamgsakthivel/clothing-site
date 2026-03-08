@@ -3,6 +3,10 @@ import connectDB from '@/config/db';
 import OrderV2 from '@/models/v2/Order';
 import { buildError } from '@/lib/errors';
 import Shipment from '@/models/v2/Shipment';
+import User from '@/models/User';
+import Address from '@/models/Address';
+import ProductVariant from '@/models/v2/ProductVariant';
+import ProductV2 from '@/models/v2/Product';
 import { toNumber } from '@/lib/validation';
 import {
   reserveStock,
@@ -346,9 +350,20 @@ const getOrdersWithPagination = async ({
     return acc;
   }, {});
 
+  const userIds = [...new Set(orders.map((o) => o.userId).filter(Boolean))];
+  const users = userIds.length
+    ? await User.find({ _id: { $in: userIds } }).select('name email').lean()
+    : [];
+  const userMap = users.reduce((acc, user) => {
+    acc[user._id.toString()] = user;
+    return acc;
+  }, {});
+
   const data = orders.map((orderDoc) => ({
     ...orderDoc,
-    shipment: shipmentMap[orderDoc._id.toString()] || null
+    shipment: shipmentMap[orderDoc._id.toString()] || null,
+    customerName: userMap[orderDoc.userId]?.name || orderDoc.userId,
+    customerEmail: userMap[orderDoc.userId]?.email || null
   }));
 
   return {
@@ -371,7 +386,37 @@ const getOrderById = async (orderId) => {
 
   const shipment = await Shipment.findOne({ orderId: order._id }).lean();
 
-  return { order, shipment: shipment || null };
+  const user = order.userId ? await User.findById(order.userId).select('name email').lean() : null;
+  const address = order.shippingAddressId ? await Address.findById(order.shippingAddressId).lean() : null;
+
+  // Hydrate order items with actual product names
+  const hydratedItems = await Promise.all(
+    order.items.map(async (item) => {
+      let productName = null;
+      if (item.variantId) {
+        const variant = await ProductVariant.findById(item.variantId)
+          .populate('productId', 'name')
+          .lean();
+        if (variant?.productId?.name) {
+          productName = variant.productId.name;
+        }
+      }
+      return {
+        ...item,
+        productName
+      };
+    })
+  );
+
+  const hydratedOrder = {
+    ...order,
+    items: hydratedItems,
+    customerName: user?.name || order.userId,
+    customerEmail: user?.email || null,
+    shippingAddress: address || null
+  };
+
+  return { order: hydratedOrder, shipment: shipment || null };
 };
 
 export { createOrder, cancelOrder, confirmShipment, packOrder, shipOrder, deliverOrder, getOrdersWithPagination, getOrderById };

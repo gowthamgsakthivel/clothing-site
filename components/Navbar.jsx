@@ -18,7 +18,7 @@ const Navbar = () => {
 
   return (
     <>
-      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-gray-300 text-gray-700 bg-white">
+      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-gray-200/50 text-gray-700 bg-white/80 backdrop-blur-md">
         <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8 py-3">
           <Image
             className="cursor-pointer w-28 md:w-32"
@@ -163,11 +163,11 @@ const Navbar = () => {
         {showMobileMenu && (
           <>
             <div
-              className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
+              className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 md:hidden transition-all duration-300"
               onClick={() => setShowMobileMenu(false)}
             />
-            <div className="fixed top-[60px] left-0 right-0 bg-white z-50 md:hidden border-b shadow-lg max-h-[calc(100vh-120px)] overflow-y-auto">
-              <div className="px-4 py-3">
+            <div className="fixed top-[60px] left-0 right-0 bg-white/95 backdrop-blur-md z-50 md:hidden border-b border-gray-200/50 shadow-xl max-h-[calc(100vh-120px)] overflow-y-auto w-full rounded-b-2xl">
+              <div className="px-4 py-4">
                 <SearchBar showResultsInline={false} />
               </div>
               <div className="py-2">
@@ -281,9 +281,9 @@ const Navbar = () => {
 
       </nav>
 
-      {/* Mobile bottom navigation bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 md:hidden z-40 pb-safe">
-        <div className="flex items-center justify-around py-2">
+      {/* Mobile bottom navigation bar - Glassmorphism */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md border-t border-gray-200/50 md:hidden z-40 pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+        <div className="flex items-center justify-around py-2 px-1">
           <Link
             href="/"
             className="flex flex-col items-center gap-1 px-3 py-2 hover:bg-gray-50 rounded-lg transition min-w-[60px]"
@@ -330,8 +330,8 @@ const Navbar = () => {
 
       {/* Mobile search bar that appears when search icon is clicked */}
       {showSearch && (
-        <div className="md:hidden fixed top-[60px] left-0 right-0 bg-white px-4 py-3 border-b shadow-lg z-40">
-          <div className="flex items-center gap-2">
+        <div className="md:hidden fixed top-[60px] left-0 right-0 bg-white/90 backdrop-blur-md px-4 py-4 border-b border-gray-200/50 shadow-lg z-40 rounded-b-2xl animate-fade-in-down">
+          <div className="flex items-center gap-3">
             <SearchBar showResultsInline={false} />
             <button
               onClick={() => setShowSearch(false)}

@@ -20,7 +20,7 @@ const RecentlyViewed = ({ currentProductId = null, maxItems = 10 }) => {
             // Filter out current product and map to actual product objects
             const recentProductsList = productIds
                 .filter(id => id !== currentProductId)
-                .map(id => products.find(p => p._id === id))
+                .map(id => products.find(p => p?.product?._id === id))
                 .filter(p => p !== undefined)
                 .slice(0, maxItems);
 
@@ -62,7 +62,7 @@ const RecentlyViewed = ({ currentProductId = null, maxItems = 10 }) => {
 
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
                 {recentProducts.map((product) => (
-                    <ProductCard key={product._id} product={product} />
+                    <ProductCard key={product?.product?._id} product={product} />
                 ))}
             </div>
         </div>

@@ -17,10 +17,9 @@ const toCode = (value, length, fallback = 'X') => {
 };
 
 const buildProductCode = (product) => {
-  const slug = product?.slug || 'prd';
-  const slugCode = toCode(slug, 3);
-  const suffix = toCode(product?._id?.toString().slice(-4), 4, '0');
-  return `${slugCode}-${suffix}`;
+  const categoryCode = toCode(product?.category || 'PRO', 3);
+  const brandCode = toCode(product?.brand || 'BRD', 3);
+  return `${categoryCode}-${brandCode}`;
 };
 
 const buildSku = ({ productCode, color, size }) => {

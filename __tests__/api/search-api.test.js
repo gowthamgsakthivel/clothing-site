@@ -17,7 +17,6 @@ import '../mocks/nextjs';
 import { GET } from '@/app/api/product/search/route';
 import ProductV2 from '@/models/v2/Product';
 import Inventory from '@/models/v2/Inventory';
-import { mapV2ProductToLegacy } from '@/lib/v2ProductMapper';
 
 // Mock the database connection to avoid actual DB operations during tests
 jest.mock('@/config/db', () => {
@@ -38,9 +37,6 @@ jest.mock('@/models/v2/Inventory', () => ({
     find: jest.fn(),
 }));
 
-jest.mock('@/lib/v2ProductMapper', () => ({
-    mapV2ProductToLegacy: jest.fn(),
-}));
 
 describe('Product Search API', () => {
     beforeEach(() => {
@@ -73,17 +69,6 @@ describe('Product Search API', () => {
             ])
         });
 
-        mapV2ProductToLegacy.mockImplementation(({ product }) => ({
-            _id: product._id,
-            name: product.name,
-            image: ['image1.jpg'],
-            offerPrice: 89.99,
-            price: 99.99,
-            brand: product.brand,
-            category: product.category,
-            slug: product.slug
-        }));
-
         // Create mock request with search query
         const req = {
             url: 'http://localhost:3000/api/product/search?q=test',
@@ -99,8 +84,10 @@ describe('Product Search API', () => {
         expect(response.status).toBe(200);
         expect(data.products).toEqual([
             expect.objectContaining({
-                _id: 'product-1',
-                name: 'Test Product 1',
+                product: expect.objectContaining({
+                    _id: 'product-1',
+                    name: 'Test Product 1',
+                })
             })
         ]);
         expect(data.pagination.totalResults).toBe(1);
@@ -155,17 +142,6 @@ describe('Product Search API', () => {
             ])
         });
 
-        mapV2ProductToLegacy.mockImplementation(({ product }) => ({
-            _id: product._id,
-            name: product.name,
-            image: ['image2.jpg'],
-            offerPrice: 119.99,
-            price: 129.99,
-            brand: product.brand,
-            category: product.category,
-            slug: product.slug
-        }));
-
         // Create mock request with pagination
         const req = {
             url: 'http://localhost:3000/api/product/search?q=test&page=2&limit=10',
@@ -181,8 +157,10 @@ describe('Product Search API', () => {
         expect(response.status).toBe(200);
         expect(data.products).toEqual([
             expect.objectContaining({
-                _id: 'product-2',
-                name: 'Test Product 2',
+                product: expect.objectContaining({
+                    _id: 'product-2',
+                    name: 'Test Product 2',
+                })
             })
         ]);
         expect(data.pagination).toEqual({

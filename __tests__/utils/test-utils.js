@@ -69,38 +69,70 @@ export function renderWithProviders(ui, options = {}) {
 // Mock product data for tests
 export const mockProducts = [
     {
-        _id: 'product-1',
-        name: 'Test Product 1',
-        description: 'This is test product 1',
-        brand: 'Test Brand',
-        category: 'Shirts',
-        price: 1000,
-        offerPrice: 800,
-        image: ['https://example.com/image1.jpg'],
-        color: [
-            { name: 'Red', code: '#FF0000' },
-            { name: 'Blue', code: '#0000FF' }
+        product: {
+            _id: 'product-1',
+            name: 'Test Product 1',
+            description: 'This is test product 1',
+            brand: 'Test Brand',
+            category: 'Shirts',
+            genderCategory: 'Unisex',
+            slug: 'test-product-1',
+            createdAt: new Date('2023-01-01')
+        },
+        variants: [
+            {
+                _id: 'variant-1',
+                productId: 'product-1',
+                color: 'Red',
+                size: 'M',
+                sku: 'SKU-1',
+                originalPrice: 1000,
+                offerPrice: 800,
+                visibility: 'visible',
+                images: ['https://example.com/image1.jpg']
+            }
         ],
-        sizes: ['S', 'M', 'L'],
-        stock: 10,
-        date: new Date('2023-01-01')
+        inventoryByVariantId: {
+            'variant-1': {
+                variantId: 'variant-1',
+                totalStock: 10,
+                reservedStock: 0,
+                lowStockThreshold: 5
+            }
+        }
     },
     {
-        _id: 'product-2',
-        name: 'Test Product 2',
-        description: 'This is test product 2',
-        brand: 'Test Brand',
-        category: 'Pants',
-        price: 1500,
-        offerPrice: 1200,
-        image: ['https://example.com/image2.jpg'],
-        color: [
-            { name: 'Black', code: '#000000' },
-            { name: 'Gray', code: '#808080' }
+        product: {
+            _id: 'product-2',
+            name: 'Test Product 2',
+            description: 'This is test product 2',
+            brand: 'Test Brand',
+            category: 'Pants',
+            genderCategory: 'Unisex',
+            slug: 'test-product-2',
+            createdAt: new Date('2023-01-02')
+        },
+        variants: [
+            {
+                _id: 'variant-2',
+                productId: 'product-2',
+                color: 'Black',
+                size: 'L',
+                sku: 'SKU-2',
+                originalPrice: 1500,
+                offerPrice: 1200,
+                visibility: 'visible',
+                images: ['https://example.com/image2.jpg']
+            }
         ],
-        sizes: ['M', 'L', 'XL'],
-        stock: 5,
-        date: new Date('2023-01-02')
+        inventoryByVariantId: {
+            'variant-2': {
+                variantId: 'variant-2',
+                totalStock: 5,
+                reservedStock: 0,
+                lowStockThreshold: 5
+            }
+        }
     }
 ];
 

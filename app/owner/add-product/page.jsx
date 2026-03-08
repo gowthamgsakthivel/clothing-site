@@ -39,7 +39,9 @@ const AddProduct = () => {
                 sizeStock: availableSizes.map(size => ({
                     size,
                     quantity: 0,
-                    lowStockThreshold: 5
+                    lowStockThreshold: 5,
+                    originalPrice: '',
+                    offerPrice: ''
                 }))
             }]
         }));
@@ -178,14 +180,14 @@ const AddProduct = () => {
                     .map((sizeData) => ({
                         color: colorName,
                         size: sizeData.size,
-                        originalPrice: Number(productData.price),
-                        offerPrice: Number(productData.offerPrice),
+                        originalPrice: Number(sizeData.originalPrice || productData.price),
+                        offerPrice: Number(sizeData.offerPrice || productData.offerPrice),
                         images: imageUrls,
                         quantity: sizeData.quantity
                     }));
             });
 
-            const response = await axios.post('/api/admin/products-v2/full-create', {
+            const response = await axios.post('/api/admin/products/full-create', {
                 product: {
                     name: productData.name,
                     description: productData.description,
@@ -521,10 +523,10 @@ const ColorInventoryCard = ({
 
                     return (
                         <div key={size} className="bg-white rounded-lg p-3 border">
-                            <div className="text-center font-medium text-gray-700 mb-2">{size}</div>
-                            <div className="space-y-2">
+                            <div className="text-center font-medium text-gray-700 mb-2 border-b pb-1">{size}</div>
+                            <div className="space-y-3">
                                 <div>
-                                    <label className="block text-xs text-gray-500 mb-1">Stock</label>
+                                    <label className="block text-xs text-gray-500 mb-1">Stock Amount</label>
                                     <input
                                         type="number"
                                         value={sizeData.quantity}
@@ -535,11 +537,33 @@ const ColorInventoryCard = ({
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-xs text-gray-500 mb-1">Alert at</label>
+                                    <label className="block text-xs text-gray-500 mb-1">Low Stock Alert</label>
                                     <input
                                         type="number"
                                         value={sizeData.lowStockThreshold}
                                         onChange={(e) => onUpdateSizeStock(colorIndex, sizeIndex, 'lowStockThreshold', e.target.value)}
+                                        className="w-full px-2 py-1 border border-gray-300 rounded text-center text-xs focus:outline-none focus:ring-1 focus:ring-orange-500"
+                                        min="0"
+                                    />
+                                </div>
+                                <div className="pt-2 border-t border-gray-100">
+                                    <label className="block text-xs text-gray-500 mb-1">Original Price (opt)</label>
+                                    <input
+                                        type="number"
+                                        value={sizeData.originalPrice}
+                                        onChange={(e) => onUpdateSizeStock(colorIndex, sizeIndex, 'originalPrice', e.target.value)}
+                                        placeholder="Default"
+                                        className="w-full px-2 py-1 border border-gray-300 rounded text-center text-xs focus:outline-none focus:ring-1 focus:ring-orange-500"
+                                        min="0"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs text-gray-500 mb-1">Offer Price (opt)</label>
+                                    <input
+                                        type="number"
+                                        value={sizeData.offerPrice}
+                                        onChange={(e) => onUpdateSizeStock(colorIndex, sizeIndex, 'offerPrice', e.target.value)}
+                                        placeholder="Default"
                                         className="w-full px-2 py-1 border border-gray-300 rounded text-center text-xs focus:outline-none focus:ring-1 focus:ring-orange-500"
                                         min="0"
                                     />

@@ -3,7 +3,7 @@ import ProductVariant from "@/models/v2/ProductVariant";
 import Inventory from "@/models/v2/Inventory";
 import { NextResponse } from "next/server";
 import connectDB from "@/config/db";
-import { mapV2ProductToLegacy } from "@/lib/v2ProductMapper";
+import { buildInventoryByVariantId } from "@/lib/v2ProductView";
 
 export async function GET(request) {
     try {
@@ -49,16 +49,24 @@ export async function GET(request) {
             variantsByProduct.get(key).push(variant);
         });
 
-        const inventoryByVariantId = new Map();
-        inventories.forEach((inventory) => {
-            inventoryByVariantId.set(String(inventory.variantId), inventory);
-        });
+        const inventoryByVariantId = buildInventoryByVariantId(inventories);
 
-        const products = rawProducts.map((product) => mapV2ProductToLegacy({
-            product,
-            variants: variantsByProduct.get(String(product._id)) || [],
-            inventoryByVariantId
-        }));
+        const products = rawProducts.map((product) => {
+            const variantsForProduct = variantsByProduct.get(String(product._id)) || [];
+            const inventoryForProduct = {};
+            variantsForProduct.forEach((variant) => {
+                const key = String(variant._id);
+                if (inventoryByVariantId[key]) {
+                    inventoryForProduct[key] = inventoryByVariantId[key];
+                }
+            });
+
+            return {
+                product,
+                variants: variantsForProduct,
+                inventoryByVariantId: inventoryForProduct
+            };
+        });
 
         return NextResponse.json({
             success: true,

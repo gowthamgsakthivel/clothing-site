@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { assets } from '@/assets/assets';
 import Loading from './Loading';
 import { addToSearchHistory, getSearchHistory, clearSearchHistory, removeFromSearchHistory, getTrendingSearches } from '@/lib/searchHistory';
+import { getProductSummary } from '@/lib/v2ProductView';
 
 const SearchBar = ({ className = '', onSearch = null, showResultsInline = false }) => {
     const { searchProducts, loadingStates, router: contextRouter } = useAppContext();
@@ -282,17 +283,19 @@ const SearchBar = ({ className = '', onSearch = null, showResultsInline = false 
                                 {searchResults.length > 0 && (
                                     <div className="border-t border-gray-100 p-2">
                                         <div className="text-xs font-semibold text-gray-500 px-2 py-1">Products</div>
-                                        {searchResults.map(product => (
+                                        {searchResults.map((bundle) => {
+                                            const summary = getProductSummary(bundle);
+                                            return (
                                             <div
-                                                key={product._id}
-                                                onClick={() => handleResultClick(product._id)}
+                                                key={summary._id}
+                                                onClick={() => handleResultClick(summary._id)}
                                                 className="flex items-center gap-3 p-2 hover:bg-gray-100 cursor-pointer rounded"
                                             >
                                                 <div className="w-10 h-10 relative bg-gray-100 rounded flex-shrink-0">
-                                                    {product.image?.[0] ? (
+                                                    {summary.images?.[0] ? (
                                                         <Image
-                                                            src={product.image[0]}
-                                                            alt={product.name}
+                                                            src={summary.images[0]}
+                                                            alt={summary.name}
                                                             className="object-cover mix-blend-multiply rounded"
                                                             fill
                                                             sizes="40px"
@@ -304,12 +307,13 @@ const SearchBar = ({ className = '', onSearch = null, showResultsInline = false 
                                                     )}
                                                 </div>
                                                 <div className="flex-1 min-w-0">
-                                                    <p className="font-medium text-xs truncate">{product.name}</p>
-                                                    <p className="text-xs text-gray-500">{product.brand}</p>
+                                                    <p className="font-medium text-xs truncate">{summary.name}</p>
+                                                    <p className="text-xs text-gray-500">{summary.brand}</p>
                                                 </div>
-                                                <p className="text-sm font-semibold text-orange-600">₹{product.offerPrice}</p>
+                                                <p className="text-sm font-semibold text-orange-600">₹{summary.offerPrice}</p>
                                             </div>
-                                        ))}
+                                            );
+                                        })}
                                         <div
                                             className="mt-1 p-2 text-center text-xs text-orange-600 hover:bg-gray-50 cursor-pointer rounded"
                                             onClick={() => {
@@ -398,17 +402,19 @@ const SearchBar = ({ className = '', onSearch = null, showResultsInline = false 
             {/* Legacy inline results (kept for backward compatibility) */}
             {showResultsInline && showResults && searchResults.length > 0 && !showDropdown && (
                 <div className="absolute mt-1 w-full bg-white rounded-md shadow-lg z-50 max-h-80 overflow-y-auto">
-                    {searchResults.map(product => (
+                    {searchResults.map((bundle) => {
+                        const summary = getProductSummary(bundle);
+                        return (
                         <div
-                            key={product._id}
-                            onClick={() => handleResultClick(product._id)}
+                            key={summary._id}
+                            onClick={() => handleResultClick(summary._id)}
                             className="flex items-center gap-3 p-3 hover:bg-gray-100 cursor-pointer border-b border-gray-100"
                         >
                             <div className="w-12 h-12 relative bg-gray-100 rounded flex-shrink-0">
-                                {product.image?.[0] ? (
+                                {summary.images?.[0] ? (
                                     <Image
-                                        src={product.image[0]}
-                                        alt={product.name}
+                                        src={summary.images[0]}
+                                        alt={summary.name}
                                         className="object-cover mix-blend-multiply"
                                         fill
                                         sizes="48px"
@@ -420,12 +426,13 @@ const SearchBar = ({ className = '', onSearch = null, showResultsInline = false 
                                 )}
                             </div>
                             <div className="flex-1 min-w-0">
-                                <p className="font-medium text-sm truncate">{product.name}</p>
-                                <p className="text-xs text-gray-500 truncate">{product.brand} • {product.category}</p>
-                                <p className="text-sm font-medium text-orange-600">₹{product.offerPrice}</p>
+                                <p className="font-medium text-sm truncate">{summary.name}</p>
+                                <p className="text-xs text-gray-500 truncate">{summary.brand} • {summary.category}</p>
+                                <p className="text-sm font-medium text-orange-600">₹{summary.offerPrice}</p>
                             </div>
                         </div>
-                    ))}
+                        );
+                    })}
                     <div
                         className="p-2 text-center text-sm text-orange-600 hover:bg-gray-50 cursor-pointer"
                         onClick={() => {

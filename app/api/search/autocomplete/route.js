@@ -3,7 +3,7 @@ import connectDB from '@/config/db';
 import ProductV2 from '@/models/v2/Product';
 import ProductVariant from '@/models/v2/ProductVariant';
 import Inventory from '@/models/v2/Inventory';
-import { mapV2ProductToLegacy } from '@/lib/v2ProductMapper';
+import { buildInventoryByVariantId } from '@/lib/v2ProductView';
 import { rateLimit, escapeRegex } from '@/lib/rateLimit';
 
 // Ensure Next.js does not attempt static rendering for this route.
@@ -85,10 +85,7 @@ export async function GET(request) {
             ? await Inventory.find({ variantId: { $in: variantIds } }).lean()
             : [];
 
-        const inventoryByVariantId = new Map();
-        inventories.forEach((inventory) => {
-            inventoryByVariantId.set(String(inventory.variantId), inventory);
-        });
+        const inventoryByVariantId = buildInventoryByVariantId(inventories);
 
         const variantsByProductId = new Map();
         variants.forEach((variant) => {
@@ -99,11 +96,22 @@ export async function GET(request) {
             variantsByProductId.get(key).push(variant);
         });
 
-        const productSuggestions = matchingProducts.map((product) => mapV2ProductToLegacy({
-            product,
-            variants: variantsByProductId.get(String(product._id)) || [],
-            inventoryByVariantId
-        }));
+        const productSuggestions = matchingProducts.map((product) => {
+            const variantsForProduct = variantsByProductId.get(String(product._id)) || [];
+            const inventoryForProduct = {};
+            variantsForProduct.forEach((variant) => {
+                const key = String(variant._id);
+                if (inventoryByVariantId[key]) {
+                    inventoryForProduct[key] = inventoryByVariantId[key];
+                }
+            });
+
+            return {
+                product,
+                variants: variantsForProduct,
+                inventoryByVariantId: inventoryForProduct
+            };
+        });
 
         // Extract unique categories (limit to 3)
         const categories = [

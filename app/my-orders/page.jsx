@@ -74,11 +74,12 @@ const MyOrders = () => {
                 return;
             }
 
-            console.log("📤 Sending request to /api/orders-v2/list...");
-            const { data } = await axios.get('/api/orders-v2/list', {
+            console.log("📤 Sending request to /api/orders/list...");
+            const { data } = await axios.get('/api/orders/list', {
                 withCredentials: true,  // IMPORTANT: Send cookies with request
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
                 },
                 timeout: 10000 // 10 second timeout
             });
@@ -370,81 +371,81 @@ const MyOrders = () => {
                     {!loading && allOrders.length > 0 && (
                         <div className="sticky top-[64px] z-30 -mx-4 px-4 sm:mx-0 sm:px-0 bg-gradient-to-b from-orange-50 via-white to-white/90 backdrop-blur border-b border-gray-100">
                             <div className="flex flex-nowrap gap-2 py-3 overflow-x-auto no-scrollbar">
-                            {[
-                                { id: 'all', label: 'All Orders', icon: '📦', count: allOrders.length },
-                                {
-                                    id: 'recent', label: 'Recent (30 days)', icon: '📅', count: allOrders.filter(o => {
-                                        let orderDate;
-                                        if (o.date) {
-                                            if (typeof o.date === 'number' || /^\d+$/.test(o.date)) {
-                                                orderDate = new Date(parseInt(o.date) * 1000);
-                                            } else {
-                                                orderDate = new Date(o.date);
-                                            }
-                                        } else if (o.createdAt) {
-                                            orderDate = new Date(o.createdAt);
-                                        } else {
-                                            return false;
-                                        }
-                                        if (isNaN(orderDate.getTime())) return false;
-                                        const thirtyDaysAgo = new Date();
-                                        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-                                        return orderDate > thirtyDaysAgo;
-                                    }).length
-                                },
-                                { id: 'custom', label: 'Custom Designs', icon: '🎨', count: allOrders.filter(o => o.items && o.items.some(item => item.isCustomDesign)).length },
-                                { id: 'paid', label: 'Paid Orders', icon: '✓', count: allOrders.filter(o => ['paid', 'confirmed', 'delivered', 'completed'].includes((o.paymentStatus || '').toLowerCase())).length },
-                            ].map(filter => (
-                                <button
-                                    key={filter.id}
-                                    onClick={() => {
-                                        if (filter.id === 'all') {
-                                            setOrders(allOrders);
-                                        } else if (filter.id === 'recent') {
-                                            const recentOrders = allOrders.filter(o => {
-                                                let orderDate;
-                                                if (o.date) {
-                                                    if (typeof o.date === 'number' || /^\d+$/.test(o.date)) {
-                                                        orderDate = new Date(parseInt(o.date) * 1000);
-                                                    } else {
-                                                        orderDate = new Date(o.date);
-                                                    }
-                                                } else if (o.createdAt) {
-                                                    orderDate = new Date(o.createdAt);
+                                {[
+                                    { id: 'all', label: 'All Orders', icon: '📦', count: allOrders.length },
+                                    {
+                                        id: 'recent', label: 'Recent (30 days)', icon: '📅', count: allOrders.filter(o => {
+                                            let orderDate;
+                                            if (o.date) {
+                                                if (typeof o.date === 'number' || /^\d+$/.test(o.date)) {
+                                                    orderDate = new Date(parseInt(o.date) * 1000);
                                                 } else {
-                                                    return false;
+                                                    orderDate = new Date(o.date);
                                                 }
-                                                if (isNaN(orderDate.getTime())) return false;
-                                                const thirtyDaysAgo = new Date();
-                                                thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-                                                return orderDate > thirtyDaysAgo;
-                                            });
-                                            setOrders(recentOrders);
-                                        } else if (filter.id === 'custom') {
-                                            const customDesignOrders = allOrders.filter(o => {
-                                                return o.items && o.items.some(item => item.isCustomDesign);
-                                            });
-                                            setOrders(customDesignOrders);
-                                        } else if (filter.id === 'paid') {
-                                            const paidOrders = allOrders.filter(o => {
-                                                return ['paid', 'confirmed', 'delivered', 'completed'].includes((o.paymentStatus || '').toLowerCase());
-                                            });
-                                            setOrders(paidOrders);
-                                        }
-                                        setActiveFilter(filter.id);
-                                    }}
-                                    className={`px-3 py-2 rounded-full text-xs font-semibold transition duration-200 flex items-center gap-2 border ${activeFilter === filter.id
-                                        ? 'bg-orange-600 text-white border-orange-600 shadow-sm'
-                                        : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
-                                        }`}
-                                >
-                                    <span className="text-sm">{filter.icon}</span>
-                                    <span className="whitespace-nowrap">{filter.label}</span>
-                                    <span className={`text-[10px] font-semibold ${activeFilter === filter.id ? 'bg-white text-orange-600' : 'bg-gray-300 text-gray-700'} rounded-full px-2 py-0.5`}>
-                                        {filter.count}
-                                    </span>
-                                </button>
-                            ))}
+                                            } else if (o.createdAt) {
+                                                orderDate = new Date(o.createdAt);
+                                            } else {
+                                                return false;
+                                            }
+                                            if (isNaN(orderDate.getTime())) return false;
+                                            const thirtyDaysAgo = new Date();
+                                            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+                                            return orderDate > thirtyDaysAgo;
+                                        }).length
+                                    },
+                                    { id: 'custom', label: 'Custom Designs', icon: '🎨', count: allOrders.filter(o => o.items && o.items.some(item => item.isCustomDesign)).length },
+                                    { id: 'paid', label: 'Paid Orders', icon: '✓', count: allOrders.filter(o => ['paid', 'confirmed', 'delivered', 'completed'].includes((o.paymentStatus || '').toLowerCase())).length },
+                                ].map(filter => (
+                                    <button
+                                        key={filter.id}
+                                        onClick={() => {
+                                            if (filter.id === 'all') {
+                                                setOrders(allOrders);
+                                            } else if (filter.id === 'recent') {
+                                                const recentOrders = allOrders.filter(o => {
+                                                    let orderDate;
+                                                    if (o.date) {
+                                                        if (typeof o.date === 'number' || /^\d+$/.test(o.date)) {
+                                                            orderDate = new Date(parseInt(o.date) * 1000);
+                                                        } else {
+                                                            orderDate = new Date(o.date);
+                                                        }
+                                                    } else if (o.createdAt) {
+                                                        orderDate = new Date(o.createdAt);
+                                                    } else {
+                                                        return false;
+                                                    }
+                                                    if (isNaN(orderDate.getTime())) return false;
+                                                    const thirtyDaysAgo = new Date();
+                                                    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+                                                    return orderDate > thirtyDaysAgo;
+                                                });
+                                                setOrders(recentOrders);
+                                            } else if (filter.id === 'custom') {
+                                                const customDesignOrders = allOrders.filter(o => {
+                                                    return o.items && o.items.some(item => item.isCustomDesign);
+                                                });
+                                                setOrders(customDesignOrders);
+                                            } else if (filter.id === 'paid') {
+                                                const paidOrders = allOrders.filter(o => {
+                                                    return ['paid', 'confirmed', 'delivered', 'completed'].includes((o.paymentStatus || '').toLowerCase());
+                                                });
+                                                setOrders(paidOrders);
+                                            }
+                                            setActiveFilter(filter.id);
+                                        }}
+                                        className={`px-3 py-2 rounded-full text-xs font-semibold transition duration-200 flex items-center gap-2 border ${activeFilter === filter.id
+                                            ? 'bg-orange-600 text-white border-orange-600 shadow-sm'
+                                            : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                                            }`}
+                                    >
+                                        <span className="text-sm">{filter.icon}</span>
+                                        <span className="whitespace-nowrap">{filter.label}</span>
+                                        <span className={`text-[10px] font-semibold ${activeFilter === filter.id ? 'bg-white text-orange-600' : 'bg-gray-300 text-gray-700'} rounded-full px-2 py-0.5`}>
+                                            {filter.count}
+                                        </span>
+                                    </button>
+                                ))}
                             </div>
                             {activeFilter === 'recent' && (
                                 <div className="text-xs text-gray-500 pb-3">Showing orders from the last 30 days.</div>

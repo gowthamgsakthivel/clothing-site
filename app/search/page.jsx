@@ -8,6 +8,7 @@ import Loading from '@/components/Loading';
 import SearchBar from '@/components/SearchBar';
 import Footer from '@/components/Footer';
 import SEOMetadata from '@/components/SEOMetadata';
+import { getProductSummary } from '@/lib/v2ProductView';
 
 // Utility to highlight search terms in text
 const highlightText = (text, query) => {
@@ -84,7 +85,9 @@ const SearchResults = () => {
     // Extract unique categories from products
     useEffect(() => {
         if (results.length > 0) {
-            const uniqueCategories = [...new Set(results.map(product => product.category))];
+            const uniqueCategories = [...new Set(
+                results.map((bundle) => getProductSummary(bundle).category).filter(Boolean)
+            )];
             setCategories(uniqueCategories.map(cat => ({ label: cat, value: cat })));
         }
     }, [results]);
@@ -279,7 +282,7 @@ const SearchResults = () => {
                         <div className="flex flex-wrap items-center justify-between mb-6 gap-4">
                             <div>
                                 <p className="text-sm text-gray-600">
-                                    {pagination?.totalProducts || 0} results found
+                                    {pagination?.totalResults || 0} results found
                                 </p>
                             </div>
 
@@ -312,8 +315,8 @@ const SearchResults = () => {
                             <>
                                 {/* Products grid */}
                                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
-                                    {results.map(product => (
-                                        <ProductCard key={product._id} product={product} />
+                                    {results.map((product) => (
+                                        <ProductCard key={product?.product?._id} product={product} />
                                     ))}
                                 </div>
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import ProductCard from "./ProductCard";
 import { useAppContext } from "@/context/AppContext";
 import Loading from "./Loading";
@@ -6,20 +6,41 @@ import Loading from "./Loading";
 const HomeProducts = () => {
   const { router, fetchProductData, products, loadingStates } = useAppContext();
   const [featuredProducts, setFeaturedProducts] = useState([]);
+  const hasFetchedRef = useRef(false);
+
+  const refreshProducts = useCallback(async () => {
+    await fetchProductData(1, 10);
+  }, [fetchProductData]);
 
   useEffect(() => {
     const loadProducts = async () => {
-      // Only fetch 10 products for the homepage if no products are loaded
-      if (products.length === 0) {
-        await fetchProductData(1, 10);
-      } else {
-        // Just use the first 10 products from the context
-        setFeaturedProducts(products.slice(0, 10));
+      if (!hasFetchedRef.current) {
+        hasFetchedRef.current = true;
+        await refreshProducts();
       }
     };
 
     loadProducts();
-  }, [fetchProductData, products]);
+  }, [refreshProducts]);
+
+  useEffect(() => {
+    const handleFocus = () => {
+      if (products.length === 0) {
+        refreshProducts();
+      }
+    };
+
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
+  }, [products.length, refreshProducts]);
+
+  useEffect(() => {
+    if (products.length > 0) {
+      setFeaturedProducts(products.slice(0, 10));
+    } else {
+      setFeaturedProducts([]);
+    }
+  }, [products]);
 
   // Get products either from our local state or directly from context
   const displayProducts = featuredProducts.length > 0 ? featuredProducts : products.slice(0, 10);
@@ -33,10 +54,21 @@ const HomeProducts = () => {
         <div className="w-full py-12 flex justify-center">
           <Loading />
         </div>
+      ) : displayProducts.length === 0 ? (
+        <div className="w-full py-12 text-center text-gray-500">
+          <p>No products available yet.</p>
+          <button
+            type="button"
+            onClick={refreshProducts}
+            className="mt-4 px-5 py-2 border rounded text-gray-500/70 hover:bg-slate-50/90 transition text-sm"
+          >
+            Retry
+          </button>
+        </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 md:gap-6 mt-6 pb-8 md:pb-14 w-full">
           {displayProducts.map((product) => (
-            <ProductCard key={product._id} product={product} />
+            <ProductCard key={product?.product?._id} product={product} />
           ))}
         </div>
       )}
