@@ -17,6 +17,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import ProductCard from '@/components/ProductCard';
 import { mockProducts } from '../utils/test-utils';
 import { useAppContext } from '@/context/AppContext';
+import { getProductSummary } from '@/lib/v2ProductView';
 
 // Mock the AppContext to control the testing environment and isolate the component
 // This allows us to simulate different states like logged-in users, favorites, etc.
@@ -44,14 +45,15 @@ describe('ProductCard', () => {
     });
 
     test('renders the product card with correct information', () => {
+        const summary = getProductSummary(mockProduct);
         render(<ProductCard product={mockProduct} />);
 
         // Check that basic product info is displayed
-        expect(screen.getByText(mockProduct.name)).toBeInTheDocument();
-        expect(screen.getByText(`$${mockProduct.offerPrice}`)).toBeInTheDocument();
+        expect(screen.getByText(summary.name)).toBeInTheDocument();
+        expect(screen.getByText(`$${summary.offerPrice}`)).toBeInTheDocument();
 
         // Check that the image is rendered
-        const productImage = screen.getAllByAltText(mockProduct.name)[0];
+        const productImage = screen.getAllByAltText(summary.name)[0];
         expect(productImage).toBeInTheDocument();
         expect(productImage).toHaveAttribute('src');
 
@@ -60,14 +62,32 @@ describe('ProductCard', () => {
     });
 
     test('shows "Only few left" badge when stock is low', () => {
-        const lowStockProduct = { ...mockProduct, stock: 5 };
+        const lowStockProduct = {
+            ...mockProduct,
+            inventoryByVariantId: {
+                ...mockProduct.inventoryByVariantId,
+                [mockProduct.variants[0]._id]: {
+                    ...mockProduct.inventoryByVariantId[mockProduct.variants[0]._id],
+                    totalStock: 5
+                }
+            }
+        };
         render(<ProductCard product={lowStockProduct} />);
 
         expect(screen.getByText('Only few left')).toBeInTheDocument();
     });
 
     test('does not show "Only few left" badge when stock is sufficient', () => {
-        const sufficientStockProduct = { ...mockProduct, stock: 20 };
+        const sufficientStockProduct = {
+            ...mockProduct,
+            inventoryByVariantId: {
+                ...mockProduct.inventoryByVariantId,
+                [mockProduct.variants[0]._id]: {
+                    ...mockProduct.inventoryByVariantId[mockProduct.variants[0]._id],
+                    totalStock: 20
+                }
+            }
+        };
         render(<ProductCard product={sufficientStockProduct} />);
 
         expect(screen.queryByText('Only few left')).not.toBeInTheDocument();
@@ -76,9 +96,9 @@ describe('ProductCard', () => {
     test('navigates to product detail page when clicked', () => {
         render(<ProductCard product={mockProduct} />);
 
-        fireEvent.click(screen.getByText(mockProduct.name));
+        fireEvent.click(screen.getByText(getProductSummary(mockProduct).name));
 
-        expect(mockRouter.push).toHaveBeenCalledWith(`/product/${mockProduct._id}`);
+        expect(mockRouter.push).toHaveBeenCalledWith(`/product/${mockProduct.product._id}`);
     });
 
     test('adds product to favorites when heart icon is clicked', () => {
@@ -87,7 +107,7 @@ describe('ProductCard', () => {
         const favoriteButton = screen.getByRole('button', { name: 'Add to favorites' });
         fireEvent.click(favoriteButton);
 
-        expect(mockAddFavorite).toHaveBeenCalledWith(mockProduct._id);
+        expect(mockAddFavorite).toHaveBeenCalledWith(mockProduct.product._id);
     });
 
     test('removes product from favorites when heart icon is clicked and product is already in favorites', () => {
@@ -95,7 +115,7 @@ describe('ProductCard', () => {
         useAppContext.mockReturnValue({
             currency: '$',
             router: mockRouter,
-            favorites: [mockProduct._id],
+            favorites: [mockProduct.product._id],
             addFavorite: mockAddFavorite,
             removeFavorite: mockRemoveFavorite,
             user: { id: 'test-user' },
@@ -106,7 +126,7 @@ describe('ProductCard', () => {
         const favoriteButton = screen.getByRole('button', { name: 'Remove from favorites' });
         fireEvent.click(favoriteButton);
 
-        expect(mockRemoveFavorite).toHaveBeenCalledWith(mockProduct._id);
+        expect(mockRemoveFavorite).toHaveBeenCalledWith(mockProduct.product._id);
     });
 
     test('does not call favorite functions when user is not logged in', () => {

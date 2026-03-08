@@ -82,9 +82,8 @@ const OrderDetailsContent = () => {
 
             try {
                 setLoading(true)
-                const { data } = await axios.get('/api/orders-v2/list', {
-                    withCredentials: true,
-                    headers: { 'Content-Type': 'application/json' }
+                const { data } = await axios.get('/api/orders/list', {
+                    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
                 })
 
                 if (data.success && Array.isArray(data.orders)) {

@@ -3,7 +3,7 @@ import connectDB from "@/config/db";
 import ProductV2 from "@/models/v2/Product";
 import ProductVariant from "@/models/v2/ProductVariant";
 import Inventory from "@/models/v2/Inventory";
-import { mapV2ProductToLegacy } from "@/lib/v2ProductMapper";
+import { buildInventoryByVariantId } from "@/lib/v2ProductView";
 
 export async function GET(request, { params }) {
   try {
@@ -19,24 +19,25 @@ export async function GET(request, { params }) {
       return NextResponse.json({ success: false, message: "Product not found" }, { status: 404 });
     }
 
-    const variants = await ProductVariant.find({ productId: product._id }).lean();
+    const variants = await ProductVariant.find({
+      productId: product._id,
+      visibility: { $ne: 'hidden' }
+    }).lean();
     const variantIds = variants.map((variant) => variant._id);
     const inventories = variantIds.length
       ? await Inventory.find({ variantId: { $in: variantIds } }).lean()
       : [];
 
-    const inventoryByVariantId = new Map();
-    inventories.forEach((inventory) => {
-      inventoryByVariantId.set(String(inventory.variantId), inventory);
-    });
+    const inventoryByVariantId = buildInventoryByVariantId(inventories);
 
-    const mapped = mapV2ProductToLegacy({
-      product,
-      variants,
-      inventoryByVariantId
+    return NextResponse.json({
+      success: true,
+      product: {
+        product,
+        variants,
+        inventoryByVariantId
+      }
     });
-
-    return NextResponse.json({ success: true, product: mapped });
   } catch (error) {
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }

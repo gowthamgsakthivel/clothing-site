@@ -92,11 +92,38 @@ describe('AppContext', () => {
                     success: true,
                     products: [
                         {
-                            _id: 'product-1',
-                            name: 'Test Product',
-                            price: 1000,
-                            offerPrice: 800,
-                            image: ['https://example.com/image.jpg'],
+                            product: {
+                                _id: 'product-1',
+                                name: 'Test Product',
+                                price: 1000,
+                                offerPrice: 800,
+                                image: ['https://example.com/image.jpg'],
+                                category: 'Shirts',
+                                brand: 'Test Brand',
+                                genderCategory: 'Unisex',
+                                createdAt: new Date('2023-01-01')
+                            },
+                            variants: [
+                                {
+                                    _id: 'variant-1',
+                                    productId: 'product-1',
+                                    color: 'red',
+                                    size: 'M',
+                                    sku: 'SKU-1',
+                                    originalPrice: 1000,
+                                    offerPrice: 800,
+                                    visibility: 'visible',
+                                    images: ['https://example.com/image.jpg']
+                                }
+                            ],
+                            inventoryByVariantId: {
+                                'variant-1': {
+                                    variantId: 'variant-1',
+                                    totalStock: 10,
+                                    reservedStock: 0,
+                                    lowStockThreshold: 5
+                                }
+                            }
                         },
                     ],
                     pagination: {

@@ -1,24 +1,12 @@
 'use client'
-import React, { useCallback, useMemo, useState } from 'react'
+import React, { useCallback, useMemo, useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useAppContext } from '@/context/AppContext'
 import {
-  BarChart3,
-  Bell,
-  Boxes,
-  ChevronDown,
-  LayoutDashboard,
-  Menu,
-  MessageSquare,
-  Package,
-  Palette,
-  Plus,
-  Search,
-  Settings,
-  ShoppingBag,
-  UserCircle,
-  Users
+  BarChart3, Bell, Boxes, ChevronDown, LayoutDashboard, Menu,
+  MessageSquare, Package, Palette, Plus, Search, Settings,
+  ShoppingBag, UserCircle, Users, LogOut
 } from 'lucide-react'
 
 const OwnerLayout = ({ children }) => {
@@ -26,6 +14,13 @@ const OwnerLayout = ({ children }) => {
   const { user } = useAppContext()
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [isMobileOpen, setIsMobileOpen] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
+
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 10)
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
 
   const userName = user?.fullName || user?.username || 'Admin'
   const userEmail = user?.primaryEmailAddress?.emailAddress || user?.emailAddresses?.[0]?.emailAddress || ''
@@ -38,9 +33,9 @@ const OwnerLayout = ({ children }) => {
 
   const navigationItems = useMemo(() => ([
     { href: '/owner', label: 'Dashboard', icon: LayoutDashboard, section: 'main' },
-    { href: '/owner/analytics-v2', label: 'Analytics', icon: BarChart3, section: 'main' },
-    { href: '/owner/orders-v2', label: 'Orders', icon: ShoppingBag, section: 'main' },
-    { href: '/owner/inventory-v2', label: 'Inventory', icon: Package, section: 'main' },
+    { href: '/owner/analytics', label: 'Analytics', icon: BarChart3, section: 'main' },
+    { href: '/owner/orders', label: 'Orders', icon: ShoppingBag, section: 'main' },
+    { href: '/owner/inventory', label: 'Inventory', icon: Package, section: 'main' },
     { href: '/owner/products', label: 'Products', icon: Boxes, section: 'main' },
     { href: '/owner/add-product', label: 'Add Product', icon: Plus, section: 'main' },
     { href: '/owner/customers', label: 'Customers', icon: Users, section: 'main' },
@@ -50,15 +45,13 @@ const OwnerLayout = ({ children }) => {
   ]), [])
 
   const isActive = useCallback((href) => {
-    if (href === '/owner') {
-      return pathname === '/owner'
-    }
+    if (href === '/owner') return pathname === '/owner'
     return pathname.startsWith(href)
   }, [pathname])
 
   const pageTitle = useMemo(() => {
     const match = navigationItems.find((item) => isActive(item.href))
-    return match?.label || 'Owner Panel'
+    return match?.label || 'Overview'
   }, [isActive, navigationItems])
 
   const closeMobile = () => setIsMobileOpen(false)
@@ -67,48 +60,47 @@ const OwnerLayout = ({ children }) => {
   const systemItems = navigationItems.filter((item) => item.section === 'system')
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
+    <div className="min-h-screen bg-[#F8FAFC] text-slate-900 font-sans selection:bg-indigo-100 selection:text-indigo-900">
+      {/* Mobile Backdrop */}
       {isMobileOpen && (
-        <button
-          type="button"
-          aria-label="Close sidebar"
+        <div
+          className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm lg:hidden transition-opacity"
           onClick={closeMobile}
-          className="fixed inset-0 z-40 bg-black/40 lg:hidden"
+          aria-hidden="true"
         />
       )}
 
       <div className="flex min-h-screen w-full overflow-hidden">
+        {/* Sidebar */}
         <aside
-          className={`fixed inset-y-0 left-0 z-50 flex h-screen flex-col overflow-y-auto border-r border-slate-200 bg-white transition-all duration-200 ${
-            isCollapsed ? 'w-20' : 'w-72'
-          } ${isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
+          className={`fixed inset-y-0 left-0 z-50 flex h-screen flex-col overflow-y-auto bg-white/70 backdrop-blur-xl border-r border-slate-200/60 shadow-[4px_0_24px_rgba(0,0,0,0.02)] transition-all duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] ${isCollapsed ? 'w-20' : 'w-[280px]'} ${isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
         >
-          <div className="flex items-center gap-3 border-b border-slate-100 px-5 py-4">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
-              SP
+          {/* Logo Area */}
+          <div className="flex items-center gap-3 px-6 h-20 shrink-0">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 to-blue-600 text-white shadow-lg shadow-indigo-200">
+              <span className="font-bold text-sm tracking-wider">SP</span>
             </div>
             {!isCollapsed && (
-              <div>
-                <h1 className="text-sm font-bold text-slate-900">Sparrow Sports</h1>
-                <p className="text-xs text-slate-500">Admin Dashboard</p>
+              <div className="flex-1 min-w-0 opacity-100 transition-opacity duration-300">
+                <h1 className="text-base font-bold text-slate-800 tracking-tight truncate">Sparrow Sports</h1>
+                <p className="text-[11px] font-medium text-slate-500 uppercase tracking-widest truncate">Admin Portal</p>
               </div>
             )}
             <button
-              type="button"
-              className="ml-auto hidden rounded-lg p-2 text-slate-400 hover:bg-slate-100 lg:inline-flex"
-              onClick={() => setIsCollapsed((prev) => !prev)}
-              aria-label="Toggle sidebar"
+              onClick={() => setIsCollapsed(!isCollapsed)}
+              className="hidden lg:flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100/80 transition-colors ml-auto"
             >
-              <Menu className="h-4 w-4" />
+              <Menu className="w-4 h-4" />
             </button>
           </div>
 
-          <nav className="flex-1 space-y-4 px-3 py-4">
+          {/* Navigation */}
+          <nav className="flex-1 space-y-6 px-4 py-4 overflow-y-auto scrollbar-hide">
             <div>
               {!isCollapsed && (
-                <p className="px-3 text-xs font-semibold uppercase tracking-wider text-slate-400">Main</p>
+                <p className="px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-3">Main Navigation</p>
               )}
-              <div className="mt-2 space-y-1">
+              <div className="space-y-1">
                 {mainItems.map((item) => {
                   const Icon = item.icon
                   const active = isActive(item.href)
@@ -117,24 +109,24 @@ const OwnerLayout = ({ children }) => {
                       key={item.href}
                       href={item.href}
                       onClick={closeMobile}
-                      className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
-                        active
-                          ? 'bg-blue-50 text-blue-700'
-                          : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                      } ${isCollapsed ? 'justify-center' : ''}`}
+                      className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${active
+                          ? 'bg-indigo-50/80 text-indigo-700 shadow-sm shadow-indigo-100/50'
+                          : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                        } ${isCollapsed ? 'justify-center' : ''}`}
                     >
-                      <Icon className="h-5 w-5" />
+                      <Icon className={`h-5 w-5 shrink-0 transition-colors ${active ? 'text-indigo-600' : 'text-slate-400 group-hover:text-slate-600'}`} />
                       {!isCollapsed && <span className="truncate">{item.label}</span>}
                     </Link>
                   )
                 })}
               </div>
             </div>
+
             <div>
               {!isCollapsed && (
-                <p className="px-3 text-xs font-semibold uppercase tracking-wider text-slate-400">System</p>
+                <p className="px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-3">System</p>
               )}
-              <div className="mt-2 space-y-1">
+              <div className="space-y-1">
                 {systemItems.map((item) => {
                   const Icon = item.icon
                   const active = isActive(item.href)
@@ -143,13 +135,12 @@ const OwnerLayout = ({ children }) => {
                       key={item.href}
                       href={item.href}
                       onClick={closeMobile}
-                      className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
-                        active
-                          ? 'bg-blue-50 text-blue-700'
-                          : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                      } ${isCollapsed ? 'justify-center' : ''}`}
+                      className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${active
+                          ? 'bg-indigo-50/80 text-indigo-700 shadow-sm shadow-indigo-100/50'
+                          : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                        } ${isCollapsed ? 'justify-center' : ''}`}
                     >
-                      <Icon className="h-5 w-5" />
+                      <Icon className={`h-5 w-5 shrink-0 transition-colors ${active ? 'text-indigo-600' : 'text-slate-400 group-hover:text-slate-600'}`} />
                       {!isCollapsed && <span className="truncate">{item.label}</span>}
                     </Link>
                   )
@@ -158,62 +149,77 @@ const OwnerLayout = ({ children }) => {
             </div>
           </nav>
 
-          <div className="border-t border-slate-100 p-4">
-            <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-200 text-xs font-semibold text-slate-600">
+          {/* User Profile */}
+          <div className="p-4 mt-auto">
+            <div className={`flex items-center gap-3 rounded-2xl bg-white border border-slate-200/60 p-3 shadow-sm transition-all duration-200 hover:shadow-md hover:border-slate-300/60 cursor-pointer ${isCollapsed ? 'justify-center' : ''}`}>
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 text-xs font-bold text-slate-700">
                 {userInitials}
               </div>
               {!isCollapsed && (
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-slate-900 truncate">{userName}</p>
-                  <p className="text-xs text-slate-500 truncate">{userEmail || 'admin@sparrow.com'}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-bold text-slate-800 truncate">{userName}</p>
+                  <p className="text-[11px] font-medium text-slate-500 truncate">{userEmail || 'admin@sparrow.com'}</p>
                 </div>
+              )}
+              {!isCollapsed && (
+                <LogOut className="w-4 h-4 text-slate-400 hover:text-slate-600 shrink-0" />
               )}
             </div>
           </div>
         </aside>
 
-        <div className={`flex min-h-screen flex-1 flex-col ${isCollapsed ? 'lg:ml-20' : 'lg:ml-72'}`}>
-          <header className="sticky top-0 z-30 border-b border-slate-200/70 bg-white/80 backdrop-blur">
-            <div className="flex w-full flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6 lg:px-8">
-              <div className="flex items-center gap-3">
+        {/* Main Content Area */}
+        <div className={`flex min-h-screen flex-1 flex-col transition-all duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] ${isCollapsed ? 'lg:ml-20' : 'lg:ml-[280px]'}`}>
+          {/* Header */}
+          <header className={`sticky top-0 z-30 transition-all duration-200 ${scrolled ? 'bg-white/80 backdrop-blur-xl border-b border-slate-200/60 shadow-sm' : 'bg-transparent border-transparent'}`}>
+            <div className="flex h-20 w-full items-center justify-between gap-4 px-4 sm:px-8">
+              <div className="flex items-center gap-4">
                 <button
                   type="button"
-                  className="inline-flex rounded-lg p-2 text-slate-500 hover:bg-slate-100 lg:hidden"
+                  className="inline-flex rounded-xl p-2 text-slate-500 hover:bg-white hover:shadow-sm lg:hidden transition-all"
                   onClick={() => setIsMobileOpen(true)}
                   aria-label="Open sidebar"
                 >
                   <Menu className="h-5 w-5" />
                 </button>
                 <div>
-                  <h1 className="text-xl font-bold text-slate-900">{pageTitle}</h1>
-                  <p className="text-xs text-slate-500">Welcome back, here is your workspace.</p>
+                  <h1 className="text-xl font-bold text-slate-900 tracking-tight">{pageTitle}</h1>
+                  <p className="text-xs font-medium text-slate-500 mt-0.5 hidden sm:block">Here is what is happening with your business today.</p>
                 </div>
               </div>
 
-              <div className="flex flex-wrap items-center gap-3">
-                <div className="relative hidden sm:block">
-                  <Search className="h-4 w-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="relative hidden md:block group">
+                  <Search className="h-4 w-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 transition-colors group-focus-within:text-indigo-500" />
                   <input
                     type="text"
-                    placeholder="Search..."
-                    className="w-60 rounded-lg border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                    placeholder="Search orders, clients..."
+                    className="w-64 rounded-xl border border-slate-200/80 bg-white/50 py-2 pl-9 pr-4 text-sm text-slate-700 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
                   />
+                  <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                    <kbd className="hidden lg:inline-flex items-center justify-center rounded border border-slate-200 px-1.5 text-[10px] font-medium text-slate-400">⌘</kbd>
+                    <kbd className="hidden lg:inline-flex items-center justify-center rounded border border-slate-200 px-1.5 text-[10px] font-medium text-slate-400">K</kbd>
+                  </div>
                 </div>
-                <button className="relative rounded-lg p-2 text-slate-500 hover:bg-slate-100">
+
+                <button className="relative rounded-xl p-2.5 text-slate-500 hover:bg-white hover:shadow-sm hover:text-slate-700 transition-all">
                   <Bell className="h-5 w-5" />
-                  <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500" />
+                  <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white" />
                 </button>
-                <button className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700">
-                  <UserCircle className="h-5 w-5 text-slate-500" />
-                  <span className="hidden sm:inline">Admin</span>
+
+                <button className="hidden sm:flex items-center gap-2 rounded-xl border border-slate-200/80 bg-white p-1 pl-2 pr-3 text-sm text-slate-700 hover:border-slate-300 hover:shadow-sm transition-all">
+                  <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-indigo-100 to-blue-100 flex items-center justify-center text-indigo-700 font-bold text-xs">
+                    {userInitials}
+                  </div>
+                  <span className="font-semibold">{userName.split(' ')[0]}</span>
                   <ChevronDown className="h-4 w-4 text-slate-400" />
                 </button>
               </div>
             </div>
           </header>
 
-          <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">
+          {/* Page Content */}
+          <main className="flex-1 px-4 py-8 sm:px-8">
             <div className="mx-auto w-full max-w-7xl">
               {children}
             </div>

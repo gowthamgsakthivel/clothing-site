@@ -1,7 +1,7 @@
 import connectDB from "@/config/db";
 import ProductV2 from "@/models/v2/Product";
 import Inventory from "@/models/v2/Inventory";
-import { mapV2ProductToLegacy } from "@/lib/v2ProductMapper";
+import { buildInventoryByVariantId } from "@/lib/v2ProductView";
 import { NextResponse } from "next/server";
 import { rateLimit, escapeRegex } from "@/lib/rateLimit";
 
@@ -117,16 +117,24 @@ export async function GET(request) {
             ? await Inventory.find({ variantId: { $in: variantIds } }).lean()
             : [];
 
-        const inventoryByVariantId = new Map();
-        inventories.forEach((inventory) => {
-            inventoryByVariantId.set(String(inventory.variantId), inventory);
-        });
+        const inventoryByVariantId = buildInventoryByVariantId(inventories);
 
-        const products = productsRaw.map((product) => mapV2ProductToLegacy({
-            product,
-            variants: product.variants || [],
-            inventoryByVariantId
-        }));
+        const products = productsRaw.map((productRaw) => {
+            const { variants = [], ...product } = productRaw || {};
+            const inventoryForProduct = {};
+            variants.forEach((variant) => {
+                const key = String(variant._id);
+                if (inventoryByVariantId[key]) {
+                    inventoryForProduct[key] = inventoryByVariantId[key];
+                }
+            });
+
+            return {
+                product,
+                variants,
+                inventoryByVariantId: inventoryForProduct
+            };
+        });
 
         return NextResponse.json({
             success: true,

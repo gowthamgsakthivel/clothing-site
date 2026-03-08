@@ -41,7 +41,7 @@ const SharedWishlistPage = () => {
   useEffect(() => {
     if (wishlistData && products.length > 0) {
       const filteredProducts = products.filter(product =>
-        wishlistData.productIds.includes(product._id)
+        wishlistData.productIds.includes(product?.product?._id)
       );
       setSharedProducts(filteredProducts);
     }
@@ -106,7 +106,7 @@ const SharedWishlistPage = () => {
               {sharedProducts.length > 0 ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6">
                   {sharedProducts.map((product) => (
-                    <ProductCard key={product._id} product={product} />
+                    <ProductCard key={product?.product?._id} product={product} />
                   ))}
                 </div>
               ) : (

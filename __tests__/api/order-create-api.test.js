@@ -6,7 +6,6 @@ import '../mocks/nextjs';
 
 import ProductV2 from '@/models/v2/Product';
 import ProductVariant from '@/models/v2/ProductVariant';
-import Product from '@/models/Product';
 import CustomDesign from '@/models/CustomDesign';
 import { createOrder } from '@/services/orders/OrderService';
 
@@ -25,16 +24,11 @@ jest.mock('@/services/orders/OrderService', () => ({
 }));
 
 jest.mock('@/models/v2/Product', () => ({
-  findById: jest.fn(),
-  findOne: jest.fn()
+  findById: jest.fn()
 }));
 
 jest.mock('@/models/v2/ProductVariant', () => ({
   findOne: jest.fn()
-}));
-
-jest.mock('@/models/Product', () => ({
-  findById: jest.fn()
 }));
 
 jest.mock('@/models/CustomDesign', () => ({
@@ -43,7 +37,7 @@ jest.mock('@/models/CustomDesign', () => ({
 }));
 
 import { getAuth } from '@clerk/nextjs/server';
-const { POST } = require('@/app/api/orders-v2/create/route');
+const { POST } = require('@/app/api/orders/create/route');
 
 const mockLean = (value) => ({
   lean: jest.fn().mockResolvedValue(value)
@@ -137,7 +131,7 @@ describe('Order Creation API (v2)', () => {
   test('returns error when product not found', async () => {
     getAuth.mockReturnValue({ userId: 'user-123' });
     ProductV2.findById.mockReturnValue(mockLean(null));
-    ProductV2.findOne.mockReturnValue(mockLean(null));
+    // No legacy fallback in v2-only path
 
     const req = {
       json: async () => ({

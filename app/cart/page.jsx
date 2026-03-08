@@ -10,6 +10,7 @@ import Footer from "@/components/Footer";
 import SEOMetadata from "@/components/SEOMetadata";
 import { toast } from "react-hot-toast";
 import axios from "axios";
+import { findVariantForSelection, getProductSummary, getVisibleVariants } from "@/lib/v2ProductView";
 
 const Cart = () => {
   const {
@@ -172,26 +173,26 @@ const Cart = () => {
       <div className="flex flex-col lg:flex-row gap-6 md:gap-10 px-4 sm:px-6 md:px-16 lg:px-32 pt-20 md:pt-24 mb-16 md:mb-20">
         <div className="flex-1 w-full overflow-x-auto">
           <LoadingOverlay isLoading={loadingStates.cart}>
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 sm:mb-8 border-b border-gray-500/30 pb-4 sm:pb-6 gap-3">
-              <p className="text-2xl md:text-3xl text-gray-500">
-                Your <span className="font-medium text-orange-600">Cart</span>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-3">
+              <p className="text-2xl md:text-3xl font-medium text-gray-800">
+                Your <span className="text-orange-600">Cart</span>
               </p>
-              <p className="text-lg md:text-xl text-gray-500/80">{getCartCount()} Items</p>
+              <p className="text-sm md:text-base font-medium text-gray-500 bg-gray-100 px-3 py-1 rounded-full">{getCartCount()} Items</p>
             </div>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100">
               <table className="min-w-full table-auto">
-                <thead className="text-left">
+                <thead className="text-left bg-gray-50/80 border-b border-gray-100">
                   <tr>
-                    <th className="text-nowrap pb-6 md:px-4 px-1 text-gray-600 font-medium">
+                    <th className="text-nowrap py-4 md:px-6 px-4 text-gray-600 font-semibold text-sm">
                       Product Details
                     </th>
-                    <th className="pb-6 md:px-4 px-1 text-gray-600 font-medium">
+                    <th className="py-4 md:px-6 px-4 text-gray-600 font-semibold text-sm">
                       Price
                     </th>
-                    <th className="pb-6 md:px-4 px-1 text-gray-600 font-medium">
+                    <th className="py-4 md:px-6 px-4 text-gray-600 font-semibold text-sm">
                       Quantity
                     </th>
-                    <th className="pb-6 md:px-4 px-1 text-gray-600 font-medium">
+                    <th className="py-4 md:px-6 px-4 text-gray-600 font-semibold text-sm">
                       Subtotal
                     </th>
                   </tr>
@@ -492,17 +493,23 @@ const Cart = () => {
                       const productId = keyParts[0];
                       const color = keyParts[1] || null;
                       const size = keyParts[2] || null;
-                      const product = products.find(product => product._id === productId);
+                      const product = products.find(product => product?.product?._id === productId);
                       if (!product || cartItems[itemKey] <= 0) return null;
+                      const summary = getProductSummary(product);
+                      const visibleVariants = getVisibleVariants(product.variants || []);
+                      const selectedVariant = findVariantForSelection(visibleVariants, color, size);
+                      const unitPrice = Number.isFinite(selectedVariant?.offerPrice)
+                        ? selectedVariant.offerPrice
+                        : summary.offerPrice;
                       return (
                         <tr key={itemKey}>
                           <td className="flex items-center gap-4 py-4 md:px-4 px-1">
                             <div>
                               <div className="rounded-lg overflow-hidden bg-gray-500/10 p-2">
-                                {product.image?.[0] ? (
+                                {summary.images?.[0] ? (
                                   <Image
-                                    src={product.image[0]}
-                                    alt={product.name}
+                                    src={summary.images[0]}
+                                    alt={summary.name}
                                     className="w-16 h-auto object-cover mix-blend-multiply"
                                     width={1280}
                                     height={720}
@@ -521,7 +528,7 @@ const Cart = () => {
                               </button>
                             </div>
                             <div className="text-sm hidden md:block">
-                              <p className="text-gray-800">{product.name}</p>
+                              <p className="text-gray-800">{summary.name}</p>
                               {color && (
                                 <div className="flex items-center gap-1">
                                   <span className="text-xs text-gray-500">Color:</span>
@@ -555,7 +562,7 @@ const Cart = () => {
                               </button>
                             </div>
                           </td>
-                          <td className="py-4 md:px-4 px-1 text-gray-600">₹{product.offerPrice}</td>
+                          <td className="py-4 md:px-4 px-1 text-gray-600">₹{unitPrice}</td>
                           <td className="py-4 md:px-4 px-1">
                             <div className="flex items-center md:gap-2 gap-1">
                               <button onClick={() => updateCartQuantity(itemKey, cartItems[itemKey] - 1)}>
@@ -575,7 +582,7 @@ const Cart = () => {
                               </button>
                             </div>
                           </td>
-                          <td className="py-4 md:px-4 px-1 text-gray-600">₹{(product.offerPrice * cartItems[itemKey]).toFixed(2)}</td>
+                          <td className="py-4 md:px-4 px-1 text-gray-600">₹{(unitPrice * cartItems[itemKey]).toFixed(2)}</td>
                         </tr>
                       );
                     }
@@ -583,9 +590,9 @@ const Cart = () => {
                 </tbody>
               </table>
             </div>
-            <button onClick={() => router.push('/all-products ')} className="group flex items-center mt-6 gap-2 text-orange-600">
+            <button onClick={() => router.push('/all-products')} className="group flex items-center mt-6 gap-2 text-gray-600 font-medium hover:text-orange-600 transition-colors bg-white px-5 py-2.5 rounded-full shadow-sm border border-gray-200 hover:border-orange-200">
               <Image
-                className="group-hover:-translate-x-1 transition"
+                className="group-hover:-translate-x-1 transition-transform"
                 src={assets.arrow_right_icon_colored}
                 alt="arrow_right_icon_colored"
               />

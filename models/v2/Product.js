@@ -12,7 +12,6 @@ const activityLogSchema = new mongoose.Schema(
 
 const productSchema = new mongoose.Schema(
   {
-    legacyProductId: { type: mongoose.Schema.Types.ObjectId, unique: true, sparse: true, index: true },
     name: { type: String, required: true },
     slug: { type: String, required: true, unique: true },
     description: { type: String, required: true },

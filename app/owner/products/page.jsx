@@ -92,7 +92,7 @@ const OwnerProductList = () => {
       const token = await getToken();
       const payload = variantEdits[variantId];
 
-      const response = await axios.patch(`/api/admin/variants-v2/${variantId}`,
+      const response = await axios.patch(`/api/admin/variants/${variantId}`,
         {
           originalPrice: Number(payload?.originalPrice),
           offerPrice: Number(payload?.offerPrice),
@@ -130,7 +130,7 @@ const OwnerProductList = () => {
     try {
       setVariantAction({ id: variantId, action: 'hide' });
       const token = await getToken();
-      const response = await axios.patch(`/api/admin/variants-v2/${variantId}`,
+      const response = await axios.patch(`/api/admin/variants/${variantId}`,
         { visibility: 'hidden' },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -164,7 +164,7 @@ const OwnerProductList = () => {
     try {
       setVariantAction({ id: variantId, action: 'delete' });
       const token = await getToken();
-      const response = await axios.delete(`/api/admin/variants-v2/${variantId}`, {
+      const response = await axios.delete(`/api/admin/variants/${variantId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -197,7 +197,7 @@ const OwnerProductList = () => {
     try {
       const token = await getToken();
 
-      const { data } = await axios.get('/api/admin/products-v2?includeVariants=true', {
+      const { data } = await axios.get('/api/admin/products?includeVariants=true', {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -332,7 +332,7 @@ const OwnerProductList = () => {
                           <td className="px-6 py-4 text-right">
                             <button
                               type="button"
-                              onClick={() => router.push(`/owner/inventory-v2?product=${product._id}`)}
+                              onClick={() => router.push(`/owner/inventory?product=${product._id}`)}
                               className="text-xs font-semibold text-blue-600 bg-blue-50 px-3 py-1 rounded-lg hover:bg-blue-100"
                             >
                               {product.variants?.length || 0} variants

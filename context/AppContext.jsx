@@ -4,6 +4,7 @@ import axios from "axios";
 import { useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 import toast from "react-hot-toast";
+import { findVariantForSelection, getPriceSummary, getVisibleVariants } from "@/lib/v2ProductView";
 
 export const AppContext = createContext();
 
@@ -340,10 +341,21 @@ export const AppContextProvider = (props) => {
                 }
             } else {
                 // Regular product
-                const [productId] = key.split('_');
-                let itemInfo = products.find((product) => product._id === productId);
-                if (cartItems[key] > 0 && itemInfo) {
-                    totalAmount += itemInfo.offerPrice * cartItems[key];
+                const split = key.split('_');
+                const productId = split[0];
+                const color = split.length >= 2 ? split[1] : null;
+                const size = split.length >= 3 ? split[2] : null;
+                const bundle = products.find((product) => product?.product?._id === productId);
+
+                if (cartItems[key] > 0 && bundle) {
+                    const variants = getVisibleVariants(bundle.variants || []);
+                    const variant = findVariantForSelection(variants, color, size);
+                    const priceSummary = getPriceSummary(variants);
+                    const unitPrice = Number.isFinite(variant?.offerPrice)
+                        ? variant.offerPrice
+                        : priceSummary.offerPrice || 0;
+
+                    totalAmount += unitPrice * cartItems[key];
                 }
             }
         }

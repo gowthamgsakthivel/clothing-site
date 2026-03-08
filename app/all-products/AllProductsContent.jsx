@@ -15,6 +15,7 @@ import ActiveFilters from "./components/ActiveFilters";
 import FiltersToolbar from "./components/FiltersToolbar";
 import ProductsGrid from "./components/ProductsGrid";
 import PaginationControls from "./components/PaginationControls";
+import { getProductSummary } from "@/lib/v2ProductView";
 
 function AllProductsContent() {
     const router = useRouter();
@@ -64,17 +65,9 @@ function AllProductsContent() {
                 setPagination(data.pagination);
 
                 // Extract unique brands and colors from products
-                const brands = [...new Set(data.products.map(p => p.brand).filter(Boolean))].sort();
-                const colors = [...new Set(data.products.flatMap(p => {
-                    // Handle both old and new inventory formats
-                    if (p.inventory && p.inventory.length > 0) {
-                        return p.inventory.map(inv => inv.color?.name).filter(Boolean);
-                    }
-                    if (p.color && p.color.length > 0) {
-                        return p.color.map(c => c.color).filter(Boolean);
-                    }
-                    return [];
-                }))].sort();
+                const summaries = data.products.map((bundle) => getProductSummary(bundle));
+                const brands = [...new Set(summaries.map(p => p.brand).filter(Boolean))].sort();
+                const colors = [...new Set(summaries.flatMap(p => p.availableColors || []))].sort();
 
                 setAvailableBrands(brands);
                 setAvailableColors(colors);
@@ -156,65 +149,62 @@ function AllProductsContent() {
         setShowFavorites(false);
     };
 
-    let filteredProducts = products;
+    const productEntries = products.map((bundle) => ({
+        bundle,
+        summary: getProductSummary(bundle)
+    }));
+
+    let filteredProducts = productEntries;
 
     // Apply search filter
     if (searchTerm.trim()) {
         const q = searchTerm.trim().toLowerCase();
-        filteredProducts = filteredProducts.filter(
-            (product) =>
-                product.name.toLowerCase().includes(q) ||
-                product.brand.toLowerCase().includes(q) ||
-                product.description.toLowerCase().includes(q)
+        filteredProducts = filteredProducts.filter(({ summary }) =>
+            summary.name?.toLowerCase().includes(q) ||
+            summary.brand?.toLowerCase().includes(q) ||
+            summary.description?.toLowerCase().includes(q)
         );
     }
 
     // Apply gender filter
     if (selectedGender !== 'All') {
         filteredProducts = filteredProducts.filter(
-            (product) => product.genderCategory === selectedGender
+            ({ summary }) => summary.genderCategory === selectedGender
         );
     }
 
     // Apply category filter
     if (selectedCategories.length > 0) {
         filteredProducts = filteredProducts.filter(
-            (product) => selectedCategories.includes(product.category)
+            ({ summary }) => selectedCategories.includes(summary.category)
         );
     }
 
     // Apply brand filter
     if (selectedBrands.length > 0) {
         filteredProducts = filteredProducts.filter(
-            (product) => selectedBrands.includes(product.brand)
+            ({ summary }) => selectedBrands.includes(summary.brand)
         );
     }
 
     // Apply color filter
     if (selectedColors.length > 0) {
-        filteredProducts = filteredProducts.filter((product) => {
-            // Handle both old and new inventory formats
-            let productColors = [];
-            if (product.inventory && product.inventory.length > 0) {
-                productColors = product.inventory.map(inv => inv.color?.name).filter(Boolean);
-            } else if (product.color && product.color.length > 0) {
-                productColors = product.color.map(c => c.color).filter(Boolean);
-            }
-            return selectedColors.some(color => productColors.includes(color));
-        });
+        filteredProducts = filteredProducts.filter(({ summary }) =>
+            selectedColors.some((color) => (summary.availableColors || []).includes(color))
+        );
     }
 
     // Apply price filter
     filteredProducts = filteredProducts.filter(
-        (product) =>
-            product.offerPrice >= priceRange[0] &&
-            product.offerPrice <= priceRange[1]
+        ({ summary }) =>
+            summary.offerPrice >= priceRange[0] &&
+            summary.offerPrice <= priceRange[1]
     );
 
     // Apply favorites filter
     if (showFavorites && user) {
         filteredProducts = filteredProducts.filter(
-            (product) => favorites.includes(product._id)
+            ({ summary }) => favorites.includes(summary._id)
         );
     }
 
@@ -222,18 +212,18 @@ function AllProductsContent() {
     filteredProducts.sort((a, b) => {
         switch (sortBy) {
             case 'price-low':
-                return a.offerPrice - b.offerPrice;
+                return a.summary.offerPrice - b.summary.offerPrice;
             case 'price-high':
-                return b.offerPrice - a.offerPrice;
+                return b.summary.offerPrice - a.summary.offerPrice;
             case 'name-asc':
-                return a.name.localeCompare(b.name);
+                return a.summary.name.localeCompare(b.summary.name);
             case 'name-desc':
-                return b.name.localeCompare(a.name);
+                return b.summary.name.localeCompare(a.summary.name);
             case 'brand':
-                return a.brand.localeCompare(b.brand);
+                return a.summary.brand.localeCompare(b.summary.brand);
             case 'newest':
             default:
-                return new Date(b.date || 0) - new Date(a.date || 0);
+                return new Date(b.summary.date || 0) - new Date(a.summary.date || 0);
         }
     });
 
@@ -280,6 +270,8 @@ function AllProductsContent() {
         return "Browse our extensive collection of sports products from top brands at Sparrow Sports. Find the perfect sporting goods and athletic wear.";
     };
 
+    const filteredBundles = filteredProducts.map(({ bundle }) => bundle);
+
     return (
         <>
             <Navbar />
@@ -308,7 +300,7 @@ function AllProductsContent() {
                     onColorChange={handleColorChange}
                     onPriceRangeChange={setPriceRange}
                     onClearAll={clearAllFilters}
-                    products={products}
+                    products={productEntries.map(({ summary }) => summary)}
                 />
                 {/* Main content */}
                 <div className="flex-1 flex flex-col items-start">
@@ -374,7 +366,7 @@ function AllProductsContent() {
 
                     <ProductsGrid
                         loading={loading}
-                        products={filteredProducts}
+                        products={filteredBundles}
                     />
 
                     {!loading && filteredProducts.length > 0 && (

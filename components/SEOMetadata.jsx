@@ -116,12 +116,17 @@ export default function SEOMetadata({
 
         // If this is a product page, add product schema
         if (product) {
+            const productImage = Array.isArray(product.image)
+                ? product.image[0]
+                : product.image;
             schemaData = {
                 "@context": "https://schema.org",
                 "@type": "Product",
                 "name": product.name,
                 "description": product.description,
-                "image": product.image.startsWith('/') ? `${window.location.origin}${product.image}` : product.image,
+                "image": productImage
+                    ? (productImage.startsWith('/') ? `${window.location.origin}${productImage}` : productImage)
+                    : undefined,
                 "sku": product.sku || product._id,
                 "mpn": product._id,
                 "brand": {

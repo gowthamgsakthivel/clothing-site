@@ -1,8 +1,8 @@
 // This script requires MONGODB_URI in .env.local
+// Purpose: backfill missing inventory documents for v2 variants.
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import connectDB from '../../config/db.js';
-import LegacyProduct from '../../models/Product.js';
 import ProductV2 from '../../models/v2/Product.js';
 import ProductVariant from '../../models/v2/ProductVariant.js';
 import Inventory from '../../models/v2/Inventory.js';
@@ -51,109 +51,7 @@ const assertTransactionsAvailable = async () => {
   }
 };
 
-const slugify = (value) => {
-  if (!value) return 'product';
-  return value
-    .toString()
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 80) || 'product';
-};
-
-const toCode = (value, length, fallback = 'X') => {
-  const cleaned = (value || '')
-    .toString()
-    .toUpperCase()
-    .replace(/[^A-Z0-9]/g, '');
-  return cleaned.slice(0, length).padEnd(length, fallback);
-};
-
-const ensureUniqueSlug = async (baseSlug) => {
-  let slug = baseSlug;
-  let counter = 2;
-  while (await ProductV2.findOne({ slug })) {
-    slug = `${baseSlug}-${counter}`;
-    counter += 1;
-  }
-  return slug;
-};
-
-const buildFallbackInventory = (product) => {
-  const sizes = Array.isArray(product.sizes) && product.sizes.length ? product.sizes : ['ONE'];
-  const colorName = product.color?.[0]?.color || 'Default';
-  const total = Number.isFinite(product.totalStock) ? product.totalStock : product.stock || 0;
-  return [
-    {
-      color: { name: colorName, code: '#000000' },
-      sizeStock: sizes.map((size, index) => ({
-        size,
-        quantity: index === 0 ? total : 0,
-        lowStockThreshold: product.stockSettings?.globalLowStockThreshold ?? 10
-      }))
-    }
-  ];
-};
-
-const buildVariantsFromProduct = (product, productCode) => {
-  const inventorySource = Array.isArray(product.inventory) && product.inventory.length
-    ? product.inventory
-    : buildFallbackInventory(product);
-
-  const variants = [];
-  const inventories = [];
-  const skuSet = new Set();
-
-  inventorySource.forEach((colorEntry) => {
-    const colorName = colorEntry?.color?.name || 'Default';
-    const colorCode = toCode(colorName, 3);
-    const sizeStock = Array.isArray(colorEntry?.sizeStock) && colorEntry.sizeStock.length
-      ? colorEntry.sizeStock
-      : [{ size: 'ONE', quantity: 0, lowStockThreshold: product.stockSettings?.globalLowStockThreshold ?? 10 }];
-
-    sizeStock.forEach((sizeEntry) => {
-      const sizeName = sizeEntry?.size || 'ONE';
-      const sizeCode = toCode(sizeName, 2);
-      const sku = `SS-${productCode}-${colorCode}-${sizeCode}`;
-
-      if (skuSet.has(sku)) {
-        return;
-      }
-      skuSet.add(sku);
-
-      const quantity = Math.max(0, Number.parseInt(sizeEntry?.quantity || 0, 10));
-      const lowStockThreshold = Math.max(0, Number.parseInt(sizeEntry?.lowStockThreshold || 0, 10))
-        || product.stockSettings?.globalLowStockThreshold
-        || 10;
-
-      variants.push({
-        color: colorName,
-        size: sizeName,
-        sku,
-        originalPrice: product.price,
-        offerPrice: product.offerPrice,
-        visibility: 'visible',
-        images: Array.isArray(product.image) ? product.image : []
-      });
-
-      inventories.push({
-        sku,
-        totalStock: quantity,
-        reservedStock: 0,
-        lowStockThreshold
-      });
-
-    });
-  });
-
-  return { variants, inventories };
-};
-
-const countMovementsForInventories = (inventories) => {
-  if (!Array.isArray(inventories)) return 0;
-  return inventories.filter((entry) => (entry?.totalStock || 0) > 0).length;
-};
+const DEFAULT_LOW_STOCK = Number.parseInt(process.env.DEFAULT_LOW_STOCK || '5', 10);
 
 const migrate = async () => {
   await connectDB();
@@ -164,157 +62,72 @@ const migrate = async () => {
     console.log('Migration running in DRY_RUN mode. Set CONFIRM_MIGRATION=true to write data.');
   }
 
-  const query = LegacyProduct.find().sort({ date: 1 });
+  const query = ProductVariant.find().sort({ createdAt: 1 });
   if (SKIP) query.skip(SKIP);
   if (LIMIT) query.limit(LIMIT);
 
-  const legacyCount = await LegacyProduct.countDocuments();
-  const legacyProducts = await query.lean();
+  const variantCount = await ProductVariant.countDocuments();
+  const variants = await query.lean();
   const summary = {
     processed: 0,
-    migrated: 0,
-    variantsCreated: 0,
     inventoryCreated: 0,
-    movementsCreated: 0,
     skipped: 0,
     errors: []
   };
 
-  for (let index = 0; index < legacyProducts.length; index += 1) {
-    const legacy = legacyProducts[index];
+  for (let index = 0; index < variants.length; index += 1) {
+    const variant = variants[index];
     summary.processed += 1;
 
-    if (!legacy?.name || !legacy?.description || !legacy?.brand || !legacy?.category) {
+    if (!variant?._id) {
       summary.skipped += 1;
-      summary.errors.push({ id: legacy?._id?.toString() || 'unknown', reason: 'missing required fields' });
+      summary.errors.push({ id: 'unknown', reason: 'missing variant id' });
       continue;
     }
 
-    const alreadyMigrated = await ProductV2.findOne({ legacyProductId: legacy._id }).lean();
-    if (alreadyMigrated) {
+    const existingInventory = await Inventory.findOne({ variantId: variant._id }).lean();
+    if (existingInventory) {
       summary.skipped += 1;
-      summary.errors.push({ id: legacy._id.toString(), reason: 'already migrated' });
-      continue;
-    }
-
-    const baseSlug = slugify(legacy.name);
-    const slug = await ensureUniqueSlug(baseSlug);
-    const productCode = `${toCode(slug, 3)}-${String(index + 1).padStart(4, '0')}`;
-
-    const createdAt = legacy.date ? new Date(legacy.date) : new Date();
-    const { variants, inventories } = buildVariantsFromProduct(legacy, productCode);
-    const movementCount = countMovementsForInventories(inventories);
-
-    if (!variants.length) {
-      summary.skipped += 1;
-      summary.errors.push({ id: legacy._id.toString(), reason: 'no variants generated' });
       continue;
     }
 
     if (DRY_RUN) {
-      summary.migrated += 1;
-      summary.variantsCreated += variants.length;
-      summary.inventoryCreated += inventories.length;
-      summary.movementsCreated += movementCount;
+      summary.inventoryCreated += 1;
       continue;
     }
 
     const session = await mongoose.startSession();
     try {
       await session.withTransaction(async () => {
-        const product = await ProductV2.create([
+        await Inventory.create([
           {
-            legacyProductId: legacy._id,
-            name: legacy.name,
-            slug,
-            description: legacy.description,
-            brand: legacy.brand,
-            category: legacy.category,
-            genderCategory: legacy.genderCategory || 'Unisex',
-            tags: [],
-            status: 'active',
-            metaTitle: '',
-            metaDescription: '',
-            relatedProducts: [],
-            discountStartDate: null,
-            discountEndDate: null,
-            createdBy: legacy.userId,
-            activityLog: [
-              {
-                action: 'migrated',
-                actorId: legacy.userId,
-                note: `Migrated from legacy product ${legacy._id}`,
-                createdAt
-              }
-            ],
-            createdAt,
-            updatedAt: createdAt
+            variantId: variant._id,
+            sku: variant.sku,
+            totalStock: 0,
+            reservedStock: 0,
+            lowStockThreshold: DEFAULT_LOW_STOCK,
+            updatedAt: new Date()
           }
         ], { session });
-
-        const variantDocs = variants.map((variant) => ({
-          ...variant,
-          productId: product[0]._id,
-          createdAt,
-          updatedAt: createdAt
-        }));
-
-        const createdVariants = await ProductVariant.insertMany(variantDocs, { session });
-
-        const inventoryDocs = createdVariants.map((variantDoc, idx) => ({
-          variantId: variantDoc._id,
-          sku: variantDoc.sku,
-          totalStock: inventories[idx]?.totalStock || 0,
-          reservedStock: inventories[idx]?.reservedStock || 0,
-          lowStockThreshold: inventories[idx]?.lowStockThreshold || 10,
-          updatedAt: createdAt
-        }));
-
-        await Inventory.insertMany(inventoryDocs, { session });
-
-        const movementDocs = createdVariants.map((variantDoc, idx) => {
-          const inventoryEntry = inventories[idx];
-          if (!inventoryEntry || (inventoryEntry.totalStock || 0) <= 0) return null;
-          return {
-            sku: variantDoc.sku,
-            variantId: variantDoc._id,
-            type: 'inbound',
-            quantity: inventoryEntry.totalStock,
-            reference: `migration:${legacy._id}`,
-            createdBy: legacy.userId,
-            createdAt
-          };
-        }).filter(Boolean);
-
-        if (movementDocs.length) {
-          await InventoryMovement.insertMany(movementDocs, { session });
-        }
       });
-      summary.migrated += 1;
-      summary.variantsCreated += variants.length;
-      summary.inventoryCreated += inventories.length;
-      summary.movementsCreated += movementCount;
+      summary.inventoryCreated += 1;
     } catch (error) {
-      summary.errors.push({ id: legacy._id.toString(), reason: error.message });
+      summary.errors.push({ id: variant._id.toString(), reason: error.message });
       summary.skipped += 1;
     } finally {
       await session.endSession();
     }
   }
 
-  const migratedCount = await ProductV2.countDocuments();
+  const productCount = await ProductV2.countDocuments();
   const variantsCount = await ProductVariant.countDocuments();
   const inventoryCount = await Inventory.countDocuments();
   const movementCount = await InventoryMovement.countDocuments();
 
-  if (legacyCount !== migratedCount) {
-    console.warn(`WARNING: Legacy products (${legacyCount}) != migrated products (${migratedCount}).`);
-  }
-
   return {
     ...summary,
-    legacyCount,
-    migratedCount,
+    productCount,
+    variantCount,
     variantsCount,
     inventoryCount,
     movementCount

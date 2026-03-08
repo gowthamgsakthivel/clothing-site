@@ -10,6 +10,7 @@ import SEOMetadata from '@/components/SEOMetadata';
 import Loading from '@/components/Loading';
 import { assets } from '@/assets/assets';
 import toast from 'react-hot-toast';
+import { getProductSummary } from '@/lib/v2ProductView';
 
 const WishlistPage = () => {
     const {
@@ -31,7 +32,10 @@ const WishlistPage = () => {
     const wishlistCount = wishlistProducts.length;
     const minPrice = useMemo(() => {
         if (!wishlistProducts.length) return null;
-        return Math.min(...wishlistProducts.map(p => p.offerPrice));
+        const prices = wishlistProducts
+            .map((bundle) => getProductSummary(bundle).offerPrice)
+            .filter((price) => Number.isFinite(price));
+        return prices.length ? Math.min(...prices) : null;
     }, [wishlistProducts]);
 
     const loadWishlistData = useCallback(async () => {
@@ -45,8 +49,8 @@ const WishlistPage = () => {
                 await fetchProductData();
             }
 
-            const favoriteProducts = products.filter(product =>
-                favorites.includes(product._id)
+            const favoriteProducts = products.filter((bundle) =>
+                favorites.includes(bundle?.product?._id)
             );
 
             setWishlistProducts(favoriteProducts);
@@ -78,7 +82,7 @@ const WishlistPage = () => {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    productIds: wishlistProducts.map(p => p._id),
+                    productIds: wishlistProducts.map((bundle) => bundle?.product?._id),
                     userName: user?.firstName ? `${user.firstName}` : 'A Sparrow Sports User',
                     message: shareMessage,
                 }),
@@ -121,7 +125,7 @@ const WishlistPage = () => {
 
     const handleViewFirstItem = () => {
         if (!wishlistProducts.length) return;
-        router.push(`/product/${wishlistProducts[0]._id}`);
+        router.push(`/product/${wishlistProducts[0]?.product?._id}`);
     };
 
     if (!user) {
@@ -285,7 +289,7 @@ const WishlistPage = () => {
                     {!loading && wishlistCount > 0 && (
                         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 md:gap-6">
                             {wishlistProducts.map((product) => (
-                                <div key={product._id} className="relative">
+                                <div key={product?.product?._id} className="relative">
                                     <ProductCard product={product} />
                                     <div className="absolute top-2 right-2 bg-white rounded-full p-1 shadow-sm" aria-hidden="true">
                                         <svg className="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 24 24">

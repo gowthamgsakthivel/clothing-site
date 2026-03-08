@@ -56,15 +56,15 @@ const HeaderSlider = () => {
         {sliderData.map((slide, index) => (
           <div
             key={slide.id}
-            className="flex flex-col-reverse md:flex-row items-center justify-between bg-[#E6E9F2] py-6 md:py-8 px-4 md:px-14 mt-4 md:mt-6 rounded-lg md:rounded-xl min-w-full gap-4 md:gap-0"
+            className="flex flex-col-reverse md:flex-row items-center justify-between bg-gradient-to-r from-slate-50 to-slate-100 border border-slate-200/50 py-6 md:py-8 px-4 md:px-14 mt-4 md:mt-6 rounded-2xl min-w-full gap-4 md:gap-0 shadow-[inset_0_0_20px_rgba(255,255,255,0.8)]"
           >
             <div className="md:pl-8 mt-6 md:mt-0 w-full md:w-auto">
               <p className="text-xs md:text-base text-orange-600 pb-1">{slide.offer}</p>
               <h1 className="max-w-lg text-lg md:text-2xl lg:text-[40px] lg:leading-[48px] font-semibold leading-tight">
                 {slide.title}
               </h1>
-              <div className="flex flex-col sm:flex-row items-center gap-2 mt-3 md:mt-6">
-                <button className="w-full sm:w-auto px-6 md:px-10 py-2 md:py-2.5 bg-orange-600 rounded-full text-white font-medium text-sm md:text-base hover:bg-orange-700 transition" onClick={() => router.push('/all-products')}>
+              <div className="flex flex-col sm:flex-row items-center gap-3 mt-4 md:mt-6">
+                <button className="w-full sm:w-auto px-8 md:px-10 py-2.5 md:py-3 bg-orange-600 rounded-full text-white font-semibold text-sm md:text-base hover:bg-orange-700 transition-all duration-300 shadow-lg shadow-orange-600/30 active:scale-95" onClick={() => router.push('/all-products')}>
                   {slide.buttonText1}
                 </button>
                 <button className="hidden sm:flex group items-center gap-2 px-4 md:px-6 py-2.5 font-medium text-sm md:text-base" onClick={() => router.push('/all-products')}>
@@ -96,7 +96,7 @@ const HeaderSlider = () => {
           <div
             key={index}
             onClick={() => handleSlideChange(index)}
-            className={`h-2 w-2 rounded-full cursor-pointer ${currentSlide === index ? "bg-orange-600" : "bg-gray-500/30"
+            className={`h-2 rounded-full cursor-pointer transition-all duration-300 ${currentSlide === index ? "bg-orange-600 w-6" : "bg-gray-400/40 w-2 hover:bg-gray-400"
               }`}
           ></div>
         ))}
