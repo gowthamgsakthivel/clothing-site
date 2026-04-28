@@ -82,9 +82,7 @@ const OrderDetailsContent = () => {
 
             try {
                 setLoading(true)
-                const { data } = await axios.get('/api/orders/list', {
-                    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
-                })
+                const { data } = await axios.get('/api/orders/list')
 
                 if (data.success && Array.isArray(data.orders)) {
                     const matched = data.orders.find((item) => item._id === orderId)

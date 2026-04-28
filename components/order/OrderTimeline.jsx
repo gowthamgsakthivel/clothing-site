@@ -1,4 +1,21 @@
-const OrderTimeline = ({ steps, current }) => {
+const OrderTimeline = ({ steps, current, status }) => {
+  const normalizedStatus = (status || '').toLowerCase()
+  const isCancelled = ['cancelled', 'failed', 'rejected', 'rto'].includes(normalizedStatus)
+
+  if (isCancelled) {
+    return (
+      <div className="rounded-xl border border-rose-200 bg-rose-50 p-4">
+        <div className="flex items-center gap-3">
+          <div className="h-8 w-8 rounded-full bg-rose-100 text-rose-700 flex items-center justify-center text-sm font-bold">!</div>
+          <div>
+            <p className="text-sm font-semibold text-rose-800">Order {status || 'Cancelled'}</p>
+            <p className="text-xs text-rose-700 mt-0.5">Shipment progress is stopped for this order.</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="rounded-xl border border-gray-100 bg-white p-4">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">

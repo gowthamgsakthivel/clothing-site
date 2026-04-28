@@ -5,6 +5,50 @@ import { trackShiprocketShipment } from "@/lib/shiprocket";
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/authRoles";
 
+const mapExternalToOrderStatus = (externalStatus) => {
+  const normalized = (externalStatus || '').toLowerCase();
+
+  if (normalized === 'delivered') return 'delivered';
+  if (normalized === 'out_for_delivery') return 'out_for_delivery';
+  if (normalized === 'shipped' || normalized === 'in_transit') return 'shipped';
+  if (normalized === 'rto') return 'rto';
+  if (normalized === 'failed') return 'failed';
+
+  return null;
+};
+
+const syncOrderStatusFromExternal = async (order, externalStatus) => {
+  if (!order) return;
+
+  const nextStatus = mapExternalToOrderStatus(externalStatus);
+  if (!nextStatus) return;
+
+  const current = (order.status || '').toLowerCase();
+  if (current === 'cancelled') return;
+
+  const rank = {
+    placed: 0,
+    pending: 0,
+    packed: 1,
+    shipped: 2,
+    out_for_delivery: 3,
+    delivered: 4,
+    rto: 4,
+    failed: 4
+  };
+
+  const currentRank = rank[current] ?? -1;
+  const nextRank = rank[nextStatus] ?? -1;
+
+  if (current === 'delivered' && ['shipped', 'out_for_delivery', 'rto', 'failed'].includes(nextStatus)) {
+    return;
+  }
+
+  if (nextRank >= currentRank && current !== nextStatus) {
+    await OrderV2.findByIdAndUpdate(order._id, { $set: { status: nextStatus } });
+  }
+};
+
 export async function GET(request) {
   try {
     const { userId, role } = await requireUser({ allowAdmin: true });
@@ -85,10 +129,17 @@ export async function GET(request) {
       {
         $set: {
           externalStatus: normalizedStatus || shipment.externalStatus || shipment.status || null,
+          status: normalizedStatus === 'delivered'
+            ? 'delivered'
+            : ['shipped', 'out_for_delivery', 'in_transit'].includes(normalizedStatus)
+              ? 'shipped'
+              : shipment.status,
           trackingUrl: trackingData?.tracking_data?.track_url || shipment.trackingUrl || null
         }
       }
     );
+
+    await syncOrderStatusFromExternal(order, normalizedStatus);
 
     return NextResponse.json({
       success: true,
