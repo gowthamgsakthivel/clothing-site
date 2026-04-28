@@ -55,6 +55,14 @@ const OrdersV2Page = () => {
   const [detailsShipment, setDetailsShipment] = useState(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [actionState, setActionState] = useState({ orderId: null, action: null });
+  const [packModalOpen, setPackModalOpen] = useState(false);
+  const [packOrderId, setPackOrderId] = useState(null);
+  const [packForm, setPackForm] = useState({
+    lengthCm: '25',
+    breadthCm: '20',
+    heightCm: '3',
+    weightKg: '0.3'
+  });
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -158,14 +166,14 @@ const OrdersV2Page = () => {
     }
   }, [detailsOrder?._id, fetchOrderDetails, fetchOrders, getToken]);
 
-  const runLifecycleAction = useCallback(async (orderId, action) => {
+  const runLifecycleAction = useCallback(async (orderId, action, payload = {}) => {
     if (!orderId || !action) return;
 
     try {
       setActionState({ orderId, action });
       const token = await getToken();
       const response = await axios.patch(`/api/admin/orders/${orderId}/${action}`,
-        {},
+        payload,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -185,6 +193,35 @@ const OrdersV2Page = () => {
       setActionState({ orderId: null, action: null });
     }
   }, [detailsOrder?._id, fetchOrderDetails, fetchOrders, getToken]);
+
+  const openPackModal = useCallback((orderId) => {
+    if (!orderId) return;
+    setPackOrderId(orderId);
+    setPackModalOpen(true);
+  }, []);
+
+  const closePackModal = useCallback(() => {
+    setPackModalOpen(false);
+    setPackOrderId(null);
+  }, []);
+
+  const submitPack = useCallback(async () => {
+    const parsed = {
+      lengthCm: Number(packForm.lengthCm),
+      breadthCm: Number(packForm.breadthCm),
+      heightCm: Number(packForm.heightCm),
+      weightKg: Number(packForm.weightKg)
+    };
+
+    const isValid = Object.values(parsed).every((value) => Number.isFinite(value) && value > 0);
+    if (!isValid) {
+      toast.error('Please enter valid package dimensions and weight');
+      return;
+    }
+
+    await runLifecycleAction(packOrderId, 'pack', { packageDetails: parsed });
+    closePackModal();
+  }, [closePackModal, packForm, packOrderId, runLifecycleAction]);
 
   const printLabel = useCallback(async (shipmentId) => {
     // Deprecated: User prints label from Shiprocket directly after paying there.
@@ -221,8 +258,6 @@ const OrdersV2Page = () => {
             : '';
 
       const canPack = order.status === 'placed';
-      const canShip = order.status === 'packed';
-      const canDeliver = order.status === 'shipped';
       const canCancel = !['shipped', 'delivered', 'cancelled'].includes(order.status);
 
       return (
@@ -266,32 +301,10 @@ const OrdersV2Page = () => {
                 <button
                   type="button"
                   disabled={actionState.orderId === order._id && actionState.action === 'pack'}
-                  onClick={() => runLifecycleAction(order._id, 'pack')}
+                  onClick={() => openPackModal(order._id)}
                   className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-50 transition-colors shadow-sm"
                 >
                   {actionState.orderId === order._id && actionState.action === 'pack' ? 'Packing...' : 'Pack Order'}
-                </button>
-              )}
-
-              {canShip && (
-                <button
-                  type="button"
-                  disabled={actionState.orderId === order._id && actionState.action === 'ship'}
-                  onClick={() => runLifecycleAction(order._id, 'ship')}
-                  className="rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors shadow-sm"
-                >
-                  {actionState.orderId === order._id && actionState.action === 'ship' ? 'Shipping...' : 'Ship Order'}
-                </button>
-              )}
-
-              {canDeliver && (
-                <button
-                  type="button"
-                  disabled={actionState.orderId === order._id && actionState.action === 'deliver'}
-                  onClick={() => runLifecycleAction(order._id, 'deliver')}
-                  className="rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-50 transition-colors shadow-sm"
-                >
-                  {actionState.orderId === order._id && actionState.action === 'deliver' ? 'Updating...' : 'Mark Delivered'}
                 </button>
               )}
 
@@ -549,7 +562,7 @@ const OrdersV2Page = () => {
                 <button
                   type="button"
                   disabled={actionState.action === 'pack'}
-                  onClick={() => runLifecycleAction(detailsOrder?._id, 'pack')}
+                  onClick={() => openPackModal(detailsOrder?._id)}
                   className="rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-50 transition-colors"
                 >
                   {actionState.action === 'pack' ? 'Packing...' : 'Pack Order'}
@@ -557,25 +570,9 @@ const OrdersV2Page = () => {
               )}
 
               {detailsOrder?.status === 'packed' && (
-                <button
-                  type="button"
-                  disabled={actionState.action === 'ship'}
-                  onClick={() => runLifecycleAction(detailsOrder?._id, 'ship')}
-                  className="rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors"
-                >
-                  {actionState.action === 'ship' ? 'Shipping...' : 'Ship Order'}
-                </button>
-              )}
-
-              {detailsOrder?.status === 'shipped' && (
-                <button
-                  type="button"
-                  disabled={actionState.action === 'deliver'}
-                  onClick={() => runLifecycleAction(detailsOrder?._id, 'deliver')}
-                  className="rounded-lg bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-50 transition-colors"
-                >
-                  {actionState.action === 'deliver' ? 'Updating...' : 'Mark Delivered'}
-                </button>
+                <div className="rounded-lg bg-indigo-50 px-3 py-2 text-[11px] font-semibold text-indigo-700 border border-indigo-100">
+                  Shipping status will sync from Shiprocket events
+                </div>
               )}
             </div>
           </div>
@@ -664,6 +661,84 @@ const OrdersV2Page = () => {
           </div>
         </div>
       </Drawer>
+
+      {packModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-md rounded-xl bg-white border border-slate-200 shadow-xl">
+            <div className="px-5 py-4 border-b border-slate-100">
+              <h3 className="text-base font-bold text-slate-900">Enter Packed Dimensions</h3>
+              <p className="text-xs text-slate-500 mt-1">These values are sent to Shiprocket for shipment creation.</p>
+            </div>
+
+            <div className="p-5 space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <label className="text-xs font-semibold text-slate-600">
+                  Length (cm)
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={packForm.lengthCm}
+                    onChange={(event) => setPackForm((prev) => ({ ...prev, lengthCm: event.target.value }))}
+                    className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700"
+                  />
+                </label>
+                <label className="text-xs font-semibold text-slate-600">
+                  Breadth (cm)
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={packForm.breadthCm}
+                    onChange={(event) => setPackForm((prev) => ({ ...prev, breadthCm: event.target.value }))}
+                    className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700"
+                  />
+                </label>
+                <label className="text-xs font-semibold text-slate-600">
+                  Height (cm)
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={packForm.heightCm}
+                    onChange={(event) => setPackForm((prev) => ({ ...prev, heightCm: event.target.value }))}
+                    className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700"
+                  />
+                </label>
+                <label className="text-xs font-semibold text-slate-600">
+                  Weight (kg)
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.001"
+                    value={packForm.weightKg}
+                    onChange={(event) => setPackForm((prev) => ({ ...prev, weightKg: event.target.value }))}
+                    className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700"
+                  />
+                </label>
+              </div>
+            </div>
+
+            <div className="px-5 py-4 border-t border-slate-100 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={closePackModal}
+                className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={submitPack}
+                disabled={!packOrderId || (actionState.orderId === packOrderId && actionState.action === 'pack')}
+                className="rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+              >
+                {actionState.orderId === packOrderId && actionState.action === 'pack' ? 'Packing...' : 'Save & Pack'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

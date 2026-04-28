@@ -205,7 +205,7 @@ const confirmShipment = async (orderId) => {
   return { order };
 };
 
-const packOrder = async (orderId) => {
+const packOrder = async (orderId, packageDetails) => {
   await connectDB();
 
   const existingShipment = await Shipment.findOne({ orderId }).lean();
@@ -213,7 +213,7 @@ const packOrder = async (orderId) => {
     await createShipment(orderId);
   }
 
-  const result = await markAsPacked(orderId);
+  const result = await markAsPacked(orderId, packageDetails);
   return { orderId, shipment: result?.data || null };
 };
 

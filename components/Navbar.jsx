@@ -5,6 +5,7 @@ import Link from "next/link"
 import { useAppContext } from "@/context/AppContext";
 import Image from "next/image";
 import { useClerk, UserButton } from "@clerk/nextjs";
+import { usePathname } from "next/navigation";
 import SearchBar from "./SearchBar";
 import UnifiedNotificationIcon from "./UnifiedNotificationIcon";
 import CartCounter from "./CartIcon";
@@ -12,31 +13,46 @@ import CartCounter from "./CartIcon";
 const Navbar = () => {
 
   const { isAdmin, router, user } = useAppContext();
+  const pathname = usePathname();
   const [showSearch, setShowSearch] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const { openSignIn } = useClerk();
 
+  const isActive = (href) => {
+    if (href === '/') return pathname === '/';
+    return pathname.startsWith(href);
+  };
+
   return (
     <>
       <nav className="fixed top-0 left-0 right-0 z-50 border-b border-gray-200/50 text-gray-700 bg-white/80 backdrop-blur-md">
-        <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8 py-3">
+        <div className="flex w-full items-center px-3 sm:px-4 lg:px-6 py-3">
           <Image
-            className="cursor-pointer w-28 md:w-32"
+            className="cursor-pointer w-28 md:w-32 shrink-0"
             onClick={() => router.push('/')}
             src={assets.logo}
             alt="logo"
           />
-          <div className="flex items-center gap-4 lg:gap-8 max-md:hidden">
-            <Link href="/" className="hover:text-gray-900 transition">
+          <div className="flex items-center gap-4 lg:gap-8 max-md:hidden ml-4 lg:ml-6">
+            <Link href="/" className={`transition ${isActive('/') ? 'text-orange-600 font-semibold' : 'text-gray-700 hover:text-gray-900'}`}>
               Home
             </Link>
-            <Link href="/all-products" className="hover:text-gray-900 transition">
+            <Link href="/all-products" className={`transition ${isActive('/all-products') ? 'text-orange-600 font-semibold' : 'text-gray-700 hover:text-gray-900'}`}>
               Products
             </Link>
-            <Link href="/about" className="hover:text-gray-900 transition">
+            <Link href="/sports" className={`transition ${isActive('/sports') ? 'text-orange-600 font-semibold' : 'text-gray-700 hover:text-gray-900'}`}>
+              Sports
+            </Link>
+            <Link href="/devotional" className={`transition ${isActive('/devotional') ? 'text-orange-600 font-semibold' : 'text-gray-700 hover:text-gray-900'}`}>
+              Devotional
+            </Link>
+            <Link href="/political" className={`transition ${isActive('/political') ? 'text-orange-600 font-semibold' : 'text-gray-700 hover:text-gray-900'}`}>
+              Political
+            </Link>
+            <Link href="/about" className={`transition ${isActive('/about') ? 'text-orange-600 font-semibold' : 'text-gray-700 hover:text-gray-900'}`}>
               About Us
             </Link>
-            <Link href="/contact" className="hover:text-gray-900 transition">
+            <Link href="/contact" className={`transition ${isActive('/contact') ? 'text-orange-600 font-semibold' : 'text-gray-700 hover:text-gray-900'}`}>
               Contact
             </Link>
 
@@ -52,7 +68,7 @@ const Navbar = () => {
 
           </div>
 
-          <ul className="hidden md:flex items-center gap-4">
+          <ul className="hidden md:flex items-center gap-4 ml-auto">
             <li className="min-w-[240px]">
               <SearchBar showResultsInline={true} />
             </li>
@@ -174,7 +190,7 @@ const Navbar = () => {
                 {isAdmin && (
                   <Link
                     href="/owner"
-                    className="flex items-center gap-3 px-6 py-3 bg-orange-50 text-orange-700 hover:bg-orange-100 active:bg-orange-200 transition"
+                    className={`flex items-center gap-3 px-6 py-3 transition ${isActive('/owner') ? 'bg-orange-50 text-orange-700 border-l-4 border-orange-600' : 'hover:bg-gray-50'}`}
                     onClick={() => setShowMobileMenu(false)}
                   >
                     <HomeIcon />
@@ -183,7 +199,7 @@ const Navbar = () => {
                 )}
                 <Link
                   href="/"
-                  className="flex items-center gap-3 px-6 py-3 hover:bg-gray-50 active:bg-gray-100 transition"
+                  className={`flex items-center gap-3 px-6 py-3 transition ${isActive('/') && pathname === '/' ? 'bg-orange-50 text-orange-700 border-l-4 border-orange-600' : 'hover:bg-gray-50'}`}
                   onClick={() => setShowMobileMenu(false)}
                 >
                   <HomeIcon />
@@ -191,23 +207,39 @@ const Navbar = () => {
                 </Link>
                 <Link
                   href="/all-products"
-                  className="flex items-center gap-3 px-6 py-3 hover:bg-gray-50 active:bg-gray-100 transition"
+                  className={`flex items-center gap-3 px-6 py-3 transition ${isActive('/all-products') ? 'bg-orange-50 text-orange-700 border-l-4 border-orange-600' : 'hover:bg-gray-50'}`}
                   onClick={() => setShowMobileMenu(false)}
                 >
                   <BoxIcon />
                   <span className="font-medium">Products</span>
                 </Link>
                 <Link
-                  href="/my-orders"
-                  className="flex items-center gap-3 px-6 py-3 hover:bg-gray-50 active:bg-gray-100 transition"
+                  href="/sports"
+                  className={`flex items-center gap-3 px-6 py-3 transition ${isActive('/sports') ? 'bg-orange-50 text-orange-700 border-l-4 border-orange-600' : 'hover:bg-gray-50'}`}
                   onClick={() => setShowMobileMenu(false)}
                 >
-                  <BagIcon />
-                  <span className="font-medium">My Orders</span>
+                  <BoxIcon />
+                  <span className="font-medium">Sports</span>
+                </Link>
+                <Link
+                  href="/devotional"
+                  className={`flex items-center gap-3 px-6 py-3 transition ${isActive('/devotional') ? 'bg-orange-50 text-orange-700 border-l-4 border-orange-600' : 'hover:bg-gray-50'}`}
+                  onClick={() => setShowMobileMenu(false)}
+                >
+                  <BoxIcon />
+                  <span className="font-medium">Devotional</span>
+                </Link>
+                <Link
+                  href="/political"
+                  className={`flex items-center gap-3 px-6 py-3 transition ${isActive('/political') ? 'bg-orange-50 text-orange-700 border-l-4 border-orange-600' : 'hover:bg-gray-50'}`}
+                  onClick={() => setShowMobileMenu(false)}
+                >
+                  <BoxIcon />
+                  <span className="font-medium">Political</span>
                 </Link>
                 <Link
                   href="/my-orders"
-                  className="flex items-center gap-3 px-6 py-3 hover:bg-gray-50 active:bg-gray-100 transition"
+                  className={`flex items-center gap-3 px-6 py-3 transition ${isActive('/my-orders') ? 'bg-orange-50 text-orange-700 border-l-4 border-orange-600' : 'hover:bg-gray-50'}`}
                   onClick={() => setShowMobileMenu(false)}
                 >
                   <BagIcon />
@@ -215,7 +247,7 @@ const Navbar = () => {
                 </Link>
                 <Link
                   href="/wishlist"
-                  className="flex items-center gap-3 px-6 py-3 hover:bg-gray-50 active:bg-gray-100 transition"
+                  className={`flex items-center gap-3 px-6 py-3 transition ${isActive('/wishlist') ? 'bg-orange-50 text-orange-700 border-l-4 border-orange-600' : 'hover:bg-gray-50'}`}
                   onClick={() => setShowMobileMenu(false)}
                 >
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -225,7 +257,7 @@ const Navbar = () => {
                 </Link>
                 <Link
                   href="/custom-design"
-                  className="flex items-center gap-3 px-6 py-3 hover:bg-gray-50 active:bg-gray-100 transition"
+                  className={`flex items-center gap-3 px-6 py-3 transition ${isActive('/custom-design') ? 'bg-orange-50 text-orange-700 border-l-4 border-orange-600' : 'hover:bg-gray-50'}`}
                   onClick={() => setShowMobileMenu(false)}
                 >
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -235,7 +267,7 @@ const Navbar = () => {
                 </Link>
                 <Link
                   href="/my-designs"
-                  className="flex items-center gap-3 px-6 py-3 hover:bg-gray-50 active:bg-gray-100 transition"
+                  className={`flex items-center gap-3 px-6 py-3 transition ${isActive('/my-designs') ? 'bg-orange-50 text-orange-700 border-l-4 border-orange-600' : 'hover:bg-gray-50'}`}
                   onClick={() => setShowMobileMenu(false)}
                 >
                   <BagIcon />
@@ -243,7 +275,7 @@ const Navbar = () => {
                 </Link>
                 <Link
                   href="/returns"
-                  className="flex items-center gap-3 px-6 py-3 hover:bg-gray-50 active:bg-gray-100 transition"
+                  className={`flex items-center gap-3 px-6 py-3 transition ${isActive('/returns') ? 'bg-orange-50 text-orange-700 border-l-4 border-orange-600' : 'hover:bg-gray-50'}`}
                   onClick={() => setShowMobileMenu(false)}
                 >
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -256,7 +288,7 @@ const Navbar = () => {
 
                 <Link
                   href="/about"
-                  className="flex items-center gap-3 px-6 py-3 hover:bg-gray-50 active:bg-gray-100 transition"
+                  className={`flex items-center gap-3 px-6 py-3 transition ${isActive('/about') ? 'bg-orange-50 text-orange-700 border-l-4 border-orange-600' : 'hover:bg-gray-50'}`}
                   onClick={() => setShowMobileMenu(false)}
                 >
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -266,7 +298,7 @@ const Navbar = () => {
                 </Link>
                 <Link
                   href="/contact"
-                  className="flex items-center gap-3 px-6 py-3 hover:bg-gray-50 active:bg-gray-100 transition"
+                  className={`flex items-center gap-3 px-6 py-3 transition ${isActive('/contact') ? 'bg-orange-50 text-orange-700 border-l-4 border-orange-600' : 'hover:bg-gray-50'}`}
                   onClick={() => setShowMobileMenu(false)}
                 >
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -286,44 +318,44 @@ const Navbar = () => {
         <div className="flex items-center justify-around py-2 px-1">
           <Link
             href="/"
-            className="flex flex-col items-center gap-1 px-3 py-2 hover:bg-gray-50 rounded-lg transition min-w-[60px]"
+            className={`flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition min-w-[60px] ${isActive('/') && pathname === '/' ? 'bg-orange-100 text-orange-700' : 'hover:bg-gray-50 text-gray-600'}`}
           >
             <HomeIcon />
-            <span className="text-xs text-gray-600">Home</span>
+            <span className="text-xs font-medium">Home</span>
           </Link>
 
           <Link
             href="/all-products"
-            className="flex flex-col items-center gap-1 px-3 py-2 hover:bg-gray-50 rounded-lg transition min-w-[60px]"
+            className={`flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition min-w-[60px] ${isActive('/all-products') ? 'bg-orange-100 text-orange-700' : 'hover:bg-gray-50 text-gray-600'}`}
           >
             <BoxIcon />
-            <span className="text-xs text-gray-600">Shop</span>
+            <span className="text-xs font-medium">Shop</span>
           </Link>
 
           <button
             onClick={() => setShowSearch(!showSearch)}
-            className="flex flex-col items-center gap-1 px-3 py-2 hover:bg-gray-50 rounded-lg transition min-w-[60px]"
+            className="flex flex-col items-center gap-1 px-3 py-2 hover:bg-gray-50 rounded-lg transition min-w-[60px] text-gray-600"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
-            <span className="text-xs text-gray-600">Search</span>
+            <span className="text-xs font-medium">Search</span>
           </button>
 
           <Link
             href="/cart"
-            className="flex flex-col items-center gap-1 px-3 py-2 hover:bg-gray-50 rounded-lg transition min-w-[60px] relative"
+            className={`flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition min-w-[60px] relative ${isActive('/cart') ? 'bg-orange-100 text-orange-700' : 'hover:bg-gray-50 text-gray-600'}`}
           >
             <CartIcon />
-            <span className="text-xs text-gray-600">Cart</span>
+            <span className="text-xs font-medium">Cart</span>
           </Link>
 
           <Link
             href="/my-orders"
-            className="flex flex-col items-center gap-1 px-3 py-2 hover:bg-gray-50 rounded-lg transition min-w-[60px]"
+            className={`flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition min-w-[60px] ${isActive('/my-orders') ? 'bg-orange-100 text-orange-700' : 'hover:bg-gray-50 text-gray-600'}`}
           >
             <BagIcon />
-            <span className="text-xs text-gray-600">Orders</span>
+            <span className="text-xs font-medium">Orders</span>
           </Link>
         </div>
       </div>

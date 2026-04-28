@@ -80,7 +80,7 @@ const formatOrderDate = (dateValue) => {
   return date.toISOString().slice(0, 19).replace('T', ' ');
 };
 
-const buildShiprocketPayload = async (order) => {
+const buildShiprocketPayload = async (order, packageDetails = null) => {
   await connectDB();
 
   const [address, user] = await Promise.all([
@@ -119,6 +119,11 @@ const buildShiprocketPayload = async (order) => {
     return { success: false, error: 'Order items are required for Shiprocket' };
   }
 
+  const safeLength = Number(packageDetails?.lengthCm);
+  const safeBreadth = Number(packageDetails?.breadthCm);
+  const safeHeight = Number(packageDetails?.heightCm);
+  const safeWeight = Number(packageDetails?.chargeableWeightKg || packageDetails?.weightKg);
+
   return {
     success: true,
     payload: {
@@ -142,17 +147,17 @@ const buildShiprocketPayload = async (order) => {
       shipping_charges: Number(order?.shippingTotal || 0),
       total_discount: Number(order?.discountTotal || 0),
       sub_total: Number(order?.subtotal || 0),
-      length: Number.isFinite(DEFAULT_LENGTH) ? DEFAULT_LENGTH : 25,
-      breadth: Number.isFinite(DEFAULT_BREADTH) ? DEFAULT_BREADTH : 20,
-      height: Number.isFinite(DEFAULT_HEIGHT) ? DEFAULT_HEIGHT : 3,
-      weight: Number.isFinite(DEFAULT_WEIGHT) ? DEFAULT_WEIGHT : 0.3
+      length: Number.isFinite(safeLength) && safeLength > 0 ? safeLength : (Number.isFinite(DEFAULT_LENGTH) ? DEFAULT_LENGTH : 25),
+      breadth: Number.isFinite(safeBreadth) && safeBreadth > 0 ? safeBreadth : (Number.isFinite(DEFAULT_BREADTH) ? DEFAULT_BREADTH : 20),
+      height: Number.isFinite(safeHeight) && safeHeight > 0 ? safeHeight : (Number.isFinite(DEFAULT_HEIGHT) ? DEFAULT_HEIGHT : 3),
+      weight: Number.isFinite(safeWeight) && safeWeight > 0 ? safeWeight : (Number.isFinite(DEFAULT_WEIGHT) ? DEFAULT_WEIGHT : 0.3)
     }
   };
 };
 
-const createShipment = async (order, retryOnce = false) => {
+const createShipment = async (order, packageDetails = null, retryOnce = false) => {
   try {
-    const payloadResult = await buildShiprocketPayload(order);
+    const payloadResult = await buildShiprocketPayload(order, packageDetails);
     if (!payloadResult.success) {
       return payloadResult;
     }
@@ -178,7 +183,7 @@ const createShipment = async (order, retryOnce = false) => {
     if (status === 401 && !retryOnce) {
       clearTokenCache();
       logger.info('shiprocket.auth.refresh', { reason: 'unauthorized', scope: 'createShipment' });
-      return createShipment(order, true);
+      return createShipment(order, packageDetails, true);
     }
     logger.error('shiprocket.createShipment.error', { message: error?.message });
     return {

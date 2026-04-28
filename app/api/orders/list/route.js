@@ -30,8 +30,11 @@ const formatOrderStatus = (status) => {
     pending: 'Processing',
     packed: 'Processing',
     shipped: 'Shipped',
+    out_for_delivery: 'Out for Delivery',
     delivered: 'Delivered',
     cancelled: 'Cancelled',
+    rto: 'RTO',
+    failed: 'Failed',
     return_requested: 'Return Requested'
   };
   return map[normalized] || toTitleCase(normalized) || 'Processing';

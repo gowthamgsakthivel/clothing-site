@@ -18,6 +18,34 @@ const ensureShipment = (shipment) => {
   }
 };
 
+const normalizePackageDetails = (packageDetails = {}) => {
+  const lengthCm = Number(packageDetails?.lengthCm);
+  const breadthCm = Number(packageDetails?.breadthCm);
+  const heightCm = Number(packageDetails?.heightCm);
+  const weightKg = Number(packageDetails?.weightKg);
+
+  if (![lengthCm, breadthCm, heightCm, weightKg].every((value) => Number.isFinite(value) && value > 0)) {
+    throw buildError({
+      message: 'Valid package details (lengthCm, breadthCm, heightCm, weightKg) are required',
+      status: 400,
+      code: 'INVALID_PACKAGE_DETAILS'
+    });
+  }
+
+  const volumetricWeightKg = Number(((lengthCm * breadthCm * heightCm) / 5000).toFixed(3));
+  const chargeableWeightKg = Number(Math.max(weightKg, volumetricWeightKg).toFixed(3));
+
+  return {
+    lengthCm,
+    breadthCm,
+    heightCm,
+    weightKg,
+    volumetricWeightKg,
+    chargeableWeightKg,
+    updatedAt: new Date()
+  };
+};
+
 const createShipment = async (orderId) => {
   await connectDB();
 
@@ -58,8 +86,10 @@ const createShipment = async (orderId) => {
   return { shipment };
 };
 
-const markAsPacked = async (orderId) => {
+const markAsPacked = async (orderId, packageInput) => {
   await connectDB();
+
+  const packageDetails = normalizePackageDetails(packageInput);
 
   const session = await mongoose.startSession();
   let shipment;
@@ -76,6 +106,7 @@ const markAsPacked = async (orderId) => {
       ensureShipment(shipment);
 
       shipment.status = 'packed';
+      shipment.packageDetails = packageDetails;
       await shipment.save({ session });
 
       order.status = 'packed';
@@ -94,7 +125,7 @@ const markAsPacked = async (orderId) => {
     } else {
       const order = await OrderV2.findById(orderId).lean();
       console.log('Shiprocket block reached for order:', orderId);
-      const shiprocketResult = await createShiprocketShipment(order);
+      const shiprocketResult = await createShiprocketShipment(order, existingShipment?.packageDetails || packageDetails);
       console.log('Shiprocket result:', shiprocketResult);
 
       if (shiprocketResult.success) {
@@ -183,7 +214,7 @@ const retryShiprocketSync = async (shipmentId) => {
   let shiprocketSynced = false;
   try {
     const order = await OrderV2.findById(shipment.orderId).lean();
-    const shiprocketResult = await createShiprocketShipment(order);
+    const shiprocketResult = await createShiprocketShipment(order, shipment?.packageDetails || null);
 
     if (shiprocketResult.success) {
       const data = shiprocketResult.data || {};

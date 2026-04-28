@@ -79,7 +79,11 @@ const OrderPlaced = () => {
         'in transit': 1,
         'out for delivery': 2,
         'delivered': 3,
-        'completed': 3
+        'completed': 3,
+        'cancelled': -1,
+        'failed': -1,
+        'rejected': -1,
+        'rto': -1
       }
 
       const current = statusMap[(status || '').toLowerCase()] ?? 0
@@ -121,6 +125,7 @@ const OrderPlaced = () => {
 
       return {
         id: rawOrder._id,
+        orderStatus: rawOrder.status || 'Processing',
         date: formatOrderDate(rawOrder.date),
         paymentStatus: rawOrder.paymentStatus || 'Pending',
         paymentMethod: rawOrder.paymentMethod || 'COD',
@@ -327,7 +332,11 @@ const OrderPlaced = () => {
               <div className="rounded-2xl border border-gray-100 bg-white p-6">
                 <h2 className="text-lg font-semibold text-gray-900">Order Status</h2>
                 <div className="mt-4">
-                  <OrderTimeline steps={order.statusTimeline.steps} current={order.statusTimeline.current} />
+                  <OrderTimeline
+                    steps={order.statusTimeline.steps}
+                    current={order.statusTimeline.current}
+                    status={order.orderStatus}
+                  />
                 </div>
               </div>
 

@@ -8,9 +8,79 @@ import {
     Box, DollarSign, Mail, PackageCheck, ShoppingBag,
     Users, TrendingUp, TrendingDown, AlertCircle, ArrowRight
 } from 'lucide-react';
-import {
-    AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
-} from 'recharts';
+
+const SimpleRevenueAreaChart = ({ data = [] }) => {
+    const chartPoints = useMemo(() => {
+        if (!Array.isArray(data) || data.length === 0) {
+            return null;
+        }
+
+        const revenues = data.map((entry) => Number(entry?.revenue) || 0);
+        const maxRevenue = Math.max(...revenues, 1);
+        const minY = 8;
+        const maxY = 92;
+        const xStep = data.length > 1 ? 100 / (data.length - 1) : 100;
+
+        const points = data.map((entry, index) => {
+            const x = data.length > 1 ? index * xStep : 50;
+            const y = maxY - ((Number(entry?.revenue) || 0) / maxRevenue) * (maxY - minY);
+            return { x, y, label: entry?.date || '', revenue: Number(entry?.revenue) || 0 };
+        });
+
+        const linePath = points
+            .map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`)
+            .join(' ');
+        const areaPath = `${linePath} L 100 ${maxY} L 0 ${maxY} Z`;
+
+        return {
+            points,
+            linePath,
+            areaPath,
+            maxRevenue
+        };
+    }, [data]);
+
+    if (!chartPoints) {
+        return <div className="h-full w-full flex items-center justify-center text-slate-400 font-medium">No data available for the selected period</div>;
+    }
+
+    return (
+        <div className="h-full w-full flex flex-col">
+            <div className="relative h-[240px] w-full">
+                <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="h-full w-full">
+                    <defs>
+                        <linearGradient id="simpleRevenueFill" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#6366f1" stopOpacity="0.3" />
+                            <stop offset="95%" stopColor="#6366f1" stopOpacity="0" />
+                        </linearGradient>
+                    </defs>
+
+                    {[20, 40, 60, 80].map((y) => (
+                        <line key={y} x1="0" y1={y} x2="100" y2={y} stroke="#E2E8F0" strokeWidth="0.5" />
+                    ))}
+
+                    <path d={chartPoints.areaPath} fill="url(#simpleRevenueFill)" />
+                    <path d={chartPoints.linePath} fill="none" stroke="#6366f1" strokeWidth="1.5" />
+
+                    {chartPoints.points.map((point) => (
+                        <circle key={`${point.label}-${point.x}`} cx={point.x} cy={point.y} r="1.1" fill="#6366f1">
+                            <title>{`${point.label}: ₹${point.revenue.toLocaleString()}`}</title>
+                        </circle>
+                    ))}
+                </svg>
+            </div>
+
+            <div className="mt-3 grid gap-2" style={{ gridTemplateColumns: `repeat(${chartPoints.points.length}, minmax(0, 1fr))` }}>
+                {chartPoints.points.map((point) => (
+                    <div key={`axis-${point.label}-${point.x}`} className="text-center">
+                        <p className="text-[11px] font-semibold text-slate-500 truncate">{point.label}</p>
+                        <p className="text-[11px] text-slate-400">₹{point.revenue.toLocaleString()}</p>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
 
 const OwnerDashboard = () => {
     const { getToken, user, router } = useAppContext();
@@ -153,41 +223,7 @@ const OwnerDashboard = () => {
                         </div>
                     </div>
                     <div className="flex-1 min-h-[300px] w-full px-4 sm:px-6 pb-6 pt-2">
-                        {stats.chartData?.length > 0 ? (
-                            <ResponsiveContainer width="100%" height="100%">
-                                <AreaChart data={stats.chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                                    <defs>
-                                        <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
-                                            <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
-                                        </linearGradient>
-                                    </defs>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-                                    <XAxis
-                                        dataKey="date"
-                                        axisLine={false}
-                                        tickLine={false}
-                                        tick={{ fill: '#64748b', fontSize: 12, fontWeight: 500 }}
-                                        dy={10}
-                                    />
-                                    <YAxis
-                                        axisLine={false}
-                                        tickLine={false}
-                                        tick={{ fill: '#64748b', fontSize: 12, fontWeight: 500 }}
-                                        dx={-10}
-                                        tickFormatter={(val) => `₹${val.toLocaleString()}`}
-                                    />
-                                    <Tooltip
-                                        contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                                        formatter={(value) => [`₹${value.toLocaleString()}`, 'Revenue']}
-                                        labelStyle={{ color: '#64748b', fontWeight: 600, marginBottom: '4px' }}
-                                    />
-                                    <Area type="monotone" dataKey="revenue" stroke="#6366f1" strokeWidth={3} fillOpacity={1} fill="url(#colorRevenue)" />
-                                </AreaChart>
-                            </ResponsiveContainer>
-                        ) : (
-                            <div className="h-full w-full flex items-center justify-center text-slate-400 font-medium">No data available for the selected period</div>
-                        )}
+                        <SimpleRevenueAreaChart data={stats.chartData} />
                     </div>
                 </div>
 

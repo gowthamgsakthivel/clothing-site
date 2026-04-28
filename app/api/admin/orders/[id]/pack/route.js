@@ -16,7 +16,15 @@ export async function PATCH(_request, context) {
       return NextResponse.json({ success: false, message: 'Invalid order id' }, { status: 400 });
     }
 
-    const result = await packOrder(id);
+    let body = {};
+    try {
+      body = await _request.json();
+    } catch {
+      body = {};
+    }
+
+    const packageDetails = body?.packageDetails || null;
+    const result = await packOrder(id, packageDetails);
 
     return NextResponse.json({
       success: true,

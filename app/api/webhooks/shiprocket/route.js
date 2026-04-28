@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/config/db';
 import Shipment from '@/models/v2/Shipment';
+import OrderV2 from '@/models/v2/Order';
 import ShipmentWebhookLog from '@/models/ShipmentWebhookLog';
 import logger from '@/lib/logger';
-import { markAsDelivered } from '@/services/shipments/ShipmentService';
 
 const getWebhookSecret = () => process.env.SHIPROCKET_WEBHOOK_SECRET || '';
 
@@ -32,6 +32,52 @@ const normalizeExternalStatus = (rawStatus) => {
   }
 
   return 'unknown';
+};
+
+const mapExternalToOrderStatus = (externalStatus) => {
+  const normalized = (externalStatus || '').toLowerCase();
+
+  if (normalized === 'delivered') return 'delivered';
+  if (normalized === 'out_for_delivery') return 'out_for_delivery';
+  if (normalized === 'shipped' || normalized === 'in_transit') return 'shipped';
+  if (normalized === 'rto') return 'rto';
+  if (normalized === 'failed') return 'failed';
+
+  return null;
+};
+
+const syncOrderStatusFromExternal = async (orderId, externalStatus) => {
+  const nextStatus = mapExternalToOrderStatus(externalStatus);
+  if (!orderId || !nextStatus) return;
+
+  const order = await OrderV2.findById(orderId);
+  if (!order) return;
+
+  const current = (order.status || '').toLowerCase();
+  if (current === 'cancelled') return;
+
+  const rank = {
+    placed: 0,
+    pending: 0,
+    packed: 1,
+    shipped: 2,
+    out_for_delivery: 3,
+    delivered: 4,
+    rto: 4,
+    failed: 4
+  };
+
+  const currentRank = rank[current] ?? -1;
+  const nextRank = rank[nextStatus] ?? -1;
+
+  if (current === 'delivered' && ['shipped', 'out_for_delivery', 'rto', 'failed'].includes(nextStatus)) {
+    return;
+  }
+
+  if (nextRank >= currentRank && current !== nextStatus) {
+    order.status = nextStatus;
+    await order.save();
+  }
 };
 
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
@@ -216,6 +262,12 @@ export async function POST(request) {
       try {
         if (!isStatusIdempotent) {
           shipment.externalStatus = externalStatus;
+
+          if (externalStatus === 'delivered') {
+            shipment.status = 'delivered';
+          } else if (['shipped', 'out_for_delivery'].includes(externalStatus) && shipment.status !== 'delivered') {
+            shipment.status = 'shipped';
+          }
         }
         if (trackingId) {
           shipment.trackingId = trackingId;
@@ -250,6 +302,16 @@ export async function POST(request) {
       }
     }
 
+    try {
+      await syncOrderStatusFromExternal(shipment.orderId, externalStatus);
+    } catch (error) {
+      logger.warn('shiprocket.webhook.order_sync_failed', {
+        orderId: shipment.orderId?.toString(),
+        externalStatus,
+        message: error?.message
+      });
+    }
+
     await logWebhookEvent({
       orderId: shipment.orderId?.toString(),
       awbCode: shipment.awb || awb || 'unknown',
@@ -258,25 +320,6 @@ export async function POST(request) {
       rawPayload: payload,
       errorReason: isStatusIdempotent ? 'idempotent' : null
     });
-
-    if (externalStatus === 'delivered' && previousStatus !== 'delivered') {
-      try {
-        await markAsDelivered(shipment.orderId);
-      } catch (error) {
-        logger.warn('shiprocket.webhook.delivery_sync_failed', {
-          orderId: shipment.orderId?.toString(),
-          message: error?.message
-        });
-        await logWebhookEvent({
-          orderId: shipment.orderId?.toString(),
-          awbCode: shipment.awb || awb || 'unknown',
-          previousStatus,
-          newStatus: externalStatus || rawStatus || 'unknown',
-          rawPayload: payload,
-          errorReason: 'delivery_sync_failed'
-        });
-      }
-    }
 
     return respond({ success: true }, 200);
   } catch (error) {

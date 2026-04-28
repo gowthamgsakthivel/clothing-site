@@ -13,6 +13,15 @@ const shipmentSchema = new mongoose.Schema(
     externalStatus: { type: String, default: null },
     externalError: { type: String, default: null },
     status: { type: String, default: 'created' },
+    packageDetails: {
+      lengthCm: { type: Number, default: null },
+      breadthCm: { type: Number, default: null },
+      heightCm: { type: Number, default: null },
+      weightKg: { type: Number, default: null },
+      volumetricWeightKg: { type: Number, default: null },
+      chargeableWeightKg: { type: Number, default: null },
+      updatedAt: { type: Date, default: null }
+    },
     trackingUrl: { type: String, default: null },
     labelUrl: { type: String, default: null },
     payload: { type: mongoose.Schema.Types.Mixed, default: null }

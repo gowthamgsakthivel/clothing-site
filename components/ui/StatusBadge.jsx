@@ -5,7 +5,10 @@ const statusPalette = {
     placed: 'bg-blue-100 text-blue-800',
     packed: 'bg-indigo-100 text-indigo-800',
     shipped: 'bg-purple-100 text-purple-800',
+    out_for_delivery: 'bg-violet-100 text-violet-800',
     delivered: 'bg-emerald-100 text-emerald-800',
+    rto: 'bg-orange-100 text-orange-800',
+    failed: 'bg-rose-100 text-rose-800',
     cancelled: 'bg-rose-100 text-rose-800'
   },
   shipment: {
