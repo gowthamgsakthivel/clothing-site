@@ -170,7 +170,7 @@ const Cart = () => {
         keywords="shopping cart, checkout, sports products, order summary"
         url="/cart"
       />
-      <div className="flex flex-col lg:flex-row gap-6 md:gap-10 px-4 sm:px-6 md:px-16 lg:px-32 pt-20 md:pt-24 mb-16 md:mb-20">
+      <div className="flex flex-col lg:flex-row gap-6 md:gap-10 px-4 sm:px-6 md:px-16 lg:px-32 pt-16 md:pt-20 mb-16 md:mb-20">
         <div className="flex-1 w-full overflow-x-auto">
           <LoadingOverlay isLoading={loadingStates.cart}>
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-3">

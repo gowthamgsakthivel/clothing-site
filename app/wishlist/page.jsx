@@ -184,7 +184,7 @@ const WishlistPage = () => {
             />
 
             <div className="min-h-screen bg-gray-50">
-                <div className="px-4 sm:px-6 md:px-16 lg:px-32 py-8 md:py-12 pt-20 md:pt-24">
+                <div className="px-4 sm:px-6 md:px-16 lg:px-32 py-8 md:py-12 pt-16 md:pt-20">
                     <div className="text-center mb-12">
                         <div className="flex items-center justify-center mb-4">
                             <svg className="w-8 h-8 text-orange-600 mr-3" fill="currentColor" viewBox="0 0 24 24">
