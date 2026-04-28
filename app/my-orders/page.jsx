@@ -341,7 +341,7 @@ const MyOrders = () => {
                 keywords="my orders, order history, purchase history, track orders, sports equipment orders"
                 url="/my-orders"
             />
-            <div className="flex flex-col justify-between px-4 sm:px-6 md:px-8 lg:px-32 py-6 pt-20 md:pt-24 min-h-screen bg-gradient-to-b from-orange-50 via-white to-slate-50">
+            <div className="flex flex-col justify-between px-4 sm:px-6 md:px-8 lg:px-32 py-6 pt-16 md:pt-20 min-h-screen bg-gradient-to-b from-orange-50 via-white to-slate-50">
                 <div className="space-y-5 max-w-5xl mx-auto w-full">
                     {/* Modern Header Section */}
                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">

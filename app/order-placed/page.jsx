@@ -215,7 +215,7 @@ const OrderPlaced = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen pt-20 md:pt-24 px-4 sm:px-6 md:px-16 lg:px-32">
+      <div className="min-h-screen pt-16 md:pt-20 px-4 sm:px-6 md:px-16 lg:px-32">
         <div className="animate-pulse space-y-6">
           <div className="h-10 w-40 bg-gray-200 rounded" />
           <div className="h-24 bg-gray-200 rounded" />
@@ -227,7 +227,7 @@ const OrderPlaced = () => {
 
   if (!order) {
     return (
-      <div className="min-h-screen pt-20 md:pt-24 px-4 sm:px-6 md:px-16 lg:px-32 flex items-center justify-center">
+      <div className="min-h-screen pt-16 md:pt-20 px-4 sm:px-6 md:px-16 lg:px-32 flex items-center justify-center">
         <div className="text-center max-w-md">
           <p className="text-lg font-semibold text-gray-800">No order details found</p>
           <p className="text-sm text-gray-500 mt-1">Please check your orders list or try again.</p>
@@ -255,7 +255,7 @@ const OrderPlaced = () => {
   return (
     <>
       <Navbar />
-      <div className="min-h-screen bg-gradient-to-b from-orange-50 via-white to-slate-50 pt-20 md:pt-24 pb-28 md:pb-16">
+      <div className="min-h-screen bg-gradient-to-b from-orange-50 via-white to-slate-50 pt-16 md:pt-20 pb-28 md:pb-16">
         <SEOMetadata
           title="Order Confirmed | Sparrow Sports"
           description="Your order has been confirmed. Thank you for shopping with Sparrow Sports!"

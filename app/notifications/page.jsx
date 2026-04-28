@@ -99,7 +99,7 @@ const Notifications = () => {
                 url="/notifications"
             />
             <Navbar />
-            <div className="px-4 sm:px-6 md:px-16 lg:px-32 pt-20 md:pt-24 pb-12 md:pb-16 min-h-[calc(100vh-200px)]">
+            <div className="px-4 sm:px-6 md:px-16 lg:px-32 pt-16 md:pt-20 pb-12 md:pb-16 min-h-[calc(100vh-200px)]">
                 <h1 className="text-3xl font-medium mb-8">My Stock Notifications</h1>
 
                 {loading ? (

@@ -1,6 +1,6 @@
 export default function Loading() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-orange-50 via-white to-slate-50 pt-20 md:pt-24 pb-28 md:pb-16">
+    <div className="min-h-screen bg-gradient-to-b from-orange-50 via-white to-slate-50 pt-16 md:pt-20 pb-28 md:pb-16">
       <div className="px-4 sm:px-6 md:px-16 lg:px-32 space-y-6">
         <div className="rounded-3xl bg-white p-6 border border-orange-100 shadow-sm animate-pulse">
           <div className="h-6 w-48 bg-gray-200 rounded" />
