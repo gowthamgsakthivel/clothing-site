@@ -12,10 +12,21 @@ const activityLogSchema = new mongoose.Schema(
 
 const productSchema = new mongoose.Schema(
   {
+    productCode: { type: String, sparse: true, default: null },
     name: { type: String, required: true },
     slug: { type: String, required: true, unique: true },
     description: { type: String, required: true },
     brand: { type: String, required: true },
+    collectionName: {
+      type: String,
+      enum: ['products', 'sports', 'devotional', 'political'],
+      required: true
+    },
+    sportCategory: {
+      type: String,
+      enum: ['cricket', 'football', 'basketball', 'badminton', 'tennis', 'gym'],
+      default: null
+    },
     category: { type: String, required: true },
     genderCategory: {
       type: String,
@@ -40,8 +51,11 @@ const productSchema = new mongoose.Schema(
 );
 
 productSchema.index({ status: 1 });
+productSchema.index({ collectionName: 1 });
+productSchema.index({ sportCategory: 1 });
 productSchema.index({ category: 1 });
 productSchema.index({ brand: 1 });
+productSchema.index({ productCode: 1 }, { unique: true, sparse: true });
 
 const ProductV2 = mongoose.models.ProductV2 || mongoose.model('ProductV2', productSchema, 'products_v2');
 

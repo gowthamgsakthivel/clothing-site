@@ -3,6 +3,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import OrderStatusBadge from './OrderStatusBadge'
 import OrderTimelineMini from './OrderTimelineMini'
+import { getDisplayOrderCode, getDisplayProductCode } from '@/lib/codeGenerators'
 
 const OrderCard = ({ order, currency }) => {
 
@@ -18,6 +19,7 @@ const OrderCard = ({ order, currency }) => {
   const totalAmount = Number(order?.amount || 0).toFixed(2)
   const status = order?.shipment_status || order?.status || 'Pending'
   const estimatedDelivery = order?.estimated_delivery_date || order?.estimatedDelivery || 'Pending update'
+  const orderCode = getDisplayOrderCode(order)
 
   const statusMap = {
     'order placed': 0,
@@ -41,6 +43,7 @@ const OrderCard = ({ order, currency }) => {
   const itemName = isCustomDesign
     ? (firstItem?.designName || 'Custom Design')
     : (product?.name || 'Product')
+  const productCode = isCustomDesign ? null : getDisplayProductCode(firstItem?.product || product)
 
   return (
     <div className="rounded-2xl border border-gray-200 bg-white shadow-sm transition hover:shadow-md">
@@ -49,7 +52,7 @@ const OrderCard = ({ order, currency }) => {
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-xs text-gray-500">ORDER #</p>
-              <p className="text-lg font-semibold text-gray-900">{order?._id?.slice(-6).toUpperCase()}</p>
+              <p className="text-lg font-semibold text-gray-900">{orderCode}</p>
               <p className="text-xs text-gray-500 mt-1">{formattedDate}</p>
             </div>
             <div className="text-right">
@@ -75,6 +78,9 @@ const OrderCard = ({ order, currency }) => {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-gray-900 truncate">{itemName}</p>
+                {productCode && (
+                  <p className="text-[11px] text-gray-500 mt-1">Code: {productCode}</p>
+                )}
                 <p className="text-xs text-gray-500 mt-1">Qty: {firstItem?.quantity || 1}</p>
               </div>
               <div className="text-sm font-semibold text-gray-900">

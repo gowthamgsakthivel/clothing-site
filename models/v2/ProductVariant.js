@@ -4,6 +4,7 @@ const productVariantSchema = new mongoose.Schema(
   {
     productId: { type: mongoose.Schema.Types.ObjectId, ref: 'ProductV2', required: true, index: true },
     color: { type: String, required: true },
+    colorCode: { type: String, default: null },
     size: { type: String, required: true },
     sku: { type: String, required: true, unique: true, index: true },
     originalPrice: { type: Number, required: true },

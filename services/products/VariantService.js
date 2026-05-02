@@ -7,6 +7,7 @@ import { buildError } from '@/lib/errors';
 import { requireFields, isNonEmptyString, toNumber } from '@/lib/validation';
 
 const VISIBILITY_VALUES = ['visible', 'hidden'];
+const isValidColorCode = (value) => /^#[0-9A-Fa-f]{6}$/.test(value);
 
 const toCode = (value, length, fallback = 'X') => {
   const cleaned = (value || '')
@@ -55,19 +56,24 @@ const createVariant = async (productId, data) => {
   }
 
   const color = data?.color?.trim();
+  const colorCode = data?.colorCode ? data.colorCode.trim() : null;
   const size = data?.size?.trim();
   const originalPrice = toNumber(data?.originalPrice);
   const offerPrice = toNumber(data?.offerPrice ?? data?.originalPrice);
   const images = Array.isArray(data?.images) ? data.images.filter(isNonEmptyString) : [];
   const visibility = data?.visibility || 'visible';
 
-  const missing = requireFields({ color, size, originalPrice }, ['color', 'size', 'originalPrice']);
+  const missing = requireFields({ color, colorCode, size, originalPrice }, ['color', 'colorCode', 'size', 'originalPrice']);
   if (missing.length) {
     throw buildError({ message: 'Missing required fields', status: 400, code: 'MISSING_FIELDS', details: missing });
   }
 
   if (!VISIBILITY_VALUES.includes(visibility)) {
     throw buildError({ message: 'Invalid visibility value', status: 400, code: 'INVALID_VISIBILITY' });
+  }
+
+  if (colorCode && !isValidColorCode(colorCode)) {
+    throw buildError({ message: 'Invalid color code value', status: 400, code: 'INVALID_COLOR_CODE' });
   }
 
   const colorSizeUnique = await ensureColorSizeUnique({ productId, color, size });
@@ -85,6 +91,7 @@ const createVariant = async (productId, data) => {
   const variant = await ProductVariant.create({
     productId,
     color,
+    colorCode,
     size,
     sku,
     originalPrice,
@@ -154,6 +161,13 @@ const updateVariant = async (variantId, data) => {
   }
 
   if (data?.color) variant.color = nextColor;
+  if (data?.colorCode !== undefined) {
+    const nextColorCode = data.colorCode ? data.colorCode.trim() : null;
+    if (nextColorCode && !isValidColorCode(nextColorCode)) {
+      throw buildError({ message: 'Invalid color code value', status: 400, code: 'INVALID_COLOR_CODE' });
+    }
+    variant.colorCode = nextColorCode;
+  }
   if (data?.size) variant.size = nextSize;
   if (data?.originalPrice !== undefined) variant.originalPrice = toNumber(data.originalPrice, variant.originalPrice);
   if (data?.offerPrice !== undefined) variant.offerPrice = toNumber(data.offerPrice, variant.offerPrice);

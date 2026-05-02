@@ -19,6 +19,7 @@ const orderItemSchema = new mongoose.Schema(
 
 const orderSchema = new mongoose.Schema(
   {
+    orderCode: { type: String, unique: true, sparse: true, default: null },
     userId: { type: String, required: true },
     status: { type: String, default: 'placed' },
     items: { type: [orderItemSchema], default: [] },
@@ -36,6 +37,7 @@ const orderSchema = new mongoose.Schema(
 );
 
 orderSchema.index({ status: 1, createdAt: -1 });
+orderSchema.index({ orderCode: 1 }, { unique: true, sparse: true });
 
 const OrderV2 = mongoose.models.OrderV2 || mongoose.model('OrderV2', orderSchema, 'orders_v2');
 

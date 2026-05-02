@@ -8,11 +8,12 @@ import Address from '@/models/Address';
 import ProductVariant from '@/models/v2/ProductVariant';
 import ProductV2 from '@/models/v2/Product';
 import { toNumber } from '@/lib/validation';
+import { generateOrderCode } from '@/lib/codeGenerators';
 import {
   reserveStock,
   releaseReservedStock,
   deductStockAfterShipment
-} from '@/services/inventory/InventoryService';
+} from '@/services/inventory/InventoryService.server';
 import { createShipment, markAsPacked } from '@/services/shipments/ShipmentService';
 
 const isCustomDesignItem = (item) => {
@@ -86,6 +87,8 @@ const createOrder = async (orderData) => {
   const session = await mongoose.startSession();
   try {
     await session.withTransaction(async () => {
+      const orderCode = await generateOrderCode({ session });
+
       for (const item of items) {
         if (isCustomDesignItem(item)) {
           continue;
@@ -96,6 +99,7 @@ const createOrder = async (orderData) => {
       await OrderV2.create([
         {
           _id: orderId,
+          orderCode,
           userId,
           status: 'placed',
           paymentStatus: (orderData?.paymentStatus || 'pending').toString().toLowerCase(),
@@ -322,6 +326,7 @@ const getOrdersWithPagination = async ({
     const term = search.toString().trim();
     if (term) {
       filters.$or = [
+        { orderCode: { $regex: term, $options: 'i' } },
         { userId: { $regex: term, $options: 'i' } },
         { 'items.sku': { $regex: term, $options: 'i' } }
       ];
@@ -361,6 +366,7 @@ const getOrdersWithPagination = async ({
 
   const data = orders.map((orderDoc) => ({
     ...orderDoc,
+    orderCode: orderDoc.orderCode || null,
     shipment: shipmentMap[orderDoc._id.toString()] || null,
     customerName: userMap[orderDoc.userId]?.name || orderDoc.userId,
     customerEmail: userMap[orderDoc.userId]?.email || null
@@ -393,23 +399,29 @@ const getOrderById = async (orderId) => {
   const hydratedItems = await Promise.all(
     order.items.map(async (item) => {
       let productName = null;
+      let productCode = null;
       if (item.variantId) {
         const variant = await ProductVariant.findById(item.variantId)
-          .populate('productId', 'name')
+          .populate('productId', 'name productCode')
           .lean();
         if (variant?.productId?.name) {
           productName = variant.productId.name;
         }
+        if (variant?.productId?.productCode) {
+          productCode = variant.productId.productCode;
+        }
       }
       return {
         ...item,
-        productName
+        productName,
+        productCode
       };
     })
   );
 
   const hydratedOrder = {
     ...order,
+    orderCode: order.orderCode || null,
     items: hydratedItems,
     customerName: user?.name || order.userId,
     customerEmail: user?.email || null,

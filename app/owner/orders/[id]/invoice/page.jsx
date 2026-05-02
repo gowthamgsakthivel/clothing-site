@@ -4,6 +4,7 @@ import React, { useEffect, useState, use } from 'react';
 import { useAppContext } from '@/context/AppContext';
 import axios from 'axios';
 import { StatusBadge } from '@/components/ui';
+import { getDisplayOrderCode } from '@/lib/codeGenerators';
 
 export default function OrderInvoicePage({ params }) {
     const unwrappedParams = use(params);
@@ -84,7 +85,7 @@ export default function OrderInvoicePage({ params }) {
                     <div className="grid grid-cols-2 gap-y-4">
                         <div>
                             <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Order ID</p>
-                            <p className="text-sm font-semibold text-slate-900">#{order._id.slice(-6).toUpperCase()}</p>
+                            <p className="text-sm font-semibold text-slate-900">#{getDisplayOrderCode(order)}</p>
                         </div>
                         <div>
                             <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Date</p>

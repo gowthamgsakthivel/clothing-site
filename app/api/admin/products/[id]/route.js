@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/authRoles';
 import { buildError } from '@/lib/errors';
 import {
-  archiveProduct,
+  deleteProduct,
   getProductById,
   updateProduct
 } from '@/services/products/ProductService';
@@ -105,7 +105,7 @@ export async function DELETE(_request, { params }) {
       }, { status: 400 });
     }
 
-    const result = await archiveProduct({ productId: id, actorId: userId });
+    const result = await deleteProduct({ productId: id, actorId: userId });
 
     return NextResponse.json({
       success: true,

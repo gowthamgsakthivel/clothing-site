@@ -89,7 +89,7 @@ export async function GET() {
 
     const productIds = variants.map((variant) => variant.productId).filter(Boolean);
     const products = productIds.length
-      ? await ProductV2.find({ _id: { $in: productIds } }, 'name brand category').lean()
+      ? await ProductV2.find({ _id: { $in: productIds } }, 'name brand category productCode').lean()
       : [];
 
     const addressMap = new Map(addresses.map((address) => [String(address._id), address]));
@@ -128,6 +128,7 @@ export async function GET() {
           product: product
             ? {
                 _id: product._id,
+                productCode: product.productCode || null,
                 name: product.name,
                 brand: product.brand,
                 category: product.category,
@@ -149,6 +150,7 @@ export async function GET() {
 
       return {
         _id: order._id,
+        orderCode: order.orderCode || null,
         userId: order.userId,
         items,
         amount: order.grandTotal,

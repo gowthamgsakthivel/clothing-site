@@ -7,8 +7,11 @@ import InventoryMovement from '@/models/v2/InventoryMovement';
 import logger from '@/lib/logger';
 import { buildError } from '@/lib/errors';
 import { requireFields, isNonEmptyString, toNumber } from '@/lib/validation';
+import { generateProductCode } from '@/lib/codeGenerators';
 
 const STATUS_VALUES = ['draft', 'active', 'hidden', 'archived'];
+const SPORT_CATEGORIES = ['cricket', 'football', 'basketball', 'badminton', 'tennis', 'gym'];
+const isValidColorCode = (value) => /^#[0-9A-Fa-f]{6}$/.test(value);
 
 const slugify = (value) => {
   if (!value) return 'product';
@@ -50,13 +53,14 @@ const normalizeVariants = (variants) => {
 
   return variants.map((variant, index) => {
     const color = variant?.color?.trim();
+    const colorCode = variant?.colorCode ? variant.colorCode.trim() : null;
     const size = variant?.size?.trim();
     const originalPrice = toNumber(variant?.originalPrice);
     const offerPrice = toNumber(variant?.offerPrice ?? variant?.originalPrice);
     const images = Array.isArray(variant?.images) ? variant.images.filter(isNonEmptyString) : [];
     const quantity = Math.max(0, toNumber(variant?.quantity, 0));
 
-    const missing = requireFields({ color, size, originalPrice }, ['color', 'size', 'originalPrice']);
+    const missing = requireFields({ color, colorCode, size, originalPrice }, ['color', 'colorCode', 'size', 'originalPrice']);
     if (missing.length) {
       throw buildError({
         message: `Missing required variant fields for item ${index + 1}`,
@@ -70,8 +74,13 @@ const normalizeVariants = (variants) => {
       throw buildError({ message: 'Variant images must be valid URLs', status: 400, code: 'INVALID_IMAGE_URL' });
     }
 
+    if (colorCode && !isValidColorCode(colorCode)) {
+      throw buildError({ message: 'Invalid color code value', status: 400, code: 'INVALID_COLOR_CODE' });
+    }
+
     return {
       color,
+      colorCode,
       size,
       originalPrice,
       offerPrice,
@@ -89,7 +98,7 @@ const createVariantsWithInventory = async ({
   reference
 }) => {
   const normalizedVariants = normalizeVariants(variants);
-  const productCode = buildProductCode(product);
+  const productCode = product?.productCode || buildProductCode(product);
 
   for (const variantData of normalizedVariants) {
     const sku = buildSku({
@@ -117,6 +126,7 @@ const createVariantsWithInventory = async ({
       {
         productId: product._id,
         color: variantData.color,
+        colorCode: variantData.colorCode,
         size: variantData.size,
         sku,
         originalPrice: variantData.originalPrice,
@@ -162,6 +172,8 @@ const createFullProduct = async ({ payload, actorId }) => {
   const name = productInput?.name?.trim();
   const description = productInput?.description?.trim();
   const brand = productInput?.brand?.trim();
+  const collectionName = productInput?.collectionName?.trim();
+  const sportCategory = productInput?.sportCategory ? productInput.sportCategory.trim().toLowerCase() : null;
   const category = productInput?.category?.trim();
   const genderCategory = productInput?.genderCategory || 'Unisex';
   const status = productInput?.status || 'draft';
@@ -172,9 +184,18 @@ const createFullProduct = async ({ payload, actorId }) => {
   const discountStartDate = productInput?.discountStartDate || null;
   const discountEndDate = productInput?.discountEndDate || null;
 
-  const missing = requireFields({ name, description, brand, category }, ['name', 'description', 'brand', 'category']);
+  const missing = requireFields({ name, description, brand, collectionName, category }, ['name', 'description', 'brand', 'collectionName', 'category']);
   if (missing.length) {
     throw buildError({ message: 'Missing required product fields', status: 400, code: 'MISSING_FIELDS', details: missing });
+  }
+
+  if (collectionName === 'sports') {
+    if (!sportCategory) {
+      throw buildError({ message: 'Sport type is required for sports products', status: 400, code: 'SPORT_CATEGORY_REQUIRED' });
+    }
+    if (!SPORT_CATEGORIES.includes(sportCategory)) {
+      throw buildError({ message: 'Invalid sport type', status: 400, code: 'INVALID_SPORT_CATEGORY' });
+    }
   }
 
   if (!STATUS_VALUES.includes(status)) {
@@ -182,6 +203,7 @@ const createFullProduct = async ({ payload, actorId }) => {
   }
 
   const slug = productInput?.slug ? slugify(productInput.slug) : slugify(name);
+  const primaryVariant = variants[0] || {};
 
   const session = await mongoose.startSession();
   let createdProduct = null;
@@ -196,10 +218,19 @@ const createFullProduct = async ({ payload, actorId }) => {
 
       const [product] = await ProductV2.create([
         {
+          productCode: await generateProductCode({
+            category,
+            genderCategory,
+            color: primaryVariant?.color || productInput?.color || productInput?.productCodeColor,
+            size: primaryVariant?.size || productInput?.size || productInput?.productCodeSize,
+            session
+          }),
           name,
           slug,
           description,
           brand,
+          collectionName,
+          sportCategory: collectionName === 'sports' ? sportCategory : null,
           category,
           genderCategory,
           tags,
