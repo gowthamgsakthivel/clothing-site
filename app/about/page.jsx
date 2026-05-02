@@ -1,5 +1,10 @@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import Image from "next/image";
+import { Oswald, Sora } from "next/font/google";
+
+const headingFont = Oswald({ subsets: ["latin"], weight: ["400", "600", "700"] });
+const bodyFont = Sora({ subsets: ["latin"], weight: ["300", "400", "600"] });
 
 export const metadata = {
     title: 'About Us | Sparrow Sports',
@@ -33,261 +38,248 @@ export default function AboutPage() {
     return (
         <>
             <Navbar />
-            <div className="min-h-screen bg-gray-50">
-                {/* Hero Section */}
-                <div className="relative bg-gradient-to-r from-blue-600 to-purple-600 text-white py-20">
-                    <div className="absolute inset-0 bg-black opacity-20"></div>
-                    <div className="relative max-w-6xl mx-auto px-6 md:px-16 lg:px-32 text-center">
-                        <h1 className="text-5xl md:text-6xl font-bold mb-6 leading-tight">
-                            About <span className="text-yellow-300">Sparrow Sports</span>
-                        </h1>
-                        <p className="text-xl md:text-2xl text-gray-200 max-w-3xl mx-auto">
-                            Revolutionizing the way you shop for premium athletic wear and custom sports equipment
-                        </p>
+            <div className={`min-h-screen bg-[#f7f4ef] text-[#0b0f12] ${bodyFont.className}`}>
+                {/* Hero */}
+                <section className="relative overflow-hidden bg-[#0b0f12] text-white">
+                    <div className="absolute inset-0">
+                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(249,115,22,0.2),_transparent_50%)]" />
+                        <div className="absolute inset-0 bg-gradient-to-br from-black/90 via-black/60 to-black/20" />
                     </div>
-                </div>
-
-                {/* Story Section */}
-                <div className="py-16 bg-white">
-                    <div className="max-w-6xl mx-auto px-6 md:px-16 lg:px-32">
-                        <div className="grid md:grid-cols-2 gap-12 items-center">
+                    <div className="relative mx-auto max-w-6xl px-6 md:px-12 lg:px-16 py-16 md:py-24">
+                        <div className="grid items-center gap-10 lg:grid-cols-[1.1fr_0.9fr]">
                             <div>
-                                <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">Our Story</h2>
-                                <p className="text-lg text-gray-600 mb-6">
-                                    Founded with a vision to bridge the gap between quality athletic wear and personalized sports equipment,
-                                    Sparrow Sports has evolved into a comprehensive platform that serves both everyday fitness enthusiasts
-                                    and professional athletes.
+                                <p className="text-xs tracking-[0.4em] text-orange-400 uppercase">Engineered for excellence</p>
+                                <h1 className={`${headingFont.className} mt-4 text-4xl md:text-6xl font-semibold leading-tight`}>
+                                    Born for performance. Built for purpose.
+                                </h1>
+                                <p className="mt-5 max-w-xl text-sm md:text-base text-gray-200">
+                                    Sparrow Sports designs apparel that moves with you. From custom kits to everyday training gear, we blend
+                                    athlete-first engineering with bold, modern style.
                                 </p>
-                                <p className="text-lg text-gray-600 mb-6">
-                                    What started as a simple idea to provide better sportswear has grown into an innovative e-commerce
-                                    platform featuring custom design services, smart inventory management, and personalized shopping experiences.
-                                </p>
-                                <div className="flex items-center space-x-4">
-                                    <div className="bg-blue-100 p-3 rounded-full">
-                                        <span className="text-2xl">🏆</span>
-                                    </div>
-                                    <div>
-                                        <h3 className="font-semibold text-gray-900">Excellence in Innovation</h3>
-                                        <p className="text-gray-600">Pioneering custom design solutions in sportswear</p>
-                                    </div>
+                                <div className="mt-8 flex flex-wrap items-center gap-4">
+                                    <a
+                                        href="/sports"
+                                        className="inline-flex items-center justify-center bg-orange-600 px-5 py-3 text-xs font-semibold uppercase tracking-wider text-white transition hover:bg-orange-500"
+                                    >
+                                        Explore the collection
+                                    </a>
+                                    <a
+                                        href="/custom-design"
+                                        className="inline-flex items-center justify-center border border-white/40 px-5 py-3 text-xs font-semibold uppercase tracking-wider text-white transition hover:border-white"
+                                    >
+                                        Custom design
+                                    </a>
                                 </div>
                             </div>
-                            <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-8 rounded-2xl text-white">
-                                <div className="grid grid-cols-2 gap-6">
-                                    <div className="text-center">
-                                        <div className="text-3xl font-bold mb-2">10K+</div>
-                                        <div className="text-sm opacity-80">Happy Customers</div>
-                                    </div>
-                                    <div className="text-center">
-                                        <div className="text-3xl font-bold mb-2">500+</div>
-                                        <div className="text-sm opacity-80">Custom Designs</div>
-                                    </div>
-                                    <div className="text-center">
-                                        <div className="text-3xl font-bold mb-2">50+</div>
-                                        <div className="text-sm opacity-80">Brand Partners</div>
-                                    </div>
-                                    <div className="text-center">
-                                        <div className="text-3xl font-bold mb-2">99%</div>
-                                        <div className="text-sm opacity-80">Satisfaction Rate</div>
-                                    </div>
+                            <div className="relative">
+                                <div className="absolute -left-6 -top-6 h-24 w-24 bg-orange-600" />
+                                <div className="relative aspect-[4/5] w-full overflow-hidden rounded-sm border border-white/10 shadow-2xl">
+                                    <Image
+                                        src="/assets/img/running.png"
+                                        alt="Runner in Sparrow Sports gear"
+                                        fill
+                                        className="object-cover"
+                                        sizes="(max-width: 1024px) 100vw, 40vw"
+                                    />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+                                </div>
+                                <div className="absolute -bottom-6 right-0 bg-orange-600 px-4 py-3 text-xs font-semibold uppercase tracking-wider text-white">
+                                    Est. 2018
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
+                </section>
 
-                {/* Features Section */}
-                <div className="py-16 bg-gray-50">
-                    <div className="max-w-6xl mx-auto px-6 md:px-16 lg:px-32">
-                        <div className="text-center mb-12">
-                            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">What Makes Us Special</h2>
-                            <p className="text-xl text-gray-600">Innovative features that set us apart from traditional sports retailers</p>
-                        </div>
-
-                        <div className="grid md:grid-cols-3 gap-8">
-                            {/* Custom Design Service */}
-                            <div className="bg-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-shadow">
-                                <div className="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mb-6">
-                                    <span className="text-2xl">🎨</span>
-                                </div>
-                                <h3 className="text-xl font-bold text-gray-900 mb-4">Custom Design Service</h3>
-                                <p className="text-gray-600 mb-4">
-                                    Upload your designs and get custom sportswear manufactured with our advanced design-to-order system.
+                {/* Story */}
+                <section className="bg-white">
+                    <div className="mx-auto max-w-6xl px-6 md:px-12 lg:px-16 py-16">
+                        <div className="grid gap-10 lg:grid-cols-[1.1fr_0.9fr]">
+                            <div>
+                                <p className="text-xs uppercase tracking-[0.35em] text-orange-600">Origins</p>
+                                <h2 className={`${headingFont.className} mt-3 text-3xl md:text-4xl font-semibold`}>Our Story</h2>
+                                <p className="mt-5 text-sm md:text-base text-gray-600">
+                                    Sparrow Sports began with a simple mission: deliver performance wear that feels personal. We obsess over
+                                    fabric, fit, and functionality so every athlete can train with confidence.
                                 </p>
-                                <ul className="text-sm text-gray-500 space-y-1">
-                                    <li>• Price negotiation system</li>
-                                    <li>• Real-time design approval</li>
-                                    <li>• Quality guarantee</li>
-                                </ul>
+                                <p className="mt-4 text-sm md:text-base text-gray-600">
+                                    Today we serve teams, creators, and everyday competitors with custom sportswear, stock notifications, and
+                                    a design workflow that turns ideas into gear.
+                                </p>
                             </div>
-
-                            {/* Smart Notifications */}
-                            <div className="bg-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-shadow">
-                                <div className="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mb-6">
-                                    <span className="text-2xl">🔔</span>
+                            <div className="relative">
+                                <div className="relative aspect-[16/10] overflow-hidden rounded-sm border border-gray-200 shadow-lg">
+                                    <Image
+                                        src="/assets/img/cricket_jersey.png"
+                                        alt="Technical sports fabric detail"
+                                        fill
+                                        className="object-cover"
+                                        sizes="(max-width: 1024px) 100vw, 40vw"
+                                    />
                                 </div>
-                                <h3 className="text-xl font-bold text-gray-900 mb-4">Smart Stock Notifications</h3>
-                                <p className="text-gray-600 mb-4">
-                                    Never miss out on your favorite products with our intelligent stock notification system.
-                                </p>
-                                <ul className="text-sm text-gray-500 space-y-1">
-                                    <li>• Variant-specific alerts</li>
-                                    <li>• Instant notifications</li>
-                                    <li>• Personalized recommendations</li>
-                                </ul>
-                            </div>
-
-                            {/* Admin Dashboard */}
-                            <div className="bg-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-shadow">
-                                <div className="bg-purple-100 w-16 h-16 rounded-full flex items-center justify-center mb-6">
-                                    <span className="text-2xl">📊</span>
+                                <div className="absolute -bottom-4 left-6 bg-orange-600 px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-white">
+                                    Crafted in India
                                 </div>
-                                <h3 className="text-xl font-bold text-gray-900 mb-4">Advanced Admin Tools</h3>
-                                <p className="text-gray-600 mb-4">
-                                    Comprehensive dashboard with analytics, inventory management, and order processing.
-                                </p>
-                                <ul className="text-sm text-gray-500 space-y-1">
-                                    <li>• Real-time analytics</li>
-                                    <li>• Inventory tracking</li>
-                                    <li>• Customer insights</li>
-                                </ul>
                             </div>
                         </div>
                     </div>
-                </div>
+                </section>
 
-                {/* Mission & Values */}
-                <div className="py-16 bg-white">
-                    <div className="max-w-6xl mx-auto px-6 md:px-16 lg:px-32">
-                        <div className="text-center mb-12">
-                            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Our Mission & Values</h2>
-                            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-                                We believe in empowering athletes and fitness enthusiasts with premium quality products
-                                and innovative technology solutions.
-                            </p>
+                {/* Engineering */}
+                <section className="bg-[#f7f4ef]">
+                    <div className="mx-auto max-w-6xl px-6 md:px-12 lg:px-16 py-16">
+                        <div className="text-center">
+                            <p className="text-xs uppercase tracking-[0.35em] text-orange-600">The science of movement</p>
+                            <h2 className={`${headingFont.className} mt-3 text-3xl md:text-4xl font-semibold`}>Engineering & Innovation</h2>
                         </div>
-
-                        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-                            <div className="text-center">
-                                <div className="bg-blue-600 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
-                                    <span className="text-3xl text-white">💪</span>
+                        <div className="mt-10 grid gap-6 md:grid-cols-3">
+                            {[
+                                {
+                                    title: "Moisture-wicking",
+                                    body: "Dry-fast blends pull sweat away so you stay light and focused during intense sessions.",
+                                },
+                                {
+                                    title: "Custom-fit build",
+                                    body: "Sizes, colors, and prints dialed for teams and individuals with precise production control.",
+                                },
+                                {
+                                    title: "Sustainable performance",
+                                    body: "We prioritize long-wear fabrics and low-waste production for a lighter footprint.",
+                                },
+                            ].map((item) => (
+                                <div key={item.title} className="border border-gray-200 bg-white p-6 shadow-sm">
+                                    <div className="h-1 w-12 bg-orange-600" />
+                                    <h3 className={`${headingFont.className} mt-5 text-lg font-semibold`}>{item.title}</h3>
+                                    <p className="mt-3 text-sm text-gray-600">{item.body}</p>
                                 </div>
-                                <h3 className="font-bold text-gray-900 mb-2">Quality First</h3>
-                                <p className="text-sm text-gray-600">Premium materials and craftsmanship in every product</p>
-                            </div>
-
-                            <div className="text-center">
-                                <div className="bg-green-600 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
-                                    <span className="text-3xl text-white">🚀</span>
-                                </div>
-                                <h3 className="font-bold text-gray-900 mb-2">Innovation</h3>
-                                <p className="text-sm text-gray-600">Cutting-edge technology for better shopping experience</p>
-                            </div>
-
-                            <div className="text-center">
-                                <div className="bg-purple-600 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
-                                    <span className="text-3xl text-white">🤝</span>
-                                </div>
-                                <h3 className="font-bold text-gray-900 mb-2">Customer Focus</h3>
-                                <p className="text-sm text-gray-600">Your satisfaction is our highest priority</p>
-                            </div>
-
-                            <div className="text-center">
-                                <div className="bg-orange-600 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
-                                    <span className="text-3xl text-white">🌱</span>
-                                </div>
-                                <h3 className="font-bold text-gray-900 mb-2">Sustainability</h3>
-                                <p className="text-sm text-gray-600">Eco-friendly practices and sustainable sourcing</p>
-                            </div>
+                            ))}
                         </div>
                     </div>
-                </div>
+                </section>
 
-                {/* Technology Stack */}
-                <div className="py-16 bg-gray-900 text-white">
-                    <div className="max-w-6xl mx-auto px-6 md:px-16 lg:px-32">
-                        <div className="text-center mb-12">
-                            <h2 className="text-3xl md:text-4xl font-bold mb-4">Built with Modern Technology</h2>
-                            <p className="text-xl text-gray-300">
-                                Powered by cutting-edge technologies for optimal performance and user experience
-                            </p>
-                        </div>
-
-                        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                            <div className="text-center">
-                                <div className="bg-blue-600 p-4 rounded-lg mb-4 inline-block">
-                                    <span className="text-2xl font-bold">⚛️</span>
-                                </div>
-                                <h3 className="font-bold mb-2">Next.js 15 & React 19</h3>
-                                <p className="text-sm text-gray-400">Latest frontend technologies for lightning-fast performance</p>
-                            </div>
-
-                            <div className="text-center">
-                                <div className="bg-green-600 p-4 rounded-lg mb-4 inline-block">
-                                    <span className="text-2xl font-bold">🍃</span>
-                                </div>
-                                <h3 className="font-bold mb-2">MongoDB & Mongoose</h3>
-                                <p className="text-sm text-gray-400">Scalable database solution for complex data relationships</p>
-                            </div>
-
-                            <div className="text-center">
-                                <div className="bg-purple-600 p-4 rounded-lg mb-4 inline-block">
-                                    <span className="text-2xl font-bold">🔐</span>
-                                </div>
-                                <h3 className="font-bold mb-2">Clerk Authentication</h3>
-                                <p className="text-sm text-gray-400">Enterprise-grade security and user management</p>
-                            </div>
-
-                            <div className="text-center">
-                                <div className="bg-orange-600 p-4 rounded-lg mb-4 inline-block">
-                                    <span className="text-2xl font-bold">💳</span>
-                                </div>
-                                <h3 className="font-bold mb-2">Razorpay Integration</h3>
-                                <p className="text-sm text-gray-400">Secure payment processing for Indian market</p>
-                            </div>
-
-                            <div className="text-center">
-                                <div className="bg-red-600 p-4 rounded-lg mb-4 inline-block">
-                                    <span className="text-2xl font-bold">☁️</span>
-                                </div>
-                                <h3 className="font-bold mb-2">Cloudinary CDN</h3>
-                                <p className="text-sm text-gray-400">Optimized image storage and delivery</p>
-                            </div>
-
-                            <div className="text-center">
-                                <div className="bg-yellow-600 p-4 rounded-lg mb-4 inline-block">
-                                    <span className="text-2xl font-bold">⚡</span>
-                                </div>
-                                <h3 className="font-bold mb-2">Inngest Events</h3>
-                                <p className="text-sm text-gray-400">Event-driven architecture for scalability</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Contact CTA */}
-                <div className="py-16 bg-gradient-to-r from-blue-600 to-purple-600 text-white">
-                    <div className="max-w-4xl mx-auto px-6 md:px-16 lg:px-32 text-center">
-                        <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready to Experience the Future of Sports Shopping?</h2>
-                        <p className="text-xl text-gray-200 mb-8">
-                            Join thousands of satisfied customers who have made Sparrow Sports their go-to destination for premium athletic wear.
+                {/* Mission */}
+                <section className="bg-[#0b0f12] text-white">
+                    <div className="mx-auto max-w-4xl px-6 md:px-12 lg:px-16 py-16 text-center">
+                        <p className="text-xs uppercase tracking-[0.35em] text-orange-400">The drive</p>
+                        <h2 className={`${headingFont.className} mt-3 text-3xl md:text-4xl font-semibold`}>Our Mission</h2>
+                        <p className="mt-5 text-sm md:text-base text-gray-200">
+                            To empower every athlete to express their identity and perform at their peak with gear that never compromises on
+                            quality, comfort, or craftsmanship.
                         </p>
-                        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                    </div>
+                </section>
+
+                {/* Core Values */}
+                <section className="bg-white">
+                    <div className="mx-auto max-w-6xl px-6 md:px-12 lg:px-16 py-16">
+                        <p className="text-xs uppercase tracking-[0.35em] text-orange-600">Culture</p>
+                        <h2 className={`${headingFont.className} mt-3 text-3xl md:text-4xl font-semibold`}>Our Core Values</h2>
+                        <div className="mt-10 grid gap-6 md:grid-cols-4">
+                            {[
+                                {
+                                    number: "01",
+                                    title: "Authenticity",
+                                    body: "We build gear for real athletes with real stories.",
+                                },
+                                {
+                                    number: "02",
+                                    title: "Innovation",
+                                    body: "Constant evolution of fit, fabric, and fulfillment.",
+                                },
+                                {
+                                    number: "03",
+                                    title: "Impact",
+                                    body: "We grow community-first and support local teams.",
+                                },
+                                {
+                                    number: "04",
+                                    title: "Integrity",
+                                    body: "Quality manufacturing and honest relationships.",
+                                },
+                            ].map((value) => (
+                                <div key={value.number} className="border border-gray-200 bg-[#f7f4ef] p-6">
+                                    <p className="text-2xl text-orange-300 font-semibold">{value.number}</p>
+                                    <h3 className={`${headingFont.className} mt-4 text-lg font-semibold`}>{value.title}</h3>
+                                    <p className="mt-2 text-sm text-gray-600">{value.body}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+
+                {/* Team */}
+                <section className="bg-[#f7f4ef]">
+                    <div className="mx-auto max-w-6xl px-6 md:px-12 lg:px-16 py-16">
+                        <div className="flex items-end justify-between">
+                            <div>
+                                <p className="text-xs uppercase tracking-[0.35em] text-orange-600">The collective</p>
+                                <h2 className={`${headingFont.className} mt-3 text-3xl md:text-4xl font-semibold`}>Meet the Team</h2>
+                            </div>
+                            <a href="/contact" className="text-xs uppercase tracking-[0.3em] text-orange-600">Join the team</a>
+                        </div>
+                        <div className="mt-10 grid gap-6 md:grid-cols-3">
+                            {[
+                                {
+                                    name: "Arjun Kumar",
+                                    role: "Founder & CEO",
+                                    image: "/assets/img/running.png",
+                                },
+                                {
+                                    name: "Meera Nair",
+                                    role: "Head of Innovation",
+                                    image: "/assets/img/upper.png",
+                                },
+                                {
+                                    name: "Rahul Singh",
+                                    role: "Lead Developer",
+                                    image: "/assets/img/cricket_jersey.png",
+                                },
+                            ].map((person) => (
+                                <div key={person.name} className="bg-white shadow-sm">
+                                    <div className="relative aspect-[3/4] overflow-hidden">
+                                        <Image
+                                            src={person.image}
+                                            alt={person.name}
+                                            fill
+                                            className="object-cover"
+                                            sizes="(max-width: 768px) 100vw, 30vw"
+                                        />
+                                    </div>
+                                    <div className="p-4">
+                                        <p className="text-sm font-semibold text-gray-900">{person.name}</p>
+                                        <p className="text-xs text-gray-500">{person.role}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+
+                {/* CTA */}
+                <section className="bg-[#0b0f12] text-white">
+                    <div className="mx-auto max-w-4xl px-6 md:px-12 lg:px-16 py-16 text-center">
+                        <h2 className={`${headingFont.className} text-3xl md:text-4xl font-semibold`}>
+                            Ready to outfit your next win?
+                        </h2>
+                        <p className="mt-4 text-sm md:text-base text-gray-200">
+                            Discover premium sportswear, custom kits, and training essentials built for athletes who show up.
+                        </p>
+                        <div className="mt-8 flex flex-wrap justify-center gap-4">
                             <a
                                 href="/all-products"
-                                className="bg-white text-blue-600 px-8 py-3 rounded-full font-semibold hover:bg-gray-100 transition-colors"
+                                className="inline-flex items-center justify-center bg-orange-600 px-6 py-3 text-xs font-semibold uppercase tracking-wider text-white transition hover:bg-orange-500"
                             >
-                                Shop Now
+                                Shop now
                             </a>
                             <a
                                 href="/custom-design"
-                                className="border-2 border-white text-white px-8 py-3 rounded-full font-semibold hover:bg-white hover:text-blue-600 transition-colors"
+                                className="inline-flex items-center justify-center border border-white/40 px-6 py-3 text-xs font-semibold uppercase tracking-wider text-white transition hover:border-white"
                             >
-                                Create Custom Design
+                                Create your kit
                             </a>
                         </div>
                     </div>
-                </div>
+                </section>
             </div>
             <Footer />
         </>

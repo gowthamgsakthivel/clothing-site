@@ -15,6 +15,7 @@ export async function GET(request) {
       page: searchParams.get('page') || 1,
       limit: searchParams.get('limit') || 20,
       status: searchParams.get('status') || undefined,
+      collectionName: searchParams.get('collectionName') || undefined,
       category: searchParams.get('category') || undefined,
       search: searchParams.get('search') || undefined,
       includeVariants: searchParams.get('includeVariants') === 'true',

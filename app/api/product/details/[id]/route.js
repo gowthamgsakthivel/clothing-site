@@ -5,9 +5,9 @@ import ProductVariant from "@/models/v2/ProductVariant";
 import Inventory from "@/models/v2/Inventory";
 import { buildInventoryByVariantId } from "@/lib/v2ProductView";
 
-export async function GET(request, { params }) {
+export async function GET(request, context) {
   try {
-    const { id } = params || {};
+    const { id } = await context.params;
     if (!id) {
       return NextResponse.json({ success: false, message: "Product ID is required" }, { status: 400 });
     }

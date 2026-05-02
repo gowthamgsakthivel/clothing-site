@@ -1,8 +1,10 @@
 import Link from 'next/link'
 import ShipmentStatusBadge from './ShipmentStatusBadge'
+import { getDisplayOrderCode } from '@/lib/codeGenerators'
 
 const OrderSummaryCard = ({
   orderId,
+  orderCode,
   orderDate,
   paymentStatus,
   shipmentStatus,
@@ -10,6 +12,8 @@ const OrderSummaryCard = ({
   onTrackOrder,
   trackHref
 }) => {
+  const displayOrderCode = getDisplayOrderCode({ orderCode, _id: orderId })
+
   const getPaymentBadgeClasses = (status) => {
     const normalized = (status || '').toLowerCase()
     if (['paid', 'completed', 'confirmed'].includes(normalized)) return 'bg-green-100 text-green-700 border-green-200'
@@ -31,7 +35,7 @@ const OrderSummaryCard = ({
             <p className="text-sm text-gray-600 mt-1">Tracking details are available below.</p>
             <div className="mt-4 flex flex-wrap gap-3 text-xs">
               <span className="rounded-full border border-gray-200 px-3 py-1 text-gray-700">
-                <span className="font-semibold text-gray-900">Order ID:</span> {orderId}
+                <span className="font-semibold text-gray-900">Order ID:</span> {displayOrderCode}
               </span>
               <span className="rounded-full border border-gray-200 px-3 py-1 text-gray-700">
                 <span className="font-semibold text-gray-900">Order Date:</span> {orderDate}

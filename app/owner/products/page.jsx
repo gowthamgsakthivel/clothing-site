@@ -15,8 +15,10 @@ const OwnerProductList = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [variantModalOpen, setVariantModalOpen] = useState(false)
   const [variantProduct, setVariantProduct] = useState(null)
-  const [variantEdits, setVariantEdits] = useState({})
-  const [variantAction, setVariantAction] = useState({ id: null, action: null })
+  const [deletingProductId, setDeletingProductId] = useState(null)
+  const [confirmDeleteProduct, setConfirmDeleteProduct] = useState(null)
+  const [variantInventoryMap, setVariantInventoryMap] = useState({})
+  const [loadingVariantInventory, setLoadingVariantInventory] = useState(false)
 
   const toCode = useCallback((value, length, fallback = 'X') => {
     const cleaned = (value || '')
@@ -64,132 +66,69 @@ const OwnerProductList = () => {
 
   const openVariantModal = (product) => {
     setVariantProduct(product);
-    const initialEdits = (product?.variants || []).reduce((acc, variant) => {
-      acc[variant._id] = {
-        originalPrice: variant.originalPrice,
-        offerPrice: variant.offerPrice,
-        visibility: variant.visibility || 'visible'
-      };
-      return acc;
-    }, {});
-    setVariantEdits(initialEdits);
     setVariantModalOpen(true);
   };
 
-  const updateVariantField = (variantId, field, value) => {
-    setVariantEdits((prev) => ({
-      ...prev,
-      [variantId]: {
-        ...prev[variantId],
-        [field]: value
-      }
-    }));
-  };
-
-  const applyVariantUpdate = async (variantId) => {
-    try {
-      setVariantAction({ id: variantId, action: 'save' });
-      const token = await getToken();
-      const payload = variantEdits[variantId];
-
-      const response = await axios.patch(`/api/admin/variants/${variantId}`,
-        {
-          originalPrice: Number(payload?.originalPrice),
-          offerPrice: Number(payload?.offerPrice),
-          visibility: payload?.visibility
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      if (!response.data?.success) {
-        throw new Error(response.data?.message || 'Failed to update variant');
-      }
-
-      const updatedVariant = response.data?.data?.variant;
-      if (updatedVariant) {
-        setProducts((prev) => prev.map((product) => (
-          product._id === variantProduct?._id
-            ? { ...product, variants: product.variants.map((variant) => (variant._id === variantId ? updatedVariant : variant)) }
-            : product
-        )));
-        setVariantProduct((prev) => prev
-          ? { ...prev, variants: prev.variants.map((variant) => (variant._id === variantId ? updatedVariant : variant)) }
-          : prev
-        );
-      }
-
-      toast.success('Variant updated');
-    } catch (error) {
-      toast.error(error.message || 'Failed to update variant');
-    } finally {
-      setVariantAction({ id: null, action: null });
+  useEffect(() => {
+    if (!variantModalOpen || !variantProduct?._id) {
+      setVariantInventoryMap({});
+      return;
     }
-  };
 
-  const hideVariant = async (variantId) => {
-    try {
-      setVariantAction({ id: variantId, action: 'hide' });
-      const token = await getToken();
-      const response = await axios.patch(`/api/admin/variants/${variantId}`,
-        { visibility: 'hidden' },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+    let isMounted = true;
 
-      if (!response.data?.success) {
-        throw new Error(response.data?.message || 'Failed to hide variant');
+    const loadInventory = async () => {
+      try {
+        setLoadingVariantInventory(true);
+        const token = await getToken();
+        const response = await axios.get(`/api/admin/inventory?productId=${variantProduct._id}&page=1&limit=200`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        if (isMounted && response.data?.success) {
+          const rows = response.data?.data?.inventory || [];
+          const map = rows.reduce((acc, row) => {
+            const variantId = row?.variantId?._id || row?.variantId;
+            if (variantId) {
+              acc[String(variantId)] = row.availableStock ?? row.totalStock ?? 0;
+            }
+            return acc;
+          }, {});
+          setVariantInventoryMap(map);
+        }
+      } catch (error) {
+        if (isMounted) setVariantInventoryMap({});
+      } finally {
+        if (isMounted) setLoadingVariantInventory(false);
       }
+    };
 
-      const updatedVariant = response.data?.data?.variant;
-      if (updatedVariant) {
-        setProducts((prev) => prev.map((product) => (
-          product._id === variantProduct?._id
-            ? { ...product, variants: product.variants.map((variant) => (variant._id === variantId ? updatedVariant : variant)) }
-            : product
-        )));
-        setVariantProduct((prev) => prev
-          ? { ...prev, variants: prev.variants.map((variant) => (variant._id === variantId ? updatedVariant : variant)) }
-          : prev
-        );
-      }
+    loadInventory();
 
-      toast.success('Variant hidden');
-    } catch (error) {
-      toast.error(error.message || 'Failed to hide variant');
-    } finally {
-      setVariantAction({ id: null, action: null });
-    }
-  };
+    return () => {
+      isMounted = false;
+    };
+  }, [getToken, variantModalOpen, variantProduct?._id]);
 
-  const deleteVariant = async (variantId) => {
+  const deleteProduct = async (productId) => {
     try {
-      setVariantAction({ id: variantId, action: 'delete' });
+      setDeletingProductId(productId);
       const token = await getToken();
-      const response = await axios.delete(`/api/admin/variants/${variantId}`, {
+      const response = await axios.delete(`/api/admin/products/${productId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
       if (!response.data?.success) {
-        throw new Error(response.data?.message || 'Failed to delete variant');
+        throw new Error(response.data?.message || 'Failed to delete product');
       }
 
-      const updatedVariant = response.data?.data?.variant;
-      if (updatedVariant) {
-        setProducts((prev) => prev.map((product) => (
-          product._id === variantProduct?._id
-            ? { ...product, variants: product.variants.map((variant) => (variant._id === variantId ? updatedVariant : variant)) }
-            : product
-        )));
-        setVariantProduct((prev) => prev
-          ? { ...prev, variants: prev.variants.map((variant) => (variant._id === variantId ? updatedVariant : variant)) }
-          : prev
-        );
-      }
-
-      toast.success('Variant deleted');
+      setProducts((prev) => prev.filter((product) => product._id !== productId));
+      toast.success('Product deleted');
     } catch (error) {
-      toast.error(error.message || 'Failed to delete variant');
+      toast.error(error.message || 'Failed to delete product');
     } finally {
-      setVariantAction({ id: null, action: null });
+      setDeletingProductId(null);
+      setConfirmDeleteProduct(null);
     }
   };
 
@@ -227,6 +166,7 @@ const OwnerProductList = () => {
 
   const filteredProducts = products.filter(product =>
     product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    product.collectionName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     product.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
     product.brand?.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -278,6 +218,7 @@ const OwnerProductList = () => {
                 <thead>
                   <tr className="bg-slate-50/50 border-b border-slate-100 text-xs uppercase tracking-wider text-slate-500">
                     <th className="px-6 py-4">Product</th>
+                    <th className="px-6 py-4">Collection</th>
                     <th className="px-6 py-4">Category</th>
                     <th className="px-6 py-4">Brand</th>
                     <th className="px-6 py-4">Price Range</th>
@@ -324,6 +265,11 @@ const OwnerProductList = () => {
                               {product.category}
                             </span>
                           </td>
+                          <td className="px-6 py-4">
+                            <span className="inline-flex items-center rounded-full bg-orange-50 px-2.5 py-0.5 text-xs font-medium text-orange-700 capitalize">
+                              {product.collectionName || 'sports'}
+                            </span>
+                          </td>
                           <td className="px-6 py-4 text-sm text-slate-600">{product.brand || '-'}</td>
                           <td className="px-6 py-4 text-sm font-medium text-slate-900">{priceLabel}</td>
                           <td className="px-6 py-4">
@@ -339,7 +285,7 @@ const OwnerProductList = () => {
                             </button>
                           </td>
                           <td className="px-6 py-4 text-right">
-                            <div className="flex justify-end gap-2">
+                            <div className="flex flex-wrap justify-end gap-2">
                               <button
                                 onClick={() => router.push(`/product/${product._id}`)}
                                 className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-600 hover:bg-slate-50"
@@ -352,6 +298,13 @@ const OwnerProductList = () => {
                               >
                                 Variants
                               </button>
+                              <button
+                                onClick={() => setConfirmDeleteProduct(product)}
+                                className="rounded-md border border-rose-200 bg-rose-50 px-2.5 py-1 text-xs text-rose-700 hover:bg-rose-100 disabled:opacity-60"
+                                disabled={deletingProductId === product._id}
+                              >
+                                {deletingProductId === product._id ? 'Deleting...' : 'Delete'}
+                              </button>
                             </div>
                           </td>
                         </tr>
@@ -359,7 +312,7 @@ const OwnerProductList = () => {
                     })
                   ) : (
                     <tr>
-                      <td colSpan="7" className="px-6 py-10 text-center text-slate-500">
+                      <td colSpan="8" className="px-6 py-10 text-center text-slate-500">
                         {searchTerm ? (
                           <div>
                             <p>No products found matching &quot;{searchTerm}&quot;</p>
@@ -397,7 +350,7 @@ const OwnerProductList = () => {
               <div className="flex items-center gap-4">
                 <div className="h-12 w-12 rounded-xl bg-slate-100 border border-slate-200" />
                 <div>
-                  <h3 className="text-lg font-semibold text-slate-900">{variantProduct?.name || 'Manage Variants'}</h3>
+                  <h3 className="text-lg font-semibold text-slate-900">{variantProduct?.name || 'Variants'}</h3>
                   <p className="text-xs text-slate-500">{variantProduct?.productCode} - {(variantProduct?.variants || []).length} Variants</p>
                 </div>
               </div>
@@ -414,88 +367,51 @@ const OwnerProductList = () => {
                 <p className="text-sm text-slate-500">No variants available.</p>
               ) : (
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between text-sm text-slate-500">
-                    <span>Manage Variants</span>
-                    <button className="text-blue-600 hover:underline">Bulk Edit</button>
-                  </div>
+                  {loadingVariantInventory && (
+                    <div className="rounded-lg border border-dashed border-slate-200 p-3 text-xs text-slate-500">
+                      Loading inventory...
+                    </div>
+                  )}
                   <div className="overflow-hidden rounded-xl border border-slate-200">
                     <table className="w-full text-sm">
                       <thead className="bg-slate-50 text-xs uppercase tracking-wider text-slate-500">
                         <tr>
-                          <th className="px-4 py-3 text-left">Visible</th>
+                          <th className="px-4 py-3 text-left">Status</th>
                           <th className="px-4 py-3 text-left">SKU / Variant</th>
                           <th className="px-4 py-3 text-left">Original Price</th>
                           <th className="px-4 py-3 text-left">Offer Price</th>
                           <th className="px-4 py-3 text-right">Inventory</th>
-                          <th className="px-4 py-3 text-left">Actions</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
                         {(variantProduct?.variants || []).map((variant) => {
-                          const draft = variantEdits[variant._id] || {};
-                          const isSaving = variantAction.id === variant._id && variantAction.action === 'save';
-                          const isHiding = variantAction.id === variant._id && variantAction.action === 'hide';
-                          const isDeleting = variantAction.id === variant._id && variantAction.action === 'delete';
-
                           return (
                             <tr key={variant._id}>
                               <td className="px-4 py-3">
-                                <input
-                                  type="checkbox"
-                                  checked={(draft.visibility ?? variant.visibility) === 'visible'}
-                                  onChange={(event) => updateVariantField(variant._id, 'visibility', event.target.checked ? 'visible' : 'hidden')}
-                                  className="h-4 w-4 rounded border-slate-300 text-blue-600"
-                                />
+                                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${variant.visibility === 'hidden' ? 'bg-slate-100 text-slate-500' : 'bg-emerald-50 text-emerald-700'}`}>
+                                  {variant.visibility === 'hidden' ? 'Hidden' : 'Visible'}
+                                </span>
                               </td>
                               <td className="px-4 py-3">
                                 <div className="font-medium text-slate-900">{variant.color} / {variant.size}</div>
                                 <div className="text-xs text-slate-500">{variant.sku}</div>
                               </td>
                               <td className="px-4 py-3">
-                                <input
-                                  type="number"
-                                  value={draft.originalPrice ?? variant.originalPrice}
-                                  onChange={(event) => updateVariantField(variant._id, 'originalPrice', event.target.value)}
-                                  className="w-28 rounded-md border border-slate-200 px-2 py-1 text-sm"
-                                  min="0"
-                                />
+                                <span className="text-sm text-slate-700">₹{variant.originalPrice}</span>
                               </td>
                               <td className="px-4 py-3">
-                                <input
-                                  type="number"
-                                  value={draft.offerPrice ?? variant.offerPrice}
-                                  onChange={(event) => updateVariantField(variant._id, 'offerPrice', event.target.value)}
-                                  className="w-28 rounded-md border border-slate-200 px-2 py-1 text-sm"
-                                  min="0"
-                                />
+                                <span className="text-sm text-slate-700">₹{variant.offerPrice}</span>
                               </td>
                               <td className="px-4 py-3 text-right">
-                                <span className="text-sm font-semibold text-slate-900">{variant.inventory ?? variant.stock ?? 0}</span>
-                              </td>
-                              <td className="px-4 py-3">
-                                <div className="flex gap-2">
-                                  <button
-                                    onClick={() => applyVariantUpdate(variant._id)}
-                                    className="px-3 py-1.5 bg-blue-600 text-white rounded-md text-xs hover:bg-blue-700 disabled:opacity-60"
-                                    disabled={isSaving}
-                                  >
-                                    {isSaving ? 'Saving...' : 'Save'}
-                                  </button>
-                                  <button
-                                    onClick={() => hideVariant(variant._id)}
-                                    className="px-3 py-1.5 bg-slate-100 text-slate-600 rounded-md text-xs hover:bg-slate-200 disabled:opacity-60"
-                                    disabled={isHiding}
-                                  >
-                                    {isHiding ? 'Hiding...' : 'Hide'}
-                                  </button>
-                                  <button
-                                    onClick={() => deleteVariant(variant._id)}
-                                    className="px-3 py-1.5 bg-rose-600 text-white rounded-md text-xs hover:bg-rose-700 disabled:opacity-60"
-                                    disabled={isDeleting}
-                                  >
-                                    {isDeleting ? 'Deleting...' : 'Delete'}
-                                  </button>
-                                </div>
+                                {loadingVariantInventory ? (
+                                  <span className="inline-flex items-center justify-end text-slate-400" aria-label="Loading inventory">
+                                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-200 border-t-slate-500" />
+                                  </span>
+                                ) : (
+                                  <span className="text-sm font-semibold text-slate-900">
+                                    {variantInventoryMap[variant._id] ?? 0}
+                                  </span>
+                                )}
                               </td>
                             </tr>
                           );
@@ -509,15 +425,40 @@ const OwnerProductList = () => {
             <div className="flex items-center justify-end gap-3 border-t px-6 py-4">
               <button
                 onClick={() => setVariantModalOpen(false)}
+                className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {confirmDeleteProduct && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white shadow-xl">
+            <div className="border-b px-6 py-4">
+              <h3 className="text-lg font-semibold text-slate-900">Delete product</h3>
+              <p className="mt-1 text-sm text-slate-500">
+                This will permanently remove the product and its variants.
+              </p>
+            </div>
+            <div className="px-6 py-4">
+              <p className="text-sm text-slate-700">{confirmDeleteProduct?.name}</p>
+            </div>
+            <div className="flex items-center justify-end gap-3 border-t px-6 py-4">
+              <button
+                onClick={() => setConfirmDeleteProduct(null)}
                 className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600"
+                disabled={deletingProductId === confirmDeleteProduct?._id}
               >
                 Cancel
               </button>
               <button
-                onClick={() => setVariantModalOpen(false)}
-                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white"
+                onClick={() => deleteProduct(confirmDeleteProduct._id)}
+                className="rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700 disabled:opacity-60"
+                disabled={deletingProductId === confirmDeleteProduct?._id}
               >
-                Save Changes
+                {deletingProductId === confirmDeleteProduct?._id ? 'Deleting...' : 'Delete'}
               </button>
             </div>
           </div>

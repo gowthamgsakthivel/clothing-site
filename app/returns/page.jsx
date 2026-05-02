@@ -8,6 +8,7 @@ import toast from 'react-hot-toast';
 import Image from 'next/image';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import { getDisplayOrderCode } from '@/lib/codeGenerators';
 
 const ReturnPolicy = () => (
     <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
@@ -317,7 +318,7 @@ const ReturnsPage = () => {
                                                     <div className="flex justify-between items-start mb-4">
                                                         <div>
                                                             <h3 className="font-semibold text-gray-900">
-                                                                Order #{order._id.slice(-8)}
+                                                                Order #{getDisplayOrderCode(order)}
                                                             </h3>
                                                             <p className="text-sm text-gray-600">
                                                                 Delivered on{' '}
@@ -376,7 +377,7 @@ const ReturnsPage = () => {
                                 <div className="bg-white rounded-lg shadow-sm p-6">
                                     <div className="flex justify-between items-center mb-6">
                                         <h2 className="text-xl font-bold text-gray-900">
-                                            Return Request - Order #{selectedOrder._id.slice(-8)}
+                                            Return Request - Order #{getDisplayOrderCode(selectedOrder)}
                                         </h2>
                                         <button
                                             onClick={() => {
@@ -585,7 +586,7 @@ const ReturnsPage = () => {
                                                         Return Request #{returnReq._id.slice(-8)}
                                                     </h3>
                                                     <p className="text-sm text-gray-600">
-                                                        Order #{returnReq.orderId.toString().slice(-8)}
+                                                        Order #{getDisplayOrderCode({ orderCode: returnReq.orderCode, _id: returnReq.orderId })}
                                                     </p>
                                                     <p className="text-xs text-gray-500 mt-1">
                                                         Requested on{' '}

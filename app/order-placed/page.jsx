@@ -10,6 +10,7 @@ import OrderSummaryCard from '@/components/order/OrderSummaryCard'
 import OrderTimeline from '@/components/order/OrderTimeline'
 import TrackingEventCard from '@/components/order/TrackingEventCard'
 import ShipmentStatusBadge from '@/components/order/ShipmentStatusBadge'
+import { getDisplayOrderCode, getDisplayProductCode } from '@/lib/codeGenerators'
 
 const OrderItem = ({ item }) => {
   return (
@@ -21,6 +22,9 @@ const OrderItem = ({ item }) => {
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-sm font-semibold text-gray-900">{item.name}</p>
+            {item.productCode && (
+              <p className="mt-1 text-[11px] text-gray-500">Code: {item.productCode}</p>
+            )}
             <p className="mt-1 text-xs text-gray-500">
               Size: {item.size} • Color: {item.color}
             </p>
@@ -107,6 +111,7 @@ const OrderPlaced = () => {
         return {
           id: item._id || `${rawOrder._id}-${index}`,
           name: isCustomDesign ? (item.designName || 'Custom Design') : (product?.name || 'Product'),
+          productCode: isCustomDesign ? null : getDisplayProductCode(product),
           image,
           size: item.size || 'N/A',
           color: item.color || 'N/A',
@@ -125,6 +130,7 @@ const OrderPlaced = () => {
 
       return {
         id: rawOrder._id,
+        orderCode: getDisplayOrderCode(rawOrder),
         orderStatus: rawOrder.status || 'Processing',
         date: formatOrderDate(rawOrder.date),
         paymentStatus: rawOrder.paymentStatus || 'Pending',
@@ -267,6 +273,7 @@ const OrderPlaced = () => {
         <div className="px-4 sm:px-6 md:px-16 lg:px-32 space-y-6">
           <OrderSummaryCard
             orderId={order.id}
+            orderCode={order.orderCode}
             orderDate={order.date}
             paymentStatus={order.paymentStatus}
             shipmentStatus={order.shipmentStatus}

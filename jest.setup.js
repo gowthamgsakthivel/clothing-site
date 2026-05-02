@@ -18,8 +18,14 @@ jest.mock('next/navigation', () => ({
 jest.mock('next/image', () => ({
     __esModule: true,
     default: (props) => {
+        const { src, alt, width, height, style, fill, sizes, priority, placeholder, ...rest } = props || {};
+        const imgStyle = { ...(style || {}) };
+        if (fill) {
+            imgStyle.objectFit = imgStyle.objectFit || 'cover';
+            // do not pass `fill` to the DOM element
+        }
         // eslint-disable-next-line jsx-a11y/alt-text, @next/next/no-img-element
-        return <img {...props} />
+        return <img src={src} alt={alt} width={width} height={height} style={imgStyle} {...rest} />
     },
 }));
 
@@ -48,11 +54,15 @@ jest.mock('@clerk/nextjs', () => ({
 // Global fetch mock
 global.fetch = jest.fn();
 
-// Suppress React error boundary warnings in test output
-const originalConsoleError = console.error;
-console.error = (...args) => {
-    if (/Error boundaries should implement getDerivedStateFromError/.test(args[0])) {
-        return;
-    }
-    originalConsoleError.call(console, ...args);
-};
+// Ensure window.scrollTo is available (JSDOM provides a throwing stub)
+if (typeof global.window !== 'undefined') {
+    global.window.scrollTo = () => {};
+}
+
+// Mock database connection used by API routes so tests don't attempt a real connection
+jest.mock('@/config/db', () => ({
+    __esModule: true,
+    default: jest.fn().mockResolvedValue(true),
+}));
+
+// Leave console.error untouched so tests can surface intentional errors

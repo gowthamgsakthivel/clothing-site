@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/authRoles';
 import { buildError } from '@/lib/errors';
-import { bulkUpdateStock, listInventory } from '@/services/inventory/InventoryService';
+import { bulkUpdateStock, listInventory } from '@/services/inventory/InventoryService.server';
 
 export async function GET(request) {
   try {
@@ -13,6 +13,7 @@ export async function GET(request) {
       limit: searchParams.get('limit') || 20,
       lowStockOnly: searchParams.get('lowStock') === 'true',
       sku: searchParams.get('sku') || undefined,
+      productId: searchParams.get('productId') || undefined,
       productSearch: searchParams.get('product') || undefined
     });
 

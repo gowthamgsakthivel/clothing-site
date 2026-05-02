@@ -4,6 +4,7 @@ import axios from 'axios';
 import { useAppContext } from '@/context/AppContext';
 import Link from 'next/link';
 import { toast } from 'react-hot-toast';
+import { getDisplayOrderCode } from '@/lib/codeGenerators';
 import {
     Box, DollarSign, Mail, PackageCheck, ShoppingBag,
     Users, TrendingUp, TrendingDown, AlertCircle, ArrowRight
@@ -282,7 +283,7 @@ const OwnerDashboard = () => {
                                 {stats.recentOrders?.length > 0 ? stats.recentOrders.slice(0, 5).map((order) => (
                                     <tr key={order._id} className="group hover:bg-slate-50/80 transition-colors cursor-pointer" onClick={() => router?.push(`/owner/orders`)}>
                                         <td className="px-6 sm:px-8 py-4">
-                                            <p className="font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">#{order._id.slice(-6).toUpperCase()}</p>
+                                            <p className="font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">#{getDisplayOrderCode(order)}</p>
                                             <p className="text-sm text-slate-500 mt-0.5">{order.date ? new Date(order.date * 1000).toLocaleDateString() : 'Unknown Date'}</p>
                                         </td>
                                         <td className="px-6 sm:px-8 py-4">

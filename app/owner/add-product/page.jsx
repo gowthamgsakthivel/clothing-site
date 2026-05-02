@@ -14,6 +14,8 @@ const AddProduct = () => {
         description: '',
         price: '',
         offerPrice: '',
+        collectionName: 'products',
+        sportCategory: '',
         category: '',
         genderCategory: 'Unisex',
         brand: '',
@@ -26,6 +28,14 @@ const AddProduct = () => {
 
     const availableSizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
     const categories = ['T-Shirt', 'Shirt', 'Pants', 'Shorts', 'Hoodie', 'Jacket', 'Accessories'];
+    const sportCategories = [
+        { value: 'cricket', label: 'Cricket' },
+        { value: 'football', label: 'Football' },
+        { value: 'basketball', label: 'Basketball' },
+        { value: 'badminton', label: 'Badminton' },
+        { value: 'tennis', label: 'Tennis' },
+        { value: 'gym', label: 'Gym & Fitness' }
+    ];
 
     const addColorVariant = () => {
         setProductData(prev => ({
@@ -132,6 +142,11 @@ const AddProduct = () => {
             return;
         }
 
+        if (productData.collectionName === 'sports' && !productData.sportCategory) {
+            toast.error('Please select a sport type');
+            return;
+        }
+
         if (productData.variants.length === 0) {
             toast.error('Please add at least one color variant');
             return;
@@ -179,6 +194,7 @@ const AddProduct = () => {
                     .filter((sizeData) => sizeData.quantity > 0)
                     .map((sizeData) => ({
                         color: colorName,
+                        colorCode: variant.color.code,
                         size: sizeData.size,
                         originalPrice: Number(sizeData.originalPrice || productData.price),
                         offerPrice: Number(sizeData.offerPrice || productData.offerPrice),
@@ -191,6 +207,8 @@ const AddProduct = () => {
                 product: {
                     name: productData.name,
                     description: productData.description,
+                    collectionName: productData.collectionName,
+                    sportCategory: productData.collectionName === 'sports' ? productData.sportCategory : null,
                     category: productData.category,
                     genderCategory: productData.genderCategory,
                     brand: productData.brand,
@@ -214,6 +232,8 @@ const AddProduct = () => {
                 description: '',
                 price: '',
                 offerPrice: '',
+                collectionName: 'products',
+                sportCategory: '',
                 category: '',
                 genderCategory: 'Unisex',
                 brand: '',
@@ -279,6 +299,46 @@ const AddProduct = () => {
                                     required
                                 />
                             </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Collection *
+                                </label>
+                                <select
+                                    value={productData.collectionName}
+                                    onChange={(e) => setProductData(prev => ({
+                                        ...prev,
+                                        collectionName: e.target.value,
+                                        sportCategory: e.target.value === 'sports' ? prev.sportCategory : ''
+                                    }))}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                    required
+                                >
+                                    <option value="products">Products</option>
+                                    <option value="sports">Sports</option>
+                                    <option value="devotional">Devotional</option>
+                                    <option value="political">Political</option>
+                                </select>
+                            </div>
+
+                            {productData.collectionName === 'sports' && (
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Sport Type *
+                                    </label>
+                                    <select
+                                        value={productData.sportCategory}
+                                        onChange={(e) => setProductData(prev => ({ ...prev, sportCategory: e.target.value }))}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                        required
+                                    >
+                                        <option value="">Select Sport</option>
+                                        {sportCategories.map((sport) => (
+                                            <option key={sport.value} value={sport.value}>{sport.label}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">

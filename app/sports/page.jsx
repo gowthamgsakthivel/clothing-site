@@ -1,11 +1,14 @@
 
 'use client'
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import Image from 'next/image';
+import toast from 'react-hot-toast';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import SEOMetadata from '@/components/SEOMetadata';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useAppContext } from '@/context/AppContext';
 
 // SEO Metadata
 const metadata = {
@@ -95,61 +98,51 @@ const CAROUSEL_IMAGES = [
   },
 ];
 
-// Sample Sports T-shirt Products
-const SPORTS_TSHIRTS = [
-  {
-    id: 1,
-    name: 'Cricket Pro Jersey',
-    category: 'cricket',
-    price: 799,
-    image: '/assets/img/cricket_jersey.png',
-    rating: 4.5
-  },
-  {
-    id: 2,
-    name: 'Football Elite Shirt',
-    category: 'football',
-    price: 899,
-    image: '/assets/img/running.png',
-    rating: 4.8
-  },
-  {
-    id: 3,
-    name: 'Basketball Performance Tee',
-    category: 'basketball',
-    price: 849,
-    image: '/assets/img/basketball_jersey.png',
-    rating: 4.6
-  },
-  {
-    id: 4,
-    name: 'Badminton Quick Dry',
-    category: 'badminton',
-    price: 749,
-    image: '/assets/img/upper.png',
-    rating: 4.4
-  },
-  {
-    id: 5,
-    name: 'Tennis Training Shirt',
-    category: 'tennis',
-    price: 799,
-    image: '/assets/img/running.png',
-    rating: 4.7
-  },
-  {
-    id: 6,
-    name: 'Gym Flex Tee',
-    category: 'gym',
-    price: 599,
-    image: '/assets/img/upper.png',
-    rating: 4.5
-  },
-];
-
 const SportsPage = () => {
+  const { addToCart, router } = useAppContext();
   const [carouselIndex, setCarouselIndex] = useState(0);
   const [selectedCategory, setSelectedCategory] = useState(null);
+  const [products, setProducts] = useState([]);
+  const [loadingProducts, setLoadingProducts] = useState(true);
+
+  const getDisplayPrice = (variants) => {
+    const prices = (variants || [])
+      .map((variant) => variant.offerPrice ?? variant.originalPrice)
+      .filter((price) => typeof price === 'number');
+    if (!prices.length) return null;
+    return Math.min(...prices);
+  };
+
+  const getPrimaryVariant = (item) => item?.variants?.[0] || item?.product?.variants?.[0] || null;
+
+  const handleAddToCart = (event, item) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const productId = item?.product?._id || item?._id;
+    if (!productId) {
+      toast.error('Product unavailable');
+      return;
+    }
+    const variant = getPrimaryVariant(item);
+    if (variant?.color && variant?.size) {
+      addToCart(productId, { color: variant.color, size: variant.size, quantity: 1 });
+      return;
+    }
+    addToCart(productId);
+  };
+
+  const handleBuyNow = (event, item) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const productId = item?.product?._id || item?._id;
+    if (!productId) {
+      toast.error('Product unavailable');
+      return;
+    }
+    router.push(`/product/${productId}`);
+  };
+
+  const normalizeCategory = (value) => String(value || '').toLowerCase().replace(/\s+/g, '');
 
   // Auto-scroll carousel
   useEffect(() => {
@@ -159,9 +152,34 @@ const SportsPage = () => {
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadProducts = async () => {
+      try {
+        setLoadingProducts(true);
+        const response = await fetch('/api/product/list?collectionName=sports&limit=40');
+        const data = await response.json();
+        if (isMounted && data?.success) {
+          setProducts(data.products || []);
+        }
+      } catch (error) {
+        if (isMounted) setProducts([]);
+      } finally {
+        if (isMounted) setLoadingProducts(false);
+      }
+    };
+
+    loadProducts();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const filteredProducts = selectedCategory
-    ? SPORTS_TSHIRTS.filter(product => product.category === selectedCategory)
-    : SPORTS_TSHIRTS;
+    ? products.filter((item) => normalizeCategory(item.product?.sportCategory) === selectedCategory)
+    : products;
 
   return (
     <>
@@ -329,37 +347,76 @@ const SportsPage = () => {
               <p className="text-gray-600">Premium quality, designed for performance</p>
             </div>
 
-            {filteredProducts.length > 0 ? (
+            {loadingProducts ? (
+              <div className="rounded-lg border border-dashed border-gray-200 p-10 text-center text-sm text-gray-500">
+                Loading sports products...
+              </div>
+            ) : filteredProducts.length > 0 ? (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                {filteredProducts.map((product) => (
+                {filteredProducts.map((item) => {
+                  const price = getDisplayPrice(item.variants || item.product?.variants);
+                  const image = item.variants?.[0]?.images?.[0] || item.product?.variants?.[0]?.images?.[0];
+                  const productId = item.product?._id || item._id;
+                  const productName = item.product?.name || item.name || 'Product';
+                  const sportCategory = item.product?.sportCategory || item.sportCategory;
+
+                  const content = (
                   <div
-                    key={product.id}
                     className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition cursor-pointer"
                   >
                     <div className="relative h-56 md:h-72 overflow-hidden bg-gray-100">
-                      <Image
-                        src={product.image}
-                        alt={product.name}
-                        fill
-                        className="object-cover hover:scale-110 transition duration-300"
-                        sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                      />
+                      {image ? (
+                        <Image
+                          src={image}
+                          alt={item.product?.name}
+                          fill
+                          className="object-cover hover:scale-110 transition duration-300"
+                          sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                        />
+                      ) : (
+                        <div className="flex h-full items-center justify-center text-sm text-gray-400">No image</div>
+                      )}
                     </div>
                     <div className="p-4">
-                      <h3 className="font-semibold text-gray-900 mb-1 line-clamp-2">{product.name}</h3>
+                      <h3 className="font-semibold text-gray-900 mb-1 line-clamp-2">{productName}</h3>
                       <p className="text-sm text-gray-600 mb-3">
-                        {SPORTS_CATEGORIES.find(c => c.id === product.category)?.name}
+                        {SPORTS_CATEGORIES.find((category) => category.id === sportCategory)?.name || 'Sports'}
                       </p>
                       <div className="flex items-center justify-between mb-3">
-                        <span className="text-lg font-bold text-orange-600">₹{product.price}</span>
-                        <span className="text-sm text-yellow-500">★ {product.rating}</span>
+                        <span className="text-lg font-bold text-orange-600">
+                          {price ? `₹${price}` : '—'}
+                        </span>
                       </div>
-                      <button className="w-full bg-orange-600 text-white py-2 rounded-lg font-semibold hover:bg-orange-700 transition">
-                        Add to Cart
-                      </button>
+                      <div className="flex flex-col gap-2">
+                        <button
+                          type="button"
+                          onClick={(event) => handleAddToCart(event, item)}
+                          className="inline-flex w-full items-center justify-center rounded-lg bg-orange-600 py-2 font-semibold text-white transition hover:bg-orange-700"
+                        >
+                          Add to Cart
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(event) => handleBuyNow(event, item)}
+                          className="inline-flex w-full items-center justify-center rounded-lg border border-gray-200 bg-white py-2 font-semibold text-gray-800 transition hover:bg-gray-100"
+                        >
+                          Buy Now
+                        </button>
+                      </div>
                     </div>
                   </div>
-                ))}
+                  );
+
+                  return productId ? (
+                    <Link key={productId} href={`/product/${productId}`} className="block">
+                      {content}
+                    </Link>
+                  ) : (
+                    <div key={`sports-${item.product?.name || 'product'}`}>
+                      {content}
+                    </div>
+                  );
+                })}
               </div>
             ) : (
               <div className="text-center py-12">

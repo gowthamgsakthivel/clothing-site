@@ -11,10 +11,14 @@ export async function GET(request) {
         const page = parseInt(url.searchParams.get('page') || '1');
         const limit = parseInt(url.searchParams.get('limit') || '10');
         const skip = (page - 1) * limit;
+        const collectionName = url.searchParams.get('collectionName') || undefined;
 
         await connectDB();
 
         const filter = { status: 'active' };
+        if (collectionName) {
+            filter.collectionName = collectionName;
+        }
 
         // Get total count for pagination info
         const totalProducts = await ProductV2.countDocuments(filter);

@@ -9,6 +9,7 @@ import SEOMetadata from '@/components/SEOMetadata'
 import { useAppContext } from '@/context/AppContext'
 import { formatDistance } from 'date-fns'
 import axios from 'axios'
+import { getDisplayOrderCode, getDisplayProductCode } from '@/lib/codeGenerators'
 
 const STATUS_STEPS = [
     'Order Placed',
@@ -113,6 +114,7 @@ const OrderDetailsContent = () => {
     const isCancelled = ['cancelled', 'failed', 'rejected'].includes(normalizeStatus(order?.status))
 
     const items = Array.isArray(order?.items) ? order.items : []
+    const displayOrderCode = getDisplayOrderCode(order)
     const subtotal = items.reduce((sum, item) => {
         const price = item.price || item.product?.offerPrice || item.product?.price || 0
         return sum + price * (item.quantity || 1)
@@ -166,7 +168,7 @@ const OrderDetailsContent = () => {
                         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                             <div className="min-w-0">
                                 <p className="text-xs text-gray-500 font-semibold uppercase tracking-wide">Order ID</p>
-                                <h1 className="text-xl font-bold text-gray-900 mt-1 break-all">{order._id}</h1>
+                                <h1 className="text-xl font-bold text-gray-900 mt-1 break-all">{displayOrderCode}</h1>
                                 <p className="text-sm text-gray-600 mt-2">
                                     {dateInfo.formatted} {dateInfo.relative && <span className="text-gray-400">({dateInfo.relative})</span>}
                                 </p>
@@ -211,6 +213,7 @@ const OrderDetailsContent = () => {
                             {items.map((item, idx) => {
                                 const imageUrl = item.customDesignImage || item.product?.image?.[0]
                                 const itemName = item.designName || item.product?.name || 'Product'
+                                const itemCode = item.product ? getDisplayProductCode(item.product) : null
                                 const itemPrice = item.price || item.product?.offerPrice || item.product?.price || 0
                                 return (
                                     <div key={idx} className="flex gap-3 rounded-xl border border-gray-100 bg-white p-3">
@@ -223,6 +226,9 @@ const OrderDetailsContent = () => {
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <p className="text-sm font-semibold text-gray-900 truncate">{itemName}</p>
+                                            {itemCode && (
+                                                <p className="text-[11px] text-gray-500 mt-1">Code: {itemCode}</p>
+                                            )}
                                             <p className="text-xs text-gray-600 mt-1">
                                                 {item.color ? `Color: ${item.color}` : 'Color: —'}
                                                 {' • '}

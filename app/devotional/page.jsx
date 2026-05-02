@@ -1,11 +1,14 @@
 
 'use client'
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import Image from 'next/image';
+import toast from 'react-hot-toast';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import SEOMetadata from '@/components/SEOMetadata';
+import { useAppContext } from '@/context/AppContext';
 
 const metadata = {
   title: 'Devotional | Sparrow Sports',
@@ -53,59 +56,48 @@ const DEVOTIONAL_CAROUSEL = [
   },
 ];
 
-const DEVOTIONAL_PRODUCTS = [
-  {
-    id: 1,
-    name: 'Faith Quote Tee',
-    category: 'devotional',
-    price: 699,
-    image: '/assets/img/cricket_jersey.png',
-    rating: 4.7,
-  },
-  {
-    id: 2,
-    name: 'Prayer Mode Hoodie',
-    category: 'devotional',
-    price: 1299,
-    image: '/assets/img/upper.png',
-    rating: 4.8,
-  },
-  {
-    id: 3,
-    name: 'Blessed Everyday Tee',
-    category: 'devotional',
-    price: 749,
-    image: '/assets/img/running.png',
-    rating: 4.6,
-  },
-  {
-    id: 4,
-    name: 'Calm Spirit Oversized Tee',
-    category: 'devotional',
-    price: 799,
-    image: '/assets/img/basketball_jersey.png',
-    rating: 4.5,
-  },
-  {
-    id: 5,
-    name: 'Grace Statement Tee',
-    category: 'devotional',
-    price: 649,
-    image: '/assets/img/cricket_jersey.png',
-    rating: 4.4,
-  },
-  {
-    id: 6,
-    name: 'Hope Pullover',
-    category: 'devotional',
-    price: 1199,
-    image: '/assets/img/upper.png',
-    rating: 4.8,
-  },
-];
-
 const DevotionalPage = () => {
+  const { addToCart, router } = useAppContext();
   const [carouselIndex, setCarouselIndex] = useState(0);
+  const [products, setProducts] = useState([]);
+  const [loadingProducts, setLoadingProducts] = useState(true);
+
+  const getDisplayPrice = (variants) => {
+    const prices = (variants || [])
+      .map((variant) => variant.offerPrice ?? variant.originalPrice)
+      .filter((price) => typeof price === 'number');
+    if (!prices.length) return null;
+    return Math.min(...prices);
+  };
+
+  const getPrimaryVariant = (item) => item?.variants?.[0] || item?.product?.variants?.[0] || null;
+
+  const handleAddToCart = (event, item) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const productId = item?.product?._id || item?._id;
+    if (!productId) {
+      toast.error('Product unavailable');
+      return;
+    }
+    const variant = getPrimaryVariant(item);
+    if (variant?.color && variant?.size) {
+      addToCart(productId, { color: variant.color, size: variant.size, quantity: 1 });
+      return;
+    }
+    addToCart(productId);
+  };
+
+  const handleBuyNow = (event, item) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const productId = item?.product?._id || item?._id;
+    if (!productId) {
+      toast.error('Product unavailable');
+      return;
+    }
+    router.push(`/product/${productId}`);
+  };
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -113,6 +105,31 @@ const DevotionalPage = () => {
     }, 5000);
 
     return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadProducts = async () => {
+      try {
+        setLoadingProducts(true);
+        const response = await fetch('/api/product/list?collectionName=devotional&limit=20');
+        const data = await response.json();
+        if (isMounted && data?.success) {
+          setProducts(data.products || []);
+        }
+      } catch (error) {
+        if (isMounted) setProducts([]);
+      } finally {
+        if (isMounted) setLoadingProducts(false);
+      }
+    };
+
+    loadProducts();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   return (
@@ -210,32 +227,78 @@ const DevotionalPage = () => {
             <p className="text-gray-600">Comfortable, meaningful, and designed for everyday wear</p>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {DEVOTIONAL_PRODUCTS.map((product) => (
-              <div key={product.id} className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition cursor-pointer">
-                <div className="relative h-56 md:h-72 overflow-hidden bg-gray-100">
-                  <Image
-                    src={product.image}
-                    alt={product.name}
-                    fill
-                    className="object-cover hover:scale-110 transition duration-300"
-                    sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                  />
-                </div>
-                <div className="p-4">
-                  <h3 className="font-semibold text-gray-900 mb-1 line-clamp-2">{product.name}</h3>
-                  <p className="text-sm text-gray-600 mb-3">Faith-inspired apparel</p>
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-lg font-bold text-emerald-600">₹{product.price}</span>
-                    <span className="text-sm text-yellow-500">★ {product.rating}</span>
+          {loadingProducts ? (
+            <div className="rounded-lg border border-dashed border-gray-200 p-10 text-center text-sm text-gray-500">
+              Loading devotional products...
+            </div>
+          ) : products.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-gray-200 p-10 text-center text-sm text-gray-500">
+              No devotional products available yet.
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {products.map((item) => {
+                const price = getDisplayPrice(item.variants);
+                const image = item.variants?.[0]?.images?.[0];
+                const productId = item.product?._id;
+
+                const content = (
+                  <div className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition cursor-pointer">
+                    <div className="relative h-56 md:h-72 overflow-hidden bg-gray-100">
+                      {image ? (
+                        <Image
+                          src={image}
+                          alt={item.product?.name}
+                          fill
+                          className="object-cover hover:scale-110 transition duration-300"
+                          sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                        />
+                      ) : (
+                        <div className="flex h-full items-center justify-center text-sm text-gray-400">No image</div>
+                      )}
+                    </div>
+                    <div className="p-4">
+                      <h3 className="font-semibold text-gray-900 mb-1 line-clamp-2">{item.product?.name}</h3>
+                      <p className="text-sm text-gray-600 mb-3">Faith-inspired apparel</p>
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-lg font-bold text-emerald-600">
+                          {price ? `₹${price}` : '—'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={(event) => handleBuyNow(event, item)}
+                          className="flex-1 rounded-lg border border-slate-200 bg-white py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-900 hover:text-white"
+                          disabled={!productId}
+                        >
+                          Buy Now
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(event) => handleAddToCart(event, item)}
+                          className="flex-1 rounded-lg bg-emerald-600 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700"
+                          disabled={!productId}
+                        >
+                          Add to Cart
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                  <button className="w-full bg-emerald-600 text-white py-2 rounded-lg font-semibold hover:bg-emerald-700 transition">
-                    Add to Cart
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
+                );
+
+                return productId ? (
+                  <Link key={productId} href={`/product/${productId}`} className="block">
+                    {content}
+                  </Link>
+                ) : (
+                  <div key={`devotional-${item.product?.name || 'product'}`}>
+                    {content}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </section>
       </main>
       <Footer />

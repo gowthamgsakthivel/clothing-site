@@ -5,6 +5,7 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import { useAppContext } from '@/context/AppContext';
 import Link from 'next/link';
+import { getDisplayOrderCode } from '@/lib/codeGenerators';
 import {
   Drawer,
   EmptyState,
@@ -262,7 +263,7 @@ const OrdersV2Page = () => {
 
       return (
         <tr key={order._id} className={`border-b border-slate-100 transition-colors ${rowHighlight || 'hover:bg-slate-50'}`}>
-          <td className="px-4 py-4 text-sm font-semibold text-blue-600">#{order._id.slice(-6).toUpperCase()}</td>
+          <td className="px-4 py-4 text-sm font-semibold text-blue-600">#{getDisplayOrderCode(order)}</td>
           <td className="px-4 py-4 text-sm">
             <p className="font-semibold text-slate-800">{order.customerName || 'Guest'}</p>
             <p className="text-xs text-slate-500 max-w-[120px] truncate" title={order.customerEmail || order.userId}>

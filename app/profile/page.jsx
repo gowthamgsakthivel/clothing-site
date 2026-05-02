@@ -2,20 +2,31 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAppContext } from '@/context/AppContext';
-import { useUser } from '@clerk/nextjs';
+import { useClerk, useUser } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
+import { Oswald, Sora } from 'next/font/google';
+import Navbar from '@/components/Navbar';
+import { getDisplayOrderCode } from '@/lib/codeGenerators';
+
+const headingFont = Oswald({ subsets: ['latin'], weight: ['400', '600', '700'] });
+const bodyFont = Sora({ subsets: ['latin'], weight: ['300', '400', '600'] });
 
 const ProfilePage = () => {
     const { user, isLoaded } = useUser();
-    const { currency, router: appRouter } = useAppContext();
+    const { openUserProfile, signOut } = useClerk();
+    const { currency } = useAppContext();
     const router = useRouter();
-    const [activeTab, setActiveTab] = useState('overview');
+    const [activeSection, setActiveSection] = useState('overview');
     const [loading, setLoading] = useState(true);
     const [addresses, setAddresses] = useState([]);
     const [orders, setOrders] = useState([]);
+    const [profileName, setProfileName] = useState('');
+    const [nameDraft, setNameDraft] = useState('');
+    const [isEditingName, setIsEditingName] = useState(false);
+    const [isSavingName, setIsSavingName] = useState(false);
     const [editingAddress, setEditingAddress] = useState(null);
     const [showAddressForm, setShowAddressForm] = useState(false);
 
@@ -32,9 +43,10 @@ const ProfilePage = () => {
     const fetchUserData = useCallback(async () => {
         setLoading(true);
         try {
-            const [addressRes, ordersRes] = await Promise.all([
+            const [addressRes, ordersRes, userRes] = await Promise.all([
                 axios.get('/api/address'),
-                axios.get('/api/orders/list')
+                axios.get('/api/orders/list'),
+                axios.get('/api/user/data')
             ]);
 
             if (addressRes.data.success) {
@@ -43,6 +55,12 @@ const ProfilePage = () => {
 
             if (ordersRes.data.success) {
                 setOrders(ordersRes.data.orders);
+            }
+
+            if (userRes.data.success) {
+                const name = userRes.data.user?.name || '';
+                setProfileName(name);
+                setNameDraft((prev) => (prev ? prev : name));
             }
         } catch (error) {
             console.error('Error fetching user data:', error);
@@ -66,7 +84,6 @@ const ProfilePage = () => {
 
         try {
             if (editingAddress) {
-                // Update existing address
                 const { data } = await axios.put(`/api/address/${editingAddress._id}`, addressForm);
                 if (data.success) {
                     toast.success('Address updated successfully');
@@ -74,7 +91,6 @@ const ProfilePage = () => {
                     resetAddressForm();
                 }
             } else {
-                // Add new address
                 const { data } = await axios.post('/api/address', addressForm);
                 if (data.success) {
                     toast.success('Address added successfully');
@@ -144,524 +160,542 @@ const ProfilePage = () => {
         return colors[status] || 'bg-gray-100 text-gray-800';
     };
 
+    const handleNameSave = async () => {
+        const trimmedName = nameDraft.trim();
+        if (!trimmedName) {
+            toast.error('Please enter your name');
+            return;
+        }
+        setIsSavingName(true);
+        try {
+            const { data } = await axios.patch('/api/user/profile', { name: trimmedName });
+            if (data.success) {
+                setProfileName(data.user?.name || trimmedName);
+                setIsEditingName(false);
+                toast.success('Profile name updated');
+            } else {
+                toast.error(data.message || 'Failed to update name');
+            }
+        } catch (error) {
+            console.error('Error updating name:', error);
+            toast.error(error.response?.data?.message || 'Failed to update name');
+        } finally {
+            setIsSavingName(false);
+        }
+    };
+
+    const membershipYear = user?.createdAt
+        ? new Date(user.createdAt).getFullYear()
+        : null;
+
+    const fallbackName = [user?.firstName, user?.lastName].filter(Boolean).join(' ').trim();
+    const displayName = profileName || fallbackName || 'Sparrow Member';
+    const primaryAddress = addresses.find((address) => address.isDefault) || addresses[0];
+
     if (!isLoaded || loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center">
+            <div className="min-h-screen flex items-center justify-center bg-slate-50">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
             </div>
         );
     }
 
+    const sections = [
+        { id: 'overview', label: 'Profile Overview' },
+        { id: 'orders', label: 'Order History' },
+        { id: 'addresses', label: 'Addresses' },
+        { id: 'account', label: 'Account Settings' }
+    ];
+
     return (
-        <div className="min-h-screen bg-gray-50 py-8">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 md:pt-20">
-                {/* Profile Header */}
-                <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-                    <div className="flex items-center gap-6">
-                        <div className="w-20 h-20 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center text-white text-3xl font-bold">
-                            {user?.firstName?.[0] || user?.emailAddresses?.[0]?.emailAddress?.[0]?.toUpperCase()}
-                        </div>
-                        <div className="flex-1">
-                            <h1 className="text-2xl font-bold text-gray-900">
-                                {user?.firstName} {user?.lastName}
-                            </h1>
-                            <p className="text-gray-600">{user?.emailAddresses?.[0]?.emailAddress}</p>
-                            <div className="flex gap-4 mt-2">
-                                <span className="text-sm text-gray-500">
-                                    📦 {orders.length} {orders.length === 1 ? 'Order' : 'Orders'}
-                                </span>
-                                <span className="text-sm text-gray-500">
-                                    📍 {addresses.length} {addresses.length === 1 ? 'Address' : 'Addresses'}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Tab Navigation */}
-                <div className="bg-white rounded-lg shadow-sm mb-6">
-                    <div className="border-b border-gray-200">
-                        <nav className="flex -mb-px">
-                            {[
-                                { id: 'overview', label: 'Overview', icon: '📊' },
-                                { id: 'orders', label: 'My Orders', icon: '📦' },
-                                { id: 'addresses', label: 'Addresses', icon: '📍' },
-                                { id: 'settings', label: 'Settings', icon: '⚙️' }
-                            ].map(tab => (
-                                <button
-                                    key={tab.id}
-                                    onClick={() => setActiveTab(tab.id)}
-                                    className={`px-6 py-4 text-sm font-medium border-b-2 transition ${activeTab === tab.id
-                                        ? 'border-orange-500 text-orange-600'
-                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                                        }`}
-                                >
-                                    <span className="mr-2">{tab.icon}</span>
-                                    {tab.label}
-                                </button>
-                            ))}
-                        </nav>
-                    </div>
-                </div>
-
-                {/* Tab Content */}
-                <div className="bg-white rounded-lg shadow-sm p-6">
-                    {/* Overview Tab */}
-                    {activeTab === 'overview' && (
-                        <div className="space-y-6">
-                            <h2 className="text-xl font-bold text-gray-900 mb-4">Account Overview</h2>
-
-                            {/* Quick Stats */}
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                <div className="border rounded-lg p-6 hover:shadow-md transition">
-                                    <div className="text-3xl mb-2">📦</div>
-                                    <div className="text-2xl font-bold text-gray-900">{orders.length}</div>
-                                    <div className="text-sm text-gray-600">Total Orders</div>
+        <div className={`min-h-screen bg-slate-50 ${bodyFont.className}`}>
+            <Navbar />
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-16 sm:pt-20 pb-10 sm:pb-12">
+                <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
+                    <aside className="space-y-4">
+                        <div className="rounded-2xl bg-white p-4 sm:p-5 shadow-sm">
+                            <div className="flex items-center gap-3 sm:gap-4">
+                                <div className="relative h-14 w-14 overflow-hidden rounded-full bg-orange-100">
+                                    {user?.imageUrl ? (
+                                        <Image
+                                            src={user.imageUrl}
+                                            alt="Profile avatar"
+                                            fill
+                                            className="object-cover"
+                                            sizes="56px"
+                                        />
+                                    ) : (
+                                        <div className="flex h-full w-full items-center justify-center text-xl font-semibold text-orange-600">
+                                            {user?.firstName?.[0] || user?.emailAddresses?.[0]?.emailAddress?.[0]?.toUpperCase()}
+                                        </div>
+                                    )}
                                 </div>
-
-                                <div className="border rounded-lg p-6 hover:shadow-md transition">
-                                    <div className="text-3xl mb-2">✅</div>
-                                    <div className="text-2xl font-bold text-green-600">
-                                        {orders.filter(o => o.status === 'Delivered').length}
-                                    </div>
-                                    <div className="text-sm text-gray-600">Delivered</div>
-                                </div>
-
-                                <div className="border rounded-lg p-6 hover:shadow-md transition">
-                                    <div className="text-3xl mb-2">🚚</div>
-                                    <div className="text-2xl font-bold text-blue-600">
-                                        {orders.filter(o => ['Processing', 'Shipped', 'Out for Delivery'].includes(o.status)).length}
-                                    </div>
-                                    <div className="text-sm text-gray-600">In Progress</div>
+                                <div>
+                                    <p className={`${headingFont.className} text-lg font-semibold text-gray-900`}>
+                                        {displayName}
+                                    </p>
+                                    <p className="text-xs text-gray-500">Member since {membershipYear || '—'}</p>
                                 </div>
                             </div>
+                            <button
+                                onClick={() => openUserProfile()}
+                                className="mt-4 w-full rounded-full border border-orange-200 bg-orange-50 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-orange-600 transition hover:bg-orange-100"
+                            >
+                                Manage profile
+                            </button>
+                        </div>
 
-                            {/* Recent Orders */}
-                            <div className="mt-8">
-                                <div className="flex justify-between items-center mb-4">
-                                    <h3 className="text-lg font-semibold text-gray-900">Recent Orders</h3>
+                        <div className="rounded-2xl bg-white p-3 sm:p-4 shadow-sm">
+                            <nav className="space-y-1">
+                                {sections.map((section) => (
                                     <button
-                                        onClick={() => setActiveTab('orders')}
-                                        className="text-sm text-orange-600 hover:text-orange-700 font-medium"
+                                        key={section.id}
+                                        onClick={() => setActiveSection(section.id)}
+                                        className={`w-full rounded-xl px-4 py-2.5 text-left text-sm font-medium transition ${
+                                            activeSection === section.id
+                                                ? 'bg-orange-600 text-white'
+                                                : 'text-gray-600 hover:bg-slate-100'
+                                        }`}
                                     >
-                                        View All →
+                                        {section.label}
                                     </button>
+                                ))}
+                                <button
+                                    onClick={() => signOut(() => router.push('/'))}
+                                    className="w-full rounded-xl px-4 py-3 text-left text-sm font-medium text-red-600 transition hover:bg-red-50"
+                                >
+                                    Sign out
+                                </button>
+                            </nav>
+                        </div>
+                    </aside>
+
+                    <main className="space-y-6">
+                        {activeSection === 'overview' && (
+                            <div className="space-y-6">
+                                <div className="rounded-2xl bg-white p-5 sm:p-6 shadow-sm">
+                                    <div className="flex flex-wrap items-start justify-between gap-4">
+                                        <div>
+                                            <p className="text-xs uppercase tracking-[0.35em] text-orange-500">Profile Overview</p>
+                                            <h1 className={`${headingFont.className} mt-2 text-3xl font-semibold text-gray-900`}>
+                                                Welcome back, {displayName}.
+                                            </h1>
+                                            <p className="mt-3 text-sm text-gray-600">
+                                                Keep your details updated and track your latest orders and saved addresses.
+                                            </p>
+                                        </div>
+                                        <button
+                                            onClick={() => router.push('/all-products')}
+                                            className="w-full sm:w-auto rounded-full bg-orange-600 px-5 py-2 text-xs font-semibold uppercase tracking-wider text-white transition hover:bg-orange-500"
+                                        >
+                                            Shop now
+                                        </button>
+                                    </div>
                                 </div>
 
-                                {orders.slice(0, 3).length > 0 ? (
-                                    <div className="space-y-4">
-                                        {orders.slice(0, 3).map(order => (
-                                            <div key={order._id} className="border rounded-lg p-4 hover:shadow-md transition">
-                                                <div className="flex justify-between items-start">
+                                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                    {[
+                                        { label: 'Total Orders', value: orders.length },
+                                        { label: 'Delivered', value: orders.filter(o => o.status === 'Delivered').length },
+                                        { label: 'Saved Addresses', value: addresses.length }
+                                    ].map((stat) => (
+                                        <div key={stat.label} className="rounded-2xl bg-white p-5 shadow-sm">
+                                            <p className="text-xs uppercase tracking-[0.3em] text-gray-400">{stat.label}</p>
+                                            <p className={`${headingFont.className} mt-3 text-3xl font-semibold text-gray-900`}>{stat.value}</p>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+                                    <div className="rounded-2xl bg-white p-5 sm:p-6 shadow-sm">
+                                        <div className="flex items-center justify-between">
+                                            <h2 className={`${headingFont.className} text-xl font-semibold text-gray-900`}>Recent Orders</h2>
+                                            <button
+                                                onClick={() => setActiveSection('orders')}
+                                                className="text-xs font-semibold uppercase tracking-wider text-orange-600"
+                                            >
+                                                View all
+                                            </button>
+                                        </div>
+                                        <div className="mt-4 space-y-4">
+                                            {orders.slice(0, 3).map(order => (
+                                                <div key={order._id} className="rounded-xl border border-gray-100 p-4">
+                                                    <div className="flex items-start justify-between">
+                                                        <div>
+                                                            <p className="text-sm font-semibold text-gray-900">Order #{getDisplayOrderCode(order)}</p>
+                                                            <p className="text-xs text-gray-500">
+                                                                {new Date(order.createdAt).toLocaleDateString('en-IN', {
+                                                                    year: 'numeric',
+                                                                    month: 'short',
+                                                                    day: 'numeric'
+                                                                })}
+                                                            </p>
+                                                        </div>
+                                                        <span className={`rounded-full px-3 py-1 text-[11px] font-semibold ${getOrderStatusColor(order.status)}`}>
+                                                            {order.status}
+                                                        </span>
+                                                    </div>
+                                                    <p className="mt-3 text-xs text-gray-500">
+                                                        {order.items.length} items • {currency}{order.totalAmount}
+                                                    </p>
+                                                </div>
+                                            ))}
+                                            {orders.length === 0 && (
+                                                <div className="rounded-xl border border-dashed border-gray-200 p-6 text-center text-sm text-gray-500">
+                                                    No orders yet. Start shopping to see your history here.
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="rounded-2xl bg-white p-5 sm:p-6 shadow-sm">
+                                        <h2 className={`${headingFont.className} text-xl font-semibold text-gray-900`}>Personal Info</h2>
+                                        <div className="mt-4 space-y-4 text-sm text-gray-600">
+                                            <div>
+                                                <p className="text-xs uppercase tracking-[0.3em] text-gray-400">Full Name</p>
+                                                {isEditingName ? (
+                                                    <div className="mt-2 space-y-2">
+                                                        <input
+                                                            type="text"
+                                                            value={nameDraft}
+                                                            onChange={(e) => setNameDraft(e.target.value)}
+                                                            className="w-full rounded-xl border border-gray-200 px-4 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                                        />
+                                                        <div className="flex gap-2">
+                                                            <button
+                                                                type="button"
+                                                                onClick={handleNameSave}
+                                                                disabled={isSavingName}
+                                                                className="rounded-full bg-orange-600 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-white transition hover:bg-orange-500 disabled:cursor-not-allowed disabled:opacity-70"
+                                                            >
+                                                                {isSavingName ? 'Saving...' : 'Save'}
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    setNameDraft(profileName || fallbackName);
+                                                                    setIsEditingName(false);
+                                                                }}
+                                                                className="rounded-full border border-gray-200 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-gray-600 transition hover:bg-gray-50"
+                                                            >
+                                                                Cancel
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div className="mt-2 flex items-center justify-between gap-3">
+                                                        <p className="text-gray-900">{displayName}</p>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setNameDraft(displayName);
+                                                                setIsEditingName(true);
+                                                            }}
+                                                            className="rounded-full border border-orange-200 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-orange-600 transition hover:bg-orange-50"
+                                                        >
+                                                            Edit
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div>
+                                                <p className="text-xs uppercase tracking-[0.3em] text-gray-400">Email</p>
+                                                <p className="mt-1 text-gray-900">{user?.emailAddresses?.[0]?.emailAddress}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-xs uppercase tracking-[0.3em] text-gray-400">Phone</p>
+                                                <p className="mt-1 text-gray-900">
+                                                    {user?.phoneNumbers?.[0]?.phoneNumber || 'Not added yet'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={() => openUserProfile()}
+                                            className="mt-5 w-full rounded-full border border-orange-200 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-orange-600 transition hover:bg-orange-50"
+                                        >
+                                            Manage account details
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="rounded-2xl bg-white p-5 sm:p-6 shadow-sm">
+                                    <div className="flex items-center justify-between">
+                                        <h2 className={`${headingFont.className} text-xl font-semibold text-gray-900`}>
+                                            Default Shipping Address
+                                        </h2>
+                                        <button
+                                            onClick={() => setActiveSection('addresses')}
+                                            className="text-xs font-semibold uppercase tracking-wider text-orange-600"
+                                        >
+                                            Manage
+                                        </button>
+                                    </div>
+                                    {primaryAddress ? (
+                                        <div className="mt-4 text-sm text-gray-600">
+                                            <p className="font-semibold text-gray-900">{primaryAddress.fullName}</p>
+                                            <p className="mt-2">
+                                                {primaryAddress.area}, {primaryAddress.city}
+                                            </p>
+                                            <p>{primaryAddress.state} - {primaryAddress.pincode}</p>
+                                            <p className="mt-2">Phone: {primaryAddress.phoneNumber}</p>
+                                        </div>
+                                    ) : (
+                                        <div className="mt-4 rounded-xl border border-dashed border-gray-200 p-4 text-sm text-gray-500">
+                                            No shipping address saved yet. Add one to speed up checkout.
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {activeSection === 'orders' && (
+                            <div className="rounded-2xl bg-white p-5 sm:p-6 shadow-sm">
+                                <h2 className={`${headingFont.className} text-2xl font-semibold text-gray-900`}>Order History</h2>
+                                <div className="mt-6 space-y-4">
+                                    {orders.length > 0 ? (
+                                        orders.map(order => (
+                                            <div key={order._id} className="rounded-xl border border-gray-100 p-4 sm:p-5">
+                                                <div className="flex flex-wrap items-start justify-between gap-3">
                                                     <div>
-                                                        <p className="font-medium text-gray-900">Order #{order._id.slice(-8)}</p>
-                                                        <p className="text-sm text-gray-600">
-                                                            {new Date(order.createdAt).toLocaleDateString('en-IN', {
+                                                        <p className="text-sm font-semibold text-gray-900">Order #{getDisplayOrderCode(order)}</p>
+                                                        <p className="text-xs text-gray-500">
+                                                            Placed on {new Date(order.createdAt).toLocaleDateString('en-IN', {
                                                                 year: 'numeric',
                                                                 month: 'long',
                                                                 day: 'numeric'
                                                             })}
                                                         </p>
                                                     </div>
-                                                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getOrderStatusColor(order.status)}`}>
+                                                    <span className={`rounded-full px-3 py-1 text-[11px] font-semibold ${getOrderStatusColor(order.status)}`}>
                                                         {order.status}
                                                     </span>
                                                 </div>
-                                                <div className="mt-2">
-                                                    <p className="text-sm text-gray-600">
-                                                        {order.items.length} {order.items.length === 1 ? 'item' : 'items'} • {currency}{order.totalAmount}
-                                                    </p>
+                                                <div className="mt-4 space-y-3">
+                                                    {order.items.map((item, idx) => (
+                                                        <div key={idx} className="flex items-center gap-4 rounded-lg bg-slate-50 p-3">
+                                                            <div className="relative h-12 w-12 overflow-hidden rounded bg-white">
+                                                                {item.image?.[0] ? (
+                                                                    <Image
+                                                                        src={item.image[0]}
+                                                                        alt={item.name}
+                                                                        fill
+                                                                        className="object-cover"
+                                                                        sizes="48px"
+                                                                    />
+                                                                ) : (
+                                                                    <div className="flex h-full w-full items-center justify-center text-xs text-gray-400">No Image</div>
+                                                                )}
+                                                            </div>
+                                                            <div className="flex-1">
+                                                                <p className="text-sm font-medium text-gray-900">{item.name}</p>
+                                                                <p className="text-xs text-gray-500">
+                                                                    {item.size && `Size: ${item.size}`}
+                                                                    {item.size && item.color && ' • '}
+                                                                    {item.color && `Color: ${item.color}`}
+                                                                    {item.quantity && ` • Qty: ${item.quantity}`}
+                                                                </p>
+                                                            </div>
+                                                            <p className="text-sm font-semibold text-gray-900">{currency}{item.price}</p>
+                                                        </div>
+                                                    ))}
                                                 </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <div className="text-center py-12 border rounded-lg bg-gray-50">
-                                        <div className="text-6xl mb-4">📦</div>
-                                        <p className="text-gray-600 mb-4">No orders yet</p>
-                                        <button
-                                            onClick={() => router.push('/all-products')}
-                                            className="px-6 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition"
-                                        >
-                                            Start Shopping
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Saved Addresses */}
-                            <div className="mt-8">
-                                <div className="flex justify-between items-center mb-4">
-                                    <h3 className="text-lg font-semibold text-gray-900">Saved Addresses</h3>
-                                    <button
-                                        onClick={() => setActiveTab('addresses')}
-                                        className="text-sm text-orange-600 hover:text-orange-700 font-medium"
-                                    >
-                                        Manage →
-                                    </button>
-                                </div>
-
-                                {addresses.length > 0 ? (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        {addresses.slice(0, 2).map(address => (
-                                            <div key={address._id} className="border rounded-lg p-4">
-                                                <div className="flex items-start justify-between mb-2">
-                                                    <p className="font-medium text-gray-900">{address.fullName}</p>
-                                                    {address.isDefault && (
-                                                        <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">Default</span>
+                                                <div className="mt-4 flex flex-wrap items-center justify-between gap-4 border-t pt-4 text-sm">
+                                                    <p className="text-gray-600">
+                                                        Payment: <span className="font-medium text-gray-900">{order.paymentMethod}</span>
+                                                    </p>
+                                                    <p className="text-lg font-semibold text-gray-900">{currency}{order.totalAmount}</p>
+                                                </div>
+                                                <div className="mt-4 flex flex-wrap gap-3">
+                                                    <button
+                                                        onClick={() => router.push(`/my-orders?orderId=${order._id}`)}
+                                                        className="w-full sm:w-auto rounded-full border border-gray-200 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-gray-700 transition hover:bg-gray-50"
+                                                    >
+                                                        View details
+                                                    </button>
+                                                    {order.status === 'Delivered' && order.items.length > 0 && (
+                                                        <button
+                                                            onClick={() => {
+                                                                const firstItem = order.items[0];
+                                                                if (firstItem.product?._id || firstItem.isCustomDesign) {
+                                                                    const productId = firstItem.product?._id || firstItem.customDesignId;
+                                                                    router.push(`/product/${productId}#reviews`);
+                                                                }
+                                                            }}
+                                                            className="w-full sm:w-auto rounded-full border border-orange-200 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-orange-600 transition hover:bg-orange-50"
+                                                        >
+                                                            Leave review
+                                                        </button>
                                                     )}
                                                 </div>
-                                                <p className="text-sm text-gray-600">
-                                                    {address.area}, {address.city}<br />
-                                                    {address.state} - {address.pincode}<br />
-                                                    📞 {address.phoneNumber}
-                                                </p>
                                             </div>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <div className="text-center py-8 border rounded-lg bg-gray-50">
-                                        <p className="text-gray-600 mb-3">No saved addresses</p>
-                                        <button
-                                            onClick={() => setActiveTab('addresses')}
-                                            className="text-sm text-orange-600 hover:text-orange-700 font-medium"
-                                        >
-                                            Add Address →
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Orders Tab */}
-                    {activeTab === 'orders' && (
-                        <div>
-                            <h2 className="text-xl font-bold text-gray-900 mb-6">My Orders</h2>
-
-                            {orders.length > 0 ? (
-                                <div className="space-y-4">
-                                    {orders.map(order => (
-                                        <div key={order._id} className="border rounded-lg p-6 hover:shadow-md transition">
-                                            <div className="flex justify-between items-start mb-4">
-                                                <div>
-                                                    <h3 className="font-semibold text-gray-900 text-lg">
-                                                        Order #{order._id.slice(-8)}
-                                                    </h3>
-                                                    <p className="text-sm text-gray-600">
-                                                        Placed on {new Date(order.createdAt).toLocaleDateString('en-IN', {
-                                                            year: 'numeric',
-                                                            month: 'long',
-                                                            day: 'numeric'
-                                                        })}
-                                                    </p>
-                                                </div>
-                                                <span className={`px-4 py-2 rounded-full text-sm font-medium ${getOrderStatusColor(order.status)}`}>
-                                                    {order.status}
-                                                </span>
-                                            </div>
-
-                                            {/* Order Items */}
-                                            <div className="space-y-3 mb-4">
-                                                {order.items.map((item, idx) => (
-                                                    <div key={idx} className="flex gap-4 p-3 bg-gray-50 rounded-lg">
-                                                        <div className="w-16 h-16 bg-white rounded flex items-center justify-center">
-                                                            {item.image?.[0] ? (
-                                                                <Image
-                                                                    src={item.image[0]}
-                                                                    alt={item.name}
-                                                                    width={64}
-                                                                    height={64}
-                                                                    className="object-cover rounded"
-                                                                />
-                                                            ) : (
-                                                                <span className="text-2xl">📦</span>
-                                                            )}
-                                                        </div>
-                                                        <div className="flex-1">
-                                                            <p className="font-medium text-gray-900">{item.name}</p>
-                                                            <p className="text-sm text-gray-600">
-                                                                {item.size && `Size: ${item.size}`}
-                                                                {item.size && item.color && ' • '}
-                                                                {item.color && `Color: ${item.color}`}
-                                                            </p>
-                                                            <p className="text-sm text-gray-600">Qty: {item.quantity}</p>
-                                                        </div>
-                                                        <div className="text-right">
-                                                            <p className="font-semibold text-gray-900">{currency}{item.price}</p>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-
-                                            {/* Order Summary */}
-                                            <div className="flex justify-between items-center pt-4 border-t">
-                                                <div className="text-sm text-gray-600">
-                                                    Payment: <span className="font-medium text-gray-900">{order.paymentMethod}</span>
-                                                </div>
-                                                <div className="text-right">
-                                                    <p className="text-sm text-gray-600">Total Amount</p>
-                                                    <p className="text-xl font-bold text-gray-900">{currency}{order.totalAmount}</p>
-                                                </div>
-                                            </div>
-
-                                            {/* Action Buttons */}
-                                            <div className="flex gap-3 mt-4">
-                                                <button
-                                                    onClick={() => router.push(`/my-orders?orderId=${order._id}`)}
-                                                    className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition"
-                                                >
-                                                    View Details
-                                                </button>
-                                                {order.status === 'Delivered' && order.items.length > 0 && (
-                                                    <button
-                                                        onClick={() => {
-                                                            // Navigate to the first product to leave a review
-                                                            const firstItem = order.items[0];
-                                                            if (firstItem.product?._id || firstItem.isCustomDesign) {
-                                                                const productId = firstItem.product?._id || firstItem.customDesignId;
-                                                                router.push(`/product/${productId}#reviews`);
-                                                            }
-                                                        }}
-                                                        className="px-4 py-2 border border-orange-300 text-orange-600 rounded-lg text-sm font-medium hover:bg-orange-50 transition"
-                                                    >
-                                                        Leave Review
-                                                    </button>
-                                                )}
-                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="rounded-xl border border-dashed border-gray-200 p-8 sm:p-10 text-center">
+                                            <p className="text-sm text-gray-600">No orders yet. Start shopping to build your history.</p>
+                                            <button
+                                                onClick={() => router.push('/all-products')}
+                                                className="mt-4 w-full sm:w-auto rounded-full bg-orange-600 px-5 py-2 text-xs font-semibold uppercase tracking-wider text-white transition hover:bg-orange-500"
+                                            >
+                                                Browse products
+                                            </button>
                                         </div>
-                                    ))}
+                                    )}
                                 </div>
-                            ) : (
-                                <div className="text-center py-16">
-                                    <div className="text-8xl mb-4">📦</div>
-                                    <h3 className="text-xl font-semibold text-gray-900 mb-2">No Orders Yet</h3>
-                                    <p className="text-gray-600 mb-6">Start shopping and your orders will appear here</p>
+                            </div>
+                        )}
+
+                        {activeSection === 'addresses' && (
+                            <div className="rounded-2xl bg-white p-5 sm:p-6 shadow-sm">
+                                <div className="flex flex-wrap items-center justify-between gap-3">
+                                    <h2 className={`${headingFont.className} text-2xl font-semibold text-gray-900`}>Saved Addresses</h2>
                                     <button
-                                        onClick={() => router.push('/all-products')}
-                                        className="px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition font-medium"
+                                        onClick={() => setShowAddressForm(!showAddressForm)}
+                                        className="w-full sm:w-auto rounded-full bg-orange-600 px-5 py-2 text-xs font-semibold uppercase tracking-wider text-white transition hover:bg-orange-500"
                                     >
-                                        Browse Products
+                                        {showAddressForm ? 'Cancel' : 'Add new address'}
                                     </button>
                                 </div>
-                            )}
-                        </div>
-                    )}
 
-                    {/* Addresses Tab */}
-                    {activeTab === 'addresses' && (
-                        <div>
-                            <div className="flex justify-between items-center mb-6">
-                                <h2 className="text-xl font-bold text-gray-900">Saved Addresses</h2>
-                                <button
-                                    onClick={() => setShowAddressForm(!showAddressForm)}
-                                    className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition font-medium"
-                                >
-                                    {showAddressForm ? 'Cancel' : '+ Add New Address'}
-                                </button>
-                            </div>
-
-                            {/* Address Form */}
-                            {showAddressForm && (
-                                <form onSubmit={handleAddressSubmit} className="mb-8 p-6 border rounded-lg bg-gray-50">
-                                    <h3 className="text-lg font-semibold mb-4">
-                                        {editingAddress ? 'Edit Address' : 'Add New Address'}
-                                    </h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <input
-                                            type="text"
-                                            placeholder="Full Name"
-                                            value={addressForm.fullName}
-                                            onChange={(e) => setAddressForm({ ...addressForm, fullName: e.target.value })}
-                                            required
-                                            className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                                        />
-                                        <input
-                                            type="tel"
-                                            placeholder="Phone Number"
-                                            value={addressForm.phoneNumber}
-                                            onChange={(e) => setAddressForm({ ...addressForm, phoneNumber: e.target.value })}
-                                            required
-                                            className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                                        />
-                                        <input
-                                            type="text"
-                                            placeholder="Pincode"
-                                            value={addressForm.pincode}
-                                            onChange={(e) => setAddressForm({ ...addressForm, pincode: e.target.value })}
-                                            required
-                                            className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                                        />
-                                        <input
-                                            type="text"
-                                            placeholder="Area/Locality"
-                                            value={addressForm.area}
-                                            onChange={(e) => setAddressForm({ ...addressForm, area: e.target.value })}
-                                            required
-                                            className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                                        />
-                                        <input
-                                            type="text"
-                                            placeholder="City"
-                                            value={addressForm.city}
-                                            onChange={(e) => setAddressForm({ ...addressForm, city: e.target.value })}
-                                            required
-                                            className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                                        />
-                                        <input
-                                            type="text"
-                                            placeholder="State"
-                                            value={addressForm.state}
-                                            onChange={(e) => setAddressForm({ ...addressForm, state: e.target.value })}
-                                            required
-                                            className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                                        />
-                                    </div>
-                                    <div className="mt-4">
-                                        <label className="flex items-center gap-2 cursor-pointer">
+                                {showAddressForm && (
+                                    <form onSubmit={handleAddressSubmit} className="mt-6 rounded-2xl border border-gray-100 bg-slate-50 p-5">
+                                        <h3 className={`${headingFont.className} text-lg font-semibold text-gray-900`}>
+                                            {editingAddress ? 'Edit Address' : 'Add New Address'}
+                                        </h3>
+                                        <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+                                            <input
+                                                type="text"
+                                                placeholder="Full Name"
+                                                value={addressForm.fullName}
+                                                onChange={(e) => setAddressForm({ ...addressForm, fullName: e.target.value })}
+                                                required
+                                                className="rounded-xl border border-gray-200 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                            />
+                                            <input
+                                                type="tel"
+                                                placeholder="Phone Number"
+                                                value={addressForm.phoneNumber}
+                                                onChange={(e) => setAddressForm({ ...addressForm, phoneNumber: e.target.value })}
+                                                required
+                                                className="rounded-xl border border-gray-200 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                            />
+                                            <input
+                                                type="text"
+                                                placeholder="Pincode"
+                                                value={addressForm.pincode}
+                                                onChange={(e) => setAddressForm({ ...addressForm, pincode: e.target.value })}
+                                                required
+                                                className="rounded-xl border border-gray-200 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                            />
+                                            <input
+                                                type="text"
+                                                placeholder="Area/Locality"
+                                                value={addressForm.area}
+                                                onChange={(e) => setAddressForm({ ...addressForm, area: e.target.value })}
+                                                required
+                                                className="rounded-xl border border-gray-200 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                            />
+                                            <input
+                                                type="text"
+                                                placeholder="City"
+                                                value={addressForm.city}
+                                                onChange={(e) => setAddressForm({ ...addressForm, city: e.target.value })}
+                                                required
+                                                className="rounded-xl border border-gray-200 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                            />
+                                            <input
+                                                type="text"
+                                                placeholder="State"
+                                                value={addressForm.state}
+                                                onChange={(e) => setAddressForm({ ...addressForm, state: e.target.value })}
+                                                required
+                                                className="rounded-xl border border-gray-200 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                            />
+                                        </div>
+                                        <label className="mt-4 flex items-center gap-2 text-sm text-gray-600">
                                             <input
                                                 type="checkbox"
                                                 checked={addressForm.isDefault}
                                                 onChange={(e) => setAddressForm({ ...addressForm, isDefault: e.target.checked })}
-                                                className="w-4 h-4 text-orange-600 rounded focus:ring-orange-500"
+                                                className="h-4 w-4 rounded text-orange-600 focus:ring-orange-500"
                                             />
-                                            <span className="text-sm text-gray-700">Set as default address</span>
+                                            Set as default address
                                         </label>
-                                    </div>
-                                    <div className="flex gap-3 mt-6">
-                                        <button
-                                            type="submit"
-                                            className="px-6 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition font-medium"
-                                        >
-                                            {editingAddress ? 'Update Address' : 'Save Address'}
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={resetAddressForm}
-                                            className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
-                                        >
-                                            Cancel
-                                        </button>
-                                    </div>
-                                </form>
-                            )}
+                                        <div className="mt-5 flex flex-wrap gap-3">
+                                            <button
+                                                type="submit"
+                                                className="w-full sm:w-auto rounded-full bg-orange-600 px-5 py-2 text-xs font-semibold uppercase tracking-wider text-white transition hover:bg-orange-500"
+                                            >
+                                                {editingAddress ? 'Update address' : 'Save address'}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={resetAddressForm}
+                                                className="w-full sm:w-auto rounded-full border border-gray-200 px-5 py-2 text-xs font-semibold uppercase tracking-wider text-gray-600 transition hover:bg-white"
+                                            >
+                                                Cancel
+                                            </button>
+                                        </div>
+                                    </form>
+                                )}
 
-                            {/* Address List */}
-                            {addresses.length > 0 ? (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="mt-6 grid gap-4 sm:grid-cols-2">
                                     {addresses.map(address => (
-                                        <div key={address._id} className="border rounded-lg p-6 hover:shadow-md transition">
-                                            <div className="flex items-start justify-between mb-3">
-                                                <h3 className="font-semibold text-gray-900">{address.fullName}</h3>
+                                        <div key={address._id} className="rounded-2xl border border-gray-100 p-5">
+                                            <div className="flex items-start justify-between">
+                                                <div>
+                                                    <p className="text-sm font-semibold text-gray-900">{address.fullName}</p>
+                                                    <p className="mt-2 text-xs text-gray-500">
+                                                        {address.area}, {address.city}
+                                                    </p>
+                                                    <p className="text-xs text-gray-500">{address.state} - {address.pincode}</p>
+                                                    <p className="mt-2 text-xs text-gray-500">Phone: {address.phoneNumber}</p>
+                                                </div>
                                                 {address.isDefault && (
-                                                    <span className="px-3 py-1 bg-green-100 text-green-700 text-xs rounded-full font-medium">
+                                                    <span className="rounded-full bg-green-100 px-3 py-1 text-[11px] font-semibold text-green-700">
                                                         Default
                                                     </span>
                                                 )}
                                             </div>
-                                            <div className="text-sm text-gray-600 space-y-1">
-                                                <p>{address.area}</p>
-                                                <p>{address.city}, {address.state} - {address.pincode}</p>
-                                                <p className="flex items-center gap-2 mt-2">
-                                                    <span>📞</span> {address.phoneNumber}
-                                                </p>
-                                            </div>
-                                            <div className="flex gap-2 mt-4 pt-4 border-t">
+                                            <div className="mt-4 flex flex-wrap gap-2">
                                                 <button
                                                     onClick={() => handleEditAddress(address)}
-                                                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition"
+                                                    className="w-full sm:flex-1 rounded-full border border-gray-200 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-gray-600 transition hover:bg-gray-50"
                                                 >
                                                     Edit
                                                 </button>
                                                 <button
                                                     onClick={() => handleDeleteAddress(address._id)}
-                                                    className="flex-1 px-4 py-2 border border-red-300 text-red-600 rounded-lg text-sm font-medium hover:bg-red-50 transition"
+                                                    className="w-full sm:flex-1 rounded-full border border-red-200 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-red-600 transition hover:bg-red-50"
                                                 >
                                                     Delete
                                                 </button>
                                             </div>
                                         </div>
                                     ))}
-                                </div>
-                            ) : (
-                                <div className="text-center py-16 border rounded-lg">
-                                    <div className="text-8xl mb-4">📍</div>
-                                    <h3 className="text-xl font-semibold text-gray-900 mb-2">No Saved Addresses</h3>
-                                    <p className="text-gray-600 mb-6">Add your first address for faster checkout</p>
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {/* Settings Tab */}
-                    {activeTab === 'settings' && (
-                        <div>
-                            <h2 className="text-xl font-bold text-gray-900 mb-6">Account Settings</h2>
-
-                            <div className="space-y-6">
-                                {/* Personal Information */}
-                                <div className="border rounded-lg p-6">
-                                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Personal Information</h3>
-                                    <div className="space-y-4">
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                                            <p className="text-gray-900">{user?.firstName} {user?.lastName}</p>
+                                    {addresses.length === 0 && (
+                                        <div className="rounded-2xl border border-dashed border-gray-200 p-6 text-center text-sm text-gray-500">
+                                            No saved addresses yet. Add one for faster checkout.
                                         </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                                            <p className="text-gray-900">{user?.emailAddresses?.[0]?.emailAddress}</p>
-                                        </div>
-                                        <button
-                                            onClick={() => router.push('/sign-in')}
-                                            className="px-4 py-2 text-orange-600 border border-orange-300 rounded-lg text-sm font-medium hover:bg-orange-50 transition"
-                                        >
-                                            Manage Account via Clerk
-                                        </button>
-                                    </div>
-                                </div>
-
-                                {/* Preferences */}
-                                <div className="border rounded-lg p-6">
-                                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Preferences</h3>
-                                    <div className="space-y-4">
-                                        <label className="flex items-center justify-between cursor-pointer">
-                                            <span className="text-gray-700">Email Notifications</span>
-                                            <input type="checkbox" className="w-5 h-5 text-orange-600 rounded" defaultChecked />
-                                        </label>
-                                        <label className="flex items-center justify-between cursor-pointer">
-                                            <span className="text-gray-700">Order Updates</span>
-                                            <input type="checkbox" className="w-5 h-5 text-orange-600 rounded" defaultChecked />
-                                        </label>
-                                        <label className="flex items-center justify-between cursor-pointer">
-                                            <span className="text-gray-700">Promotional Emails</span>
-                                            <input type="checkbox" className="w-5 h-5 text-orange-600 rounded" />
-                                        </label>
-                                    </div>
-                                </div>
-
-                                {/* Quick Actions */}
-                                <div className="border rounded-lg p-6">
-                                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-                                    <div className="space-y-3">
-                                        <button
-                                            onClick={() => router.push('/wishlist')}
-                                            className="w-full px-4 py-3 text-left border rounded-lg hover:bg-gray-50 transition flex items-center justify-between"
-                                        >
-                                            <span className="font-medium">View Wishlist</span>
-                                            <span>→</span>
-                                        </button>
-                                        <button
-                                            onClick={() => router.push('/notifications')}
-                                            className="w-full px-4 py-3 text-left border rounded-lg hover:bg-gray-50 transition flex items-center justify-between"
-                                        >
-                                            <span className="font-medium">Notifications</span>
-                                            <span>→</span>
-                                        </button>
-                                    </div>
+                                    )}
                                 </div>
                             </div>
-                        </div>
-                    )}
+                        )}
+
+                        {activeSection === 'account' && (
+                            <div className="rounded-2xl bg-white p-5 sm:p-6 shadow-sm">
+                                <h2 className={`${headingFont.className} text-2xl font-semibold text-gray-900`}>Account Settings</h2>
+                                <p className="mt-3 text-sm text-gray-600">
+                                    Update email, password, and account preferences from the secure profile manager.
+                                </p>
+                                <button
+                                    onClick={() => openUserProfile()}
+                                    className="mt-5 w-full sm:w-auto rounded-full border border-orange-200 px-5 py-2 text-xs font-semibold uppercase tracking-wider text-orange-600 transition hover:bg-orange-50"
+                                >
+                                    Open account manager
+                                </button>
+                            </div>
+                        )}
+                    </main>
                 </div>
             </div>
         </div>
