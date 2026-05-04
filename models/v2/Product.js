@@ -12,7 +12,7 @@ const activityLogSchema = new mongoose.Schema(
 
 const productSchema = new mongoose.Schema(
   {
-    productCode: { type: String, sparse: true, default: null },
+    productCode: { type: String, default: null },
     name: { type: String, required: true },
     slug: { type: String, required: true, unique: true },
     description: { type: String, required: true },
@@ -42,6 +42,8 @@ const productSchema = new mongoose.Schema(
     metaTitle: { type: String, default: '' },
     metaDescription: { type: String, default: '' },
     relatedProducts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'ProductV2' }],
+    avgRating: { type: Number, default: 0 },
+    ratingCount: { type: Number, default: 0 },
     discountStartDate: { type: Date, default: null },
     discountEndDate: { type: Date, default: null },
     createdBy: { type: String, required: true },
@@ -50,13 +52,20 @@ const productSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-productSchema.index({ status: 1 });
-productSchema.index({ collectionName: 1 });
-productSchema.index({ sportCategory: 1 });
-productSchema.index({ category: 1 });
-productSchema.index({ brand: 1 });
-productSchema.index({ productCode: 1 }, { unique: true, sparse: true });
+let ProductV2;
 
-const ProductV2 = mongoose.models.ProductV2 || mongoose.model('ProductV2', productSchema, 'products_v2');
+if (mongoose.models.ProductV2) {
+  ProductV2 = mongoose.models.ProductV2;
+} else {
+  // Define indexes only once during initial model registration
+  productSchema.index({ status: 1 });
+  productSchema.index({ collectionName: 1 });
+  productSchema.index({ sportCategory: 1 });
+  productSchema.index({ category: 1 });
+  productSchema.index({ brand: 1 });
+  productSchema.index({ productCode: 1 }, { unique: true, sparse: true });
+
+  ProductV2 = mongoose.model('ProductV2', productSchema, 'products_v2');
+}
 
 export default ProductV2;

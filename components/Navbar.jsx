@@ -122,7 +122,7 @@ const Navbar = () => {
             }
           </ul>
 
-          <div className="flex items-center md:hidden gap-3">
+          <div className="flex items-center md:hidden gap-3 ml-auto">
             <button
               className="p-2 hover:bg-gray-100 rounded-lg transition"
               aria-label="Menu"

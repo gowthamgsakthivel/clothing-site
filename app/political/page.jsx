@@ -9,6 +9,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import SEOMetadata from '@/components/SEOMetadata';
 import { useAppContext } from '@/context/AppContext';
+import { DEFAULT_CAROUSEL_CONTROLS } from '@/lib/carouselDefaults';
 
 const metadata = {
   title: 'Political | Sparrow Sports',
@@ -21,44 +22,10 @@ const metadata = {
   },
 };
 
-const POLITICAL_CAROUSEL = [
-  {
-    id: 1,
-    image: '/assets/img/running.png',
-    title: 'Political Apparel',
-    subtitle: 'Say It With Style',
-    description: 'Bold yet wearable designs for people who want their clothing to say something meaningful.',
-    badge: '🗳️ NEW ARRIVALS',
-  },
-  {
-    id: 2,
-    image: '/assets/img/cricket_jersey.png',
-    title: 'Statement Pieces',
-    subtitle: 'Comfortable Everyday Wear',
-    description: 'Premium fits and clean graphics designed to work in casual settings and events alike.',
-    badge: '📣 EXCLUSIVE',
-  },
-  {
-    id: 3,
-    image: '/assets/img/basketball_jersey.png',
-    title: 'Expressive Streetwear',
-    subtitle: 'Modern. Sharp. Clear.',
-    description: 'A refined collection that combines strong visual language with everyday comfort.',
-    badge: '🔥 BESTSELLER',
-  },
-  {
-    id: 4,
-    image: '/assets/img/upper.png',
-    title: 'Conversation Starters',
-    subtitle: 'Built To Stand Out',
-    description: 'Statement apparel designed to feel premium while remaining easy to wear anywhere.',
-    badge: '⭐ PREMIUM',
-  },
-];
-
 const PoliticalPage = () => {
   const { addToCart, router } = useAppContext();
   const [carouselIndex, setCarouselIndex] = useState(0);
+  const [carouselSlides, setCarouselSlides] = useState(DEFAULT_CAROUSEL_CONTROLS.political);
   const [products, setProducts] = useState([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
 
@@ -101,10 +68,32 @@ const PoliticalPage = () => {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setCarouselIndex((prev) => (prev + 1) % POLITICAL_CAROUSEL.length);
+      setCarouselIndex((prev) => (prev + 1) % carouselSlides.length);
     }, 5000);
 
     return () => clearInterval(interval);
+  }, [carouselSlides.length]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadCarousel = async () => {
+      try {
+        const response = await fetch('/api/carousel-controls?page=political');
+        const data = await response.json();
+        if (isMounted && data?.success && data?.slides?.length) {
+          setCarouselSlides(data.slides);
+        }
+      } catch (error) {
+        if (isMounted) setCarouselSlides(DEFAULT_CAROUSEL_CONTROLS.political);
+      }
+    };
+
+    loadCarousel();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -139,7 +128,7 @@ const PoliticalPage = () => {
       <main className="min-h-screen bg-white">
         <section className="relative w-full overflow-hidden bg-slate-950">
           <div className="relative w-full h-80 md:h-[500px] lg:h-[600px]">
-            {POLITICAL_CAROUSEL.map((slide, index) => (
+            {carouselSlides.map((slide, index) => (
               <div
                 key={slide.id}
                 className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
@@ -187,14 +176,14 @@ const PoliticalPage = () => {
           </div>
 
           <button
-            onClick={() => setCarouselIndex((prev) => (prev - 1 + POLITICAL_CAROUSEL.length) % POLITICAL_CAROUSEL.length)}
+            onClick={() => setCarouselIndex((prev) => (prev - 1 + carouselSlides.length) % carouselSlides.length)}
             className="absolute left-4 md:left-8 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 text-white p-2 md:p-3 rounded-full transition-all duration-200 z-20 backdrop-blur-sm group"
             aria-label="Previous slide"
           >
             <ChevronLeft size={28} className="group-hover:scale-110 transition" />
           </button>
           <button
-            onClick={() => setCarouselIndex((prev) => (prev + 1) % POLITICAL_CAROUSEL.length)}
+            onClick={() => setCarouselIndex((prev) => (prev + 1) % carouselSlides.length)}
             className="absolute right-4 md:right-8 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 text-white p-2 md:p-3 rounded-full transition-all duration-200 z-20 backdrop-blur-sm group"
             aria-label="Next slide"
           >
@@ -202,7 +191,7 @@ const PoliticalPage = () => {
           </button>
 
           <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-20">
-            {POLITICAL_CAROUSEL.map((_, index) => (
+            {carouselSlides.map((_, index) => (
               <button
                 key={index}
                 onClick={() => setCarouselIndex(index)}
@@ -217,7 +206,7 @@ const PoliticalPage = () => {
           </div>
 
           <div className="absolute top-6 right-6 bg-black/50 text-white px-4 py-2 rounded-full text-sm font-bold backdrop-blur-sm z-20">
-            {carouselIndex + 1} / {POLITICAL_CAROUSEL.length}
+            {carouselIndex + 1} / {carouselSlides.length}
           </div>
         </section>
 

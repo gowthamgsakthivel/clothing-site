@@ -9,6 +9,7 @@ import Footer from '@/components/Footer';
 import SEOMetadata from '@/components/SEOMetadata';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAppContext } from '@/context/AppContext';
+import { DEFAULT_CAROUSEL_CONTROLS } from '@/lib/carouselDefaults';
 
 // SEO Metadata
 const metadata = {
@@ -62,45 +63,10 @@ const SPORTS_CATEGORIES = [
   },
 ];
 
-// Carousel Images - Ready for your custom images
-const CAROUSEL_IMAGES = [
-  {
-    id: 1,
-    image: '/assets/img/running.png',
-    title: 'Premium Sports Collection',
-    subtitle: 'Elevate Your Performance',
-    description: 'Discover our latest athletic wear designed for champions',
-    badge: '🔥 NEW ARRIVALS'
-  },
-  {
-    id: 2,
-    image: '/assets/img/cricket_jersey.png',
-    title: 'Advanced Sports Tech',
-    subtitle: 'Performance Meets Innovation',
-    description: 'Engineered fabric for maximum comfort and durability',
-    badge: '⚡ EXCLUSIVE'
-  },
-  {
-    id: 3,
-    image: '/assets/img/basketball_jersey.png',
-    title: 'Champion Athlete Gear',
-    subtitle: 'Play Like a Pro',
-    description: 'Trusted by athletes worldwide for superior quality',
-    badge: '🏆 BESTSELLER'
-  },
-  {
-    id: 4,
-    image: '/assets/img/upper.png',
-    title: 'Ultimate Sports Apparel',
-    subtitle: 'Style & Comfort Combined',
-    description: 'Premium materials with modern design aesthetics',
-    badge: '✨ PREMIUM'
-  },
-];
-
 const SportsPage = () => {
   const { addToCart, router } = useAppContext();
   const [carouselIndex, setCarouselIndex] = useState(0);
+  const [carouselSlides, setCarouselSlides] = useState(DEFAULT_CAROUSEL_CONTROLS.sports);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [products, setProducts] = useState([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
@@ -147,9 +113,31 @@ const SportsPage = () => {
   // Auto-scroll carousel
   useEffect(() => {
     const interval = setInterval(() => {
-      setCarouselIndex((prev) => (prev + 1) % CAROUSEL_IMAGES.length);
+      setCarouselIndex((prev) => (prev + 1) % carouselSlides.length);
     }, 5000);
     return () => clearInterval(interval);
+  }, [carouselSlides.length]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadCarousel = async () => {
+      try {
+        const response = await fetch('/api/carousel-controls?page=sports');
+        const data = await response.json();
+        if (isMounted && data?.success && data?.slides?.length) {
+          setCarouselSlides(data.slides);
+        }
+      } catch (error) {
+        if (isMounted) setCarouselSlides(DEFAULT_CAROUSEL_CONTROLS.sports);
+      }
+    };
+
+    loadCarousel();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -192,7 +180,7 @@ const SportsPage = () => {
           {/* Carousel Container */}
           <div className="relative w-full h-80 md:h-[500px] lg:h-[600px]">
             {/* Slides */}
-            {CAROUSEL_IMAGES.map((slide, index) => (
+            {carouselSlides.map((slide, index) => (
               <div
                 key={slide.id}
                 className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
@@ -253,14 +241,14 @@ const SportsPage = () => {
 
           {/* Navigation Arrows */}
           <button
-            onClick={() => setCarouselIndex((prev) => (prev - 1 + CAROUSEL_IMAGES.length) % CAROUSEL_IMAGES.length)}
+            onClick={() => setCarouselIndex((prev) => (prev - 1 + carouselSlides.length) % carouselSlides.length)}
             className="absolute left-4 md:left-8 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 text-white p-2 md:p-3 rounded-full transition-all duration-200 z-20 backdrop-blur-sm group"
             aria-label="Previous slide"
           >
             <ChevronLeft size={28} className="group-hover:scale-110 transition" />
           </button>
           <button
-            onClick={() => setCarouselIndex((prev) => (prev + 1) % CAROUSEL_IMAGES.length)}
+            onClick={() => setCarouselIndex((prev) => (prev + 1) % carouselSlides.length)}
             className="absolute right-4 md:right-8 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 text-white p-2 md:p-3 rounded-full transition-all duration-200 z-20 backdrop-blur-sm group"
             aria-label="Next slide"
           >
@@ -269,7 +257,7 @@ const SportsPage = () => {
 
           {/* Indicators */}
           <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-20">
-            {CAROUSEL_IMAGES.map((_, index) => (
+            {carouselSlides.map((_, index) => (
               <button
                 key={index}
                 onClick={() => setCarouselIndex(index)}
@@ -285,7 +273,7 @@ const SportsPage = () => {
 
           {/* Slide Counter */}
           <div className="absolute top-6 right-6 bg-black/50 text-white px-4 py-2 rounded-full text-sm font-bold backdrop-blur-sm z-20">
-            {carouselIndex + 1} / {CAROUSEL_IMAGES.length}
+            {carouselIndex + 1} / {carouselSlides.length}
           </div>
         </section>
 

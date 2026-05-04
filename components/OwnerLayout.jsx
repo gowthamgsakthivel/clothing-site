@@ -8,6 +8,7 @@ import {
   MessageSquare, Package, Palette, Plus, Search, Settings,
   ShoppingBag, UserCircle, Users, LogOut
 } from 'lucide-react'
+import { Star, Image } from 'lucide-react'
 
 const OwnerLayout = ({ children }) => {
   const pathname = usePathname()
@@ -40,6 +41,8 @@ const OwnerLayout = ({ children }) => {
     { href: '/owner/add-product', label: 'Add Product', icon: Plus, section: 'main' },
     { href: '/owner/customers', label: 'Customers', icon: Users, section: 'main' },
     { href: '/owner/custom-designs', label: 'Custom Designs', icon: Palette, section: 'main' },
+    { href: '/owner/reviews', label: 'Reviews', icon: Star, section: 'main' },
+    { href: '/owner/asset-controls', label: 'Asset Controls', icon: Image, section: 'main' },
     { href: '/owner/messages', label: 'Messages', icon: MessageSquare, section: 'system' },
     { href: '/owner/settings', label: 'Settings', icon: Settings, section: 'system' }
   ]), [])
@@ -61,6 +64,7 @@ const OwnerLayout = ({ children }) => {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-slate-900 font-sans selection:bg-indigo-100 selection:text-indigo-900">
+      {/* Floating Add button removed per user request */}
       {/* Mobile Backdrop */}
       {isMobileOpen && (
         <div
@@ -71,6 +75,16 @@ const OwnerLayout = ({ children }) => {
       )}
 
       <div className="flex min-h-screen w-full overflow-hidden">
+        {/* Floating collapse/expand toggle positioned just outside the sidebar (left edge of content) */}
+        <button
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          aria-expanded={isCollapsed}
+          title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          className="hidden lg:flex items-center justify-center fixed top-6 z-[9999] rounded-full bg-white border border-slate-200 shadow-sm w-9 h-9 text-slate-700 hover:bg-slate-50 transition-all"
+          style={{ left: isCollapsed ? '80px' : '280px' }}
+        >
+          <span className="text-base font-semibold select-none">{isCollapsed ? '>' : '<'}</span>
+        </button>
         {/* Sidebar */}
         <aside
           className={`fixed inset-y-0 left-0 z-50 flex h-screen flex-col overflow-y-auto bg-white/70 backdrop-blur-xl border-r border-slate-200/60 shadow-[4px_0_24px_rgba(0,0,0,0.02)] transition-all duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] ${isCollapsed ? 'w-20' : 'w-[280px]'} ${isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
@@ -86,12 +100,7 @@ const OwnerLayout = ({ children }) => {
                 <p className="text-[11px] font-medium text-slate-500 uppercase tracking-widest truncate">Admin Portal</p>
               </div>
             )}
-            <button
-              onClick={() => setIsCollapsed(!isCollapsed)}
-              className="hidden lg:flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100/80 transition-colors ml-auto"
-            >
-              <Menu className="w-4 h-4" />
-            </button>
+            {/* Inline logo-area toggle removed; using floating left-edge toggle instead */}
           </div>
 
           {/* Navigation */}
@@ -108,7 +117,7 @@ const OwnerLayout = ({ children }) => {
                     <Link
                       key={item.href}
                       href={item.href}
-                      onClick={closeMobile}
+                      onClick={() => { closeMobile(); if (isCollapsed) setIsCollapsed(false); }}
                       className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${active
                           ? 'bg-indigo-50/80 text-indigo-700 shadow-sm shadow-indigo-100/50'
                           : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
@@ -134,7 +143,7 @@ const OwnerLayout = ({ children }) => {
                     <Link
                       key={item.href}
                       href={item.href}
-                      onClick={closeMobile}
+                      onClick={() => { closeMobile(); if (isCollapsed) setIsCollapsed(false); }}
                       className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${active
                           ? 'bg-indigo-50/80 text-indigo-700 shadow-sm shadow-indigo-100/50'
                           : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
@@ -189,6 +198,7 @@ const OwnerLayout = ({ children }) => {
               </div>
 
               <div className="flex items-center gap-3 sm:gap-4">
+                {/* Header inline toggle removed; using floating left-edge toggle instead */}
                 <div className="relative hidden md:block group">
                   <Search className="h-4 w-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 transition-colors group-focus-within:text-indigo-500" />
                   <input

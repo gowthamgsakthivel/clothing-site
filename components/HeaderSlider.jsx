@@ -1,36 +1,14 @@
+'use client';
+
 import React, { useState, useEffect } from "react";
 import { assets } from "@/assets/assets";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { DEFAULT_CAROUSEL_CONTROLS } from "@/lib/carouselDefaults";
 
-const HeaderSlider = () => {
+const HeaderSlider = ({ slides = [] }) => {
   const router = useRouter();
-  const sliderData = [
-    {
-      id: 1,
-      title: `Elevate Your Game - Puma T-Shirt Built for Comfort & Performance`,
-      offer: "Limited Time Offer 30% Off",
-      buttonText1: "Buy now",
-      buttonText2: "Find more",
-      imgSrc: assets.header_puma_tshirt,
-    },
-    {
-      id: 2,
-      title: "Power Your Moves - Nike Shorts for Every Game!",
-      offer: "Hurry up only few lefts!",
-      buttonText1: "Shop Now",
-      buttonText2: "Explore Deals",
-      imgSrc: assets.header_nike_shorts,
-    },
-    {
-      id: 3,
-      title: "Power Meets Elegance - Apple MacBook Pro is Here for you!",
-      offer: "Exclusive Deal 40% Off",
-      buttonText1: "Order Now",
-      buttonText2: "Learn More",
-      imgSrc: assets.header_adidas_jacket,
-    },
-  ];
+  const sliderData = slides.length ? slides : DEFAULT_CAROUSEL_CONTROLS.home;
 
   const [currentSlide, setCurrentSlide] = useState(0);
 

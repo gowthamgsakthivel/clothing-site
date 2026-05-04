@@ -9,6 +9,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import SEOMetadata from '@/components/SEOMetadata';
 import { useAppContext } from '@/context/AppContext';
+import { DEFAULT_CAROUSEL_CONTROLS } from '@/lib/carouselDefaults';
 
 const metadata = {
   title: 'Devotional | Sparrow Sports',
@@ -21,44 +22,10 @@ const metadata = {
   },
 };
 
-const DEVOTIONAL_CAROUSEL = [
-  {
-    id: 1,
-    image: '/assets/img/upper.png',
-    title: 'Devotional Collection',
-    subtitle: 'Wear Your Faith',
-    description: 'Thoughtfully designed apparel that blends comfort, meaning, and everyday style.',
-    badge: '✨ NEW ARRIVALS',
-  },
-  {
-    id: 2,
-    image: '/assets/img/cricket_jersey.png',
-    title: 'Comfort Meets Purpose',
-    subtitle: 'Made for Daily Wear',
-    description: 'Premium fabrics and calm tones designed for all-day comfort and expression.',
-    badge: '🙏 BESTSELLER',
-  },
-  {
-    id: 3,
-    image: '/assets/img/running.png',
-    title: 'Faith Inspired Styles',
-    subtitle: 'Simple. Elegant. Meaningful.',
-    description: 'Curated pieces that keep the message clear while staying modern and wearable.',
-    badge: '🌿 EXCLUSIVE',
-  },
-  {
-    id: 4,
-    image: '/assets/img/basketball_jersey.png',
-    title: 'Soft Everyday Essentials',
-    subtitle: 'Built Around Comfort',
-    description: 'A refined devotional range with versatile designs you can wear anywhere.',
-    badge: '💫 PREMIUM',
-  },
-];
-
 const DevotionalPage = () => {
   const { addToCart, router } = useAppContext();
   const [carouselIndex, setCarouselIndex] = useState(0);
+  const [carouselSlides, setCarouselSlides] = useState(DEFAULT_CAROUSEL_CONTROLS.devotional);
   const [products, setProducts] = useState([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
 
@@ -101,10 +68,32 @@ const DevotionalPage = () => {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setCarouselIndex((prev) => (prev + 1) % DEVOTIONAL_CAROUSEL.length);
+      setCarouselIndex((prev) => (prev + 1) % carouselSlides.length);
     }, 5000);
 
     return () => clearInterval(interval);
+  }, [carouselSlides.length]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadCarousel = async () => {
+      try {
+        const response = await fetch('/api/carousel-controls?page=devotional');
+        const data = await response.json();
+        if (isMounted && data?.success && data?.slides?.length) {
+          setCarouselSlides(data.slides);
+        }
+      } catch (error) {
+        if (isMounted) setCarouselSlides(DEFAULT_CAROUSEL_CONTROLS.devotional);
+      }
+    };
+
+    loadCarousel();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -139,7 +128,7 @@ const DevotionalPage = () => {
       <main className="min-h-screen bg-white">
         <section className="relative w-full overflow-hidden bg-slate-900">
           <div className="relative w-full h-80 md:h-[500px] lg:h-[600px]">
-            {DEVOTIONAL_CAROUSEL.map((slide, index) => (
+            {carouselSlides.map((slide, index) => (
               <div
                 key={slide.id}
                 className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
@@ -187,14 +176,14 @@ const DevotionalPage = () => {
           </div>
 
           <button
-            onClick={() => setCarouselIndex((prev) => (prev - 1 + DEVOTIONAL_CAROUSEL.length) % DEVOTIONAL_CAROUSEL.length)}
+            onClick={() => setCarouselIndex((prev) => (prev - 1 + carouselSlides.length) % carouselSlides.length)}
             className="absolute left-4 md:left-8 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 text-white p-2 md:p-3 rounded-full transition-all duration-200 z-20 backdrop-blur-sm group"
             aria-label="Previous slide"
           >
             <ChevronLeft size={28} className="group-hover:scale-110 transition" />
           </button>
           <button
-            onClick={() => setCarouselIndex((prev) => (prev + 1) % DEVOTIONAL_CAROUSEL.length)}
+            onClick={() => setCarouselIndex((prev) => (prev + 1) % carouselSlides.length)}
             className="absolute right-4 md:right-8 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 text-white p-2 md:p-3 rounded-full transition-all duration-200 z-20 backdrop-blur-sm group"
             aria-label="Next slide"
           >
@@ -202,7 +191,7 @@ const DevotionalPage = () => {
           </button>
 
           <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-20">
-            {DEVOTIONAL_CAROUSEL.map((_, index) => (
+            {carouselSlides.map((_, index) => (
               <button
                 key={index}
                 onClick={() => setCarouselIndex(index)}
@@ -217,7 +206,7 @@ const DevotionalPage = () => {
           </div>
 
           <div className="absolute top-6 right-6 bg-black/50 text-white px-4 py-2 rounded-full text-sm font-bold backdrop-blur-sm z-20">
-            {carouselIndex + 1} / {DEVOTIONAL_CAROUSEL.length}
+            {carouselIndex + 1} / {carouselSlides.length}
           </div>
         </section>
 

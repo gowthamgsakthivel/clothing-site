@@ -19,7 +19,7 @@ const orderItemSchema = new mongoose.Schema(
 
 const orderSchema = new mongoose.Schema(
   {
-    orderCode: { type: String, unique: true, sparse: true, default: null },
+    orderCode: { type: String, default: null },
     userId: { type: String, required: true },
     status: { type: String, default: 'placed' },
     items: { type: [orderItemSchema], default: [] },
@@ -36,9 +36,16 @@ const orderSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-orderSchema.index({ status: 1, createdAt: -1 });
-orderSchema.index({ orderCode: 1 }, { unique: true, sparse: true });
+let OrderV2;
 
-const OrderV2 = mongoose.models.OrderV2 || mongoose.model('OrderV2', orderSchema, 'orders_v2');
+if (mongoose.models.OrderV2) {
+  OrderV2 = mongoose.models.OrderV2;
+} else {
+  // Define indexes only once during initial model registration
+  orderSchema.index({ status: 1, createdAt: -1 });
+  orderSchema.index({ orderCode: 1 }, { unique: true, sparse: true });
+  
+  OrderV2 = mongoose.model('OrderV2', orderSchema, 'orders_v2');
+}
 
 export default OrderV2;
