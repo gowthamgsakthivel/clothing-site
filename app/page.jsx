@@ -28,8 +28,25 @@ async function fetchCarouselControls(page) {
   }
 }
 
+async function fetchFeaturedProducts() {
+  try {
+    const headerList = await headers();
+    const host = headerList.get('host');
+    const protocol = headerList.get('x-forwarded-proto') || 'http';
+    const baseUrl = host ? `${protocol}://${host}` : process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+    const res = await fetch(`${baseUrl}/api/featured-products`, { cache: 'no-store' });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data?.featuredProducts || [];
+  } catch (e) {
+    console.error('fetchFeaturedProducts error', e);
+    return [];
+  }
+}
+
 const Home = async () => {
   const homeSlides = await fetchCarouselControls('home');
+  const featuredProducts = await fetchFeaturedProducts();
 
   return (
     <>
@@ -44,7 +61,7 @@ const Home = async () => {
         <HeaderSlider slides={homeSlides} />
         <HomeProducts />
         <RecentlyViewed />
-        <FeaturedProduct />
+        <FeaturedProduct products={featuredProducts} />
         <Banner />
         <NewsLetter />
       </div>

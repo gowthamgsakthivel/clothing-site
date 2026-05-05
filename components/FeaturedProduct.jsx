@@ -23,12 +23,16 @@ const FeaturedProduct = ({ products = [] }) => {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-8 mt-8 md:mt-12 px-4 sm:px-0">
         {items.map((p) => (
-          <div key={p.id} className="relative group">
-            {p.imgSrc ? (
-              <Image src={p.imgSrc} alt={p.name} className="group-hover:brightness-75 transition duration-300 w-full h-auto object-cover" />
-            ) : (
-              <img src={p.image || assets.redirect_icon} alt={p.name} className="group-hover:brightness-75 transition duration-300 w-full h-auto object-cover" />
-            )}
+          <div key={p._id || p.id} className="relative group">
+            <div className="relative aspect-[10/7] overflow-hidden rounded-none">
+              <Image
+                src={p.imgSrc || p.image || assets.redirect_icon}
+                alt={p.name}
+                fill
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                className="object-cover group-hover:brightness-75 transition duration-300"
+              />
+            </div>
             <div className="group-hover:-translate-y-4 transition duration-300 absolute bottom-8 left-8 text-white space-y-2">
               <p className="font-medium text-xl lg:text-2xl">{p.name}</p>
               <p className="text-sm lg:text-base leading-5 max-w-60">{p.description}</p>
