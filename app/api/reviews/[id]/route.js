@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import connectDB from "@/config/db";
 import Review from "@/models/Review";
+import { refreshProductRatingStats } from "@/lib/reviewRatings";
 
 // PUT - Update review
 export async function PUT(req, { params }) {
@@ -39,11 +40,13 @@ export async function PUT(req, { params }) {
         review.updatedAt = new Date();
 
         await review.save();
+        const ratingStats = await refreshProductRatingStats(review.productId);
 
         return NextResponse.json({
             success: true,
             message: "Review updated successfully",
-            review
+            review,
+            ratingStats
         });
 
     } catch (error) {
@@ -81,9 +84,12 @@ export async function DELETE(req, { params }) {
             );
         }
 
+        const ratingStats = await refreshProductRatingStats(result.productId);
+
         return NextResponse.json({
             success: true,
-            message: "Review deleted successfully"
+            message: "Review deleted successfully",
+            ratingStats
         });
 
     } catch (error) {

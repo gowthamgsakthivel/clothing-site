@@ -16,6 +16,7 @@ const ProductReviews = ({ productId }) => {
     const [editingReview, setEditingReview] = useState(null);
     const [sortBy, setSortBy] = useState('recent');
     const [userReview, setUserReview] = useState(null);
+    const [reviewAccess, setReviewAccess] = useState(null);
     const [currentReviewIndex, setCurrentReviewIndex] = useState(0);
     const carouselRef = useRef(null);
 
@@ -25,11 +26,14 @@ const ProductReviews = ({ productId }) => {
             if (data.success) {
                 setReviews(data.reviews);
                 setStats(data.stats);
+                setReviewAccess(data.reviewAccess || null);
 
                 // Find user's review if exists
                 if (user) {
                     const myReview = data.reviews.find(r => r.userId === user.id);
                     setUserReview(myReview);
+                } else {
+                    setUserReview(null);
                 }
             }
         } catch (error) {
@@ -168,20 +172,28 @@ const ProductReviews = ({ productId }) => {
                         </div>
                     </div>
                 ) : (
-                    <div className="text-center py-8">
-                        <p className="text-gray-600 mb-4">No reviews yet</p>
-                        <p className="text-sm text-gray-500">Be the first to review this product!</p>
+                    <div className="text-center py-8 px-4 rounded-xl bg-gray-50 border border-dashed border-gray-200">
+                        <p className="text-gray-700 font-semibold mb-2">⭐ No reviews yet</p>
+                        <p className="text-sm text-gray-500">Buy this product to be the first reviewer</p>
                     </div>
                 )}
 
                 {/* Write Review Button */}
                 {user && !userReview && !showReviewForm && (
-                    <button
-                        onClick={() => setShowReviewForm(true)}
-                        className="mt-6 w-full md:w-auto px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition font-medium"
-                    >
-                        Write a Review
-                    </button>
+                    reviewAccess?.canReview ? (
+                        <button
+                            onClick={() => setShowReviewForm(true)}
+                            className="mt-6 w-full md:w-auto px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition font-medium"
+                        >
+                            Write a Review
+                        </button>
+                    ) : (
+                        <div className="mt-6 p-4 bg-amber-50 rounded-lg border border-amber-200">
+                            <p className="text-sm text-amber-800">
+                                {reviewAccess?.message || 'Only verified buyers with a delivered order can review this product.'}
+                            </p>
+                        </div>
+                    )
                 )}
 
                 {!user && (
@@ -198,6 +210,7 @@ const ProductReviews = ({ productId }) => {
                 <div>
                     <ReviewForm
                         productId={productId}
+                        orderId={reviewAccess?.orderId || null}
                         onReviewSubmitted={handleReviewSubmitted}
                         existingReview={editingReview}
                     />

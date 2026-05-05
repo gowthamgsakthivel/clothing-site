@@ -9,6 +9,9 @@ const ProductCard = ({ product }) => {
     const { currency, router, favorites, addFavorite, removeFavorite, user } = useAppContext();
     const summary = getProductSummary(product);
     const isFavorite = favorites?.includes(summary?._id);
+    const ratingValue = summary?.avgRating || 0;
+    const ratingCount = summary?.ratingCount || 0;
+    const filledStars = Math.round(ratingValue);
 
     const handleFavoriteClick = (e) => {
         e.stopPropagation();
@@ -70,23 +73,29 @@ const ProductCard = ({ product }) => {
 
             <p className="text-sm md:text-base font-semibold text-gray-900 pt-3 w-full truncate">{summary.name}</p>
             <p className="w-full text-[13px] text-gray-500 md:block hidden truncate">{summary.description}</p>
-            <div className="flex items-center gap-1.5 mt-0.5">
-                <p className="text-xs">{4.5}</p>
-                <div className="flex items-center gap-0.5">
-                    {Array.from({ length: 5 }).map((_, index) => (
-                        <Image
-                            key={index}
-                            className="h-3 w-3"
-                            src={
-                                index < Math.floor(4)
-                                    ? assets.star_icon
-                                    : assets.star_dull_icon
-                            }
-                            alt="star_icon"
-                        />
-                    ))}
+            {ratingCount > 0 && (
+                <div className="flex items-center gap-1.5 mt-0.5">
+                    <p className="text-xs font-medium text-gray-700">
+                        {ratingValue.toFixed(1)}
+                        <span className="text-gray-400"> · </span>
+                        <span className="text-gray-500">{ratingCount} reviews</span>
+                    </p>
+                    <div className="flex items-center gap-0.5">
+                        {Array.from({ length: 5 }).map((_, index) => (
+                            <Image
+                                key={index}
+                                className="h-3 w-3"
+                                src={
+                                    index < filledStars
+                                        ? assets.star_icon
+                                        : assets.star_dull_icon
+                                }
+                                alt="star_icon"
+                            />
+                        ))}
+                    </div>
                 </div>
-            </div>
+            )}
 
             <div className="flex items-center justify-between w-full mt-2">
                 <p className="text-base font-bold text-gray-900">{currency}{summary.offerPrice}</p>

@@ -2,20 +2,20 @@ import { NextResponse } from "next/server";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import connectDB from "@/config/db";
 import Review from "@/models/Review";
-import OrderV2 from "@/models/v2/Order";
-import ProductVariant from "@/models/v2/ProductVariant";
+import { getDeliveredPurchaseOrder, refreshProductRatingStats } from "@/lib/reviewRatings";
 
 // GET - Fetch reviews for a product
 export async function GET(req) {
     try {
         await connectDB();
+        const { userId: authUserId } = await auth();
 
         const { searchParams } = new URL(req.url);
         const productId = searchParams.get('productId');
-        const userId = searchParams.get('userId');
+        const reviewUserId = searchParams.get('userId');
         const sort = searchParams.get('sort') || 'recent'; // recent, helpful, rating-high, rating-low
 
-        if (!productId && !userId) {
+        if (!productId && !reviewUserId) {
             return NextResponse.json(
                 { success: false, message: "Product ID or User ID required" },
                 { status: 400 }
@@ -24,7 +24,7 @@ export async function GET(req) {
 
         let query = {};
         if (productId) query.productId = productId;
-        if (userId) query.userId = userId;
+        if (reviewUserId) query.userId = reviewUserId;
 
         // Sorting logic
         let sortQuery = { createdAt: -1 }; // Default: newest first
@@ -60,10 +60,37 @@ export async function GET(req) {
             };
         }
 
+        let reviewAccess = null;
+        if (productId && authUserId) {
+            const existingReview = await Review.findOne({ productId, userId: authUserId }).lean();
+            if (existingReview) {
+                reviewAccess = {
+                    canReview: false,
+                    reason: 'already_reviewed',
+                    message: 'You have already reviewed this product.'
+                };
+            } else {
+                const purchaseOrder = await getDeliveredPurchaseOrder({ userId: authUserId, productId });
+                reviewAccess = purchaseOrder
+                    ? {
+                        canReview: true,
+                        reason: 'eligible',
+                        message: null,
+                        orderId: purchaseOrder._id
+                    }
+                    : {
+                        canReview: false,
+                        reason: 'purchase_required',
+                        message: 'Only verified buyers with a delivered order can review this product.'
+                    };
+            }
+        }
+
         return NextResponse.json({
             success: true,
             reviews,
-            stats
+            stats,
+            reviewAccess
         });
 
     } catch (error) {
@@ -109,6 +136,12 @@ export async function POST(req) {
             );
         }
 
+        const purchaseOrder = await getDeliveredPurchaseOrder({ userId, productId, orderId });
+        const hasPurchased = Boolean(purchaseOrder);
+        if (!hasPurchased) {
+            throw new Error('Only buyers can review');
+        }
+
         // Check if user already reviewed this product
         const existingReview = await Review.findOne({ productId, userId });
         if (existingReview) {
@@ -116,28 +149,6 @@ export async function POST(req) {
                 { success: false, message: "You have already reviewed this product" },
                 { status: 400 }
             );
-        }
-
-        // Check if this is a verified purchase
-        let verifiedPurchase = false;
-        if (orderId) {
-            const order = await OrderV2.findOne({
-                _id: orderId,
-                userId
-            }).lean();
-            const normalizedStatus = (order?.status || '').toString().toLowerCase();
-            verifiedPurchase = !!order && normalizedStatus === 'delivered';
-        } else {
-            const variants = await ProductVariant.find({ productId }, '_id').lean();
-            const variantIds = variants.map((variant) => variant._id).filter(Boolean);
-            if (variantIds.length) {
-                const orders = await OrderV2.find({
-                    userId,
-                    status: { $in: ['delivered', 'Delivered'] },
-                    'items.variantId': { $in: variantIds }
-                }).lean();
-                verifiedPurchase = orders.length > 0;
-            }
         }
 
         const newReview = new Review({
@@ -149,22 +160,30 @@ export async function POST(req) {
             title,
             comment,
             images: images || [],
-            verifiedPurchase,
-            orderId: orderId || null,
+            verifiedPurchase: true,
+            orderId: orderId || purchaseOrder._id || null,
             size,
             color
         });
 
         await newReview.save();
+        const ratingStats = await refreshProductRatingStats(productId);
 
         return NextResponse.json({
             success: true,
             message: "Review submitted successfully",
-            review: newReview
+            review: newReview,
+            ratingStats
         });
 
     } catch (error) {
         console.error("Error creating review:", error);
+        if (error.message === 'Only buyers can review') {
+            return NextResponse.json(
+                { success: false, message: 'Only verified buyers with a delivered order can submit reviews for this product.' },
+                { status: 403 }
+            );
+        }
         return NextResponse.json(
             { success: false, message: "Failed to submit review", error: error.message },
             { status: 500 }

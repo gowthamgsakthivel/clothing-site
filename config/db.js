@@ -15,6 +15,7 @@ async function connectDB() {
         if (!cached.promise) {
             const opts = {
                 bufferCommands: false,
+                autoIndex: false, // Prevent duplicate index warnings; indexes are defined explicitly in schemas
             };
 
             // Check if MongoDB URI is defined

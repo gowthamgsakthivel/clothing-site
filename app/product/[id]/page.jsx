@@ -223,6 +223,9 @@ const Product = () => {
         () => (productData ? getProductSummary(productData) : null),
         [productData]
     );
+    const displayRating = summary?.avgRating || 0;
+    const displayRatingCount = summary?.ratingCount || 0;
+    const filledStars = Math.round(displayRating);
     const colorMatrix = useMemo(
         () => buildColorSizeMatrix(visibleVariants, productData?.inventoryByVariantId || {}),
         [visibleVariants, productData]
@@ -322,7 +325,9 @@ const Product = () => {
                 new_price: summary.offerPrice,
                 price: summary.price,
                 stock: summary.stock,
-                ratings: productDoc.ratings || []
+                ratings: displayRatingCount > 0
+                    ? Array.from({ length: displayRatingCount }, () => ({ stars: displayRating }))
+                    : []
             }}
         />
         <Navbar />
@@ -438,16 +443,23 @@ const Product = () => {
                                     </span>
                                 )}
                             </div>
-                            <div className="flex items-center gap-2">
-                                <div className="flex items-center gap-0.5">
-                                    <Image className="h-3.5 w-3.5" src={assets.star_icon} alt="star" />
-                                    <Image className="h-3.5 w-3.5" src={assets.star_icon} alt="star" />
-                                    <Image className="h-3.5 w-3.5" src={assets.star_icon} alt="star" />
-                                    <Image className="h-3.5 w-3.5" src={assets.star_icon} alt="star" />
-                                    <Image className="h-3.5 w-3.5 opacity-40" src={assets.star_dull_icon} alt="star" />
+                            {displayRatingCount > 0 && (
+                                <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-0.5">
+                                        {Array.from({ length: 5 }).map((_, index) => (
+                                            <Image
+                                                key={index}
+                                                className="h-3.5 w-3.5"
+                                                src={index < filledStars ? assets.star_icon : assets.star_dull_icon}
+                                                alt="star"
+                                            />
+                                        ))}
+                                    </div>
+                                    <p className="text-xs font-medium text-gray-500 underline">
+                                        ({displayRating.toFixed(1)}) · {displayRatingCount}
+                                    </p>
                                 </div>
-                                <p className="text-xs font-medium text-gray-500 underline">(4.5)</p>
-                            </div>
+                            )}
                         </div>
                     </div>
 

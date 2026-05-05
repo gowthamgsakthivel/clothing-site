@@ -1,44 +1,45 @@
 'use client';
 import React from "react";
-import { assets } from "@/assets/assets";
 import Image from "next/image";
+import { assets } from "@/assets/assets";
 import { useAppContext } from "@/context/AppContext";
 
-const Banner = () => {
+const Banner = ({ banners = [] }) => {
   const { router } = useAppContext();
+
+  const active = (banners || []).filter(b => b && b.active).sort((a, b) => (a.order || 0) - (b.order || 0));
+  const first = active[0] || null;
+
+  if (!first?.image) {
+    return (
+      <div className="my-16 rounded-xl border border-dashed border-slate-300 bg-white/70 px-6 py-12 text-center text-slate-500">
+        No homepage banner is configured yet.
+      </div>
+    );
+  }
+
+  const RenderImage = ({ src, alt, className }) => (
+    <div className={`relative ${className}`}>
+      <Image src={src} alt={alt} fill sizes="(max-width: 768px) 100vw, 288px" className="object-cover" />
+    </div>
+  );
+
+  const title = first?.title || 'Design Your Custom Sportswear';
+  const link = first?.link || '/custom-design';
 
   return (
     <div className="flex flex-col md:flex-row items-center justify-between md:pl-20 py-14 md:py-0 bg-[#E6E9F2] my-16 rounded-xl overflow-hidden">
-      <Image
-        className="max-w-72"
-        src={assets.header_adidas_jacket}
-        alt="header_adidas_jacket"
-      />
+      <a href={link} className="block">
+        <RenderImage className="w-full max-w-72 aspect-[3/2]" src={first.image} alt="banner_left" />
+      </a>
       <div className="flex flex-col items-center justify-center text-center space-y-4 px-4 md:px-0">
-        <h2 className="text-2xl md:text-3xl font-semibold max-w-[290px]">
-          Design Your Custom Sportswear
-        </h2>
-        <p className="max-w-[343px] font-medium text-gray-800/60">
-          Upload your design, get quotes, and make it yours!
-        </p>
-        <button
-          onClick={() => router.push('/custom-design')}
-          className="group flex items-center justify-center gap-1 px-12 py-2.5 bg-orange-600 rounded text-white hover:bg-orange-700"
-        >
+        <h2 className="text-2xl md:text-3xl font-semibold max-w-[290px]">{title}</h2>
+        <p className="max-w-[343px] font-medium text-gray-800/60">Upload your design, get quotes, and make it yours!</p>
+        <button onClick={() => router.push('/custom-design')} className="group flex items-center justify-center gap-1 px-12 py-2.5 bg-orange-600 rounded text-white hover:bg-orange-700">
           Design Now
-          <Image className="group-hover:translate-x-1 transition" src={assets.arrow_icon_white} alt="arrow_icon_white" />
+          <Image className="group-hover:translate-x-1 transition" src={assets.arrow_icon_white} alt="arrow_icon_white" width={18} height={18} />
         </button>
       </div>
-      <Image
-        className="hidden md:block max-w-72"
-        src={assets.header_nike_shorts}
-        alt="header_nike_shorts"
-      />
-      <Image
-        className="md:hidden"
-        src={assets.header_nike_shorts}
-        alt="header_nike_shorts"
-      />
     </div>
   );
 };
