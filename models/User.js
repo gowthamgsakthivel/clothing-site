@@ -5,6 +5,7 @@ const userSchema = new mongoose.Schema({
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     imageUrl: { type: String, required: true },
+    publicMetadata: { type: Object, default: {} },
     cartItems: { type: Object, default: {} },
     favorites: { type: [String], default: [] }, // Array of product IDs
     customDesigns: { type: Object, default: {} }, // Store custom design details
