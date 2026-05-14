@@ -47,6 +47,7 @@ function AllProductsContent() {
     const searchParams = useSearchParams();
     const searchQuery = searchParams.get("search") || "";
     const pageParam = Number.parseInt(searchParams.get("page") || "1", 10);
+    const genderParam = searchParams.get("gender") || "All";
 
     const fetchProducts = useCallback(async (page = 1) => {
         setLoading(true);
@@ -85,8 +86,9 @@ function AllProductsContent() {
     useEffect(() => {
         const nextPage = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1;
         setSearchTerm(searchQuery);
+        setSelectedGender(genderParam);
         fetchProducts(nextPage);
-    }, [fetchProducts, pageParam, searchQuery]);
+    }, [fetchProducts, pageParam, searchQuery, genderParam]);
 
     useEffect(() => {
         return () => {

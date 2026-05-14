@@ -42,7 +42,7 @@ const OwnerLayout = ({ children }) => {
     { href: '/owner/customers', label: 'Customers', icon: Users, section: 'main' },
     { href: '/owner/custom-designs', label: 'Custom Designs', icon: Palette, section: 'main' },
     { href: '/owner/reviews', label: 'Reviews', icon: Star, section: 'main' },
-    { href: '/owner/asset-controls', label: 'Asset Controls', icon: Image, section: 'main' },
+    { href: '/owner/featured-products', label: 'Featured Products', icon: Image, section: 'main' },
     { href: '/owner/messages', label: 'Messages', icon: MessageSquare, section: 'system' },
     { href: '/owner/settings', label: 'Settings', icon: Settings, section: 'system' }
   ]), [])

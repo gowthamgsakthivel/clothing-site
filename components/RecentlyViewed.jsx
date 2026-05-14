@@ -7,6 +7,17 @@ import ProductCard from './ProductCard';
 const RecentlyViewed = ({ currentProductId = null, maxItems = 10 }) => {
     const { products } = useAppContext();
     const [recentProducts, setRecentProducts] = useState([]);
+    const [isMobile, setIsMobile] = useState(false);
+
+    // Detect if mobile on mount and resize
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth < 768);
+        };
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
 
     const loadRecentlyViewed = useCallback(() => {
         try {
@@ -16,19 +27,20 @@ const RecentlyViewed = ({ currentProductId = null, maxItems = 10 }) => {
             }
 
             const productIds = JSON.parse(stored);
+            const itemsToShow = isMobile ? 6 : 5;
 
             // Filter out current product and map to actual product objects
             const recentProductsList = productIds
                 .filter(id => id !== currentProductId)
                 .map(id => products.find(p => p?.product?._id === id))
                 .filter(p => p !== undefined)
-                .slice(0, maxItems);
+                .slice(0, itemsToShow);
 
             setRecentProducts(recentProductsList);
         } catch (error) {
             console.error('Error loading recently viewed:', error);
         }
-    }, [currentProductId, maxItems, products]);
+    }, [currentProductId, maxItems, products, isMobile]);
 
     useEffect(() => {
         loadRecentlyViewed();
