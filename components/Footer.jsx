@@ -1,10 +1,46 @@
-import React from "react";
+"use client";
+
+import React, { useState } from "react";
+import { useUser } from "@clerk/nextjs";
 import Image from "next/image";
 import Link from "next/link";
 import { assets } from "@/assets/assets";
 import { Facebook, Instagram, Twitter } from "lucide-react";
+import axios from "axios";
+import toast from "react-hot-toast";
 
 const Footer = () => {
+  const { user, isLoaded } = useUser();
+  const [email, setEmail] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const signedInEmail = user?.primaryEmailAddress?.emailAddress || "";
+  const canAutoSubscribe = Boolean(signedInEmail);
+
+  const handleNewsletterSubmit = async (event) => {
+    event.preventDefault();
+
+    if (!canAutoSubscribe && !email.trim()) {
+      toast.error('Please enter your email');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const { data } = await axios.post('/api/newsletter', {
+        ...(canAutoSubscribe ? {} : { email }),
+        source: 'footer'
+      });
+
+      toast.success(data.message || 'Subscribed successfully');
+      setEmail("");
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to subscribe. Please try again later.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <footer className="bg-gray-50 text-gray-700">
       <div className="w-full px-4 sm:px-6 lg:px-8 py-14">
@@ -73,24 +109,50 @@ const Footer = () => {
             {/* Newsletter */}
             <div className="col-span-2 md:col-span-1">
               <h4 className="text-gray-900 font-bold text-sm mb-5 uppercase tracking-wide">Newsletter</h4>
-              <p className="text-sm text-gray-600 mb-4">
-                Subscribe for exclusive deals
-              </p>
-              <form className="flex flex-col gap-2.5" aria-label="Newsletter">
-                <label className="sr-only" htmlFor="footer-email">Email</label>
-                <input
-                  id="footer-email"
-                  type="email"
-                  placeholder="Enter your email"
-                  className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500 transition"
-                />
-                <button
-                  type="submit"
-                  className="bg-orange-600 text-white px-4 py-3 rounded-lg text-sm font-bold hover:bg-orange-700 transition"
-                >
-                  Subscribe
-                </button>
-              </form>
+              {!isLoaded ? null : (
+                <>
+                  <p className="text-sm text-gray-600 mb-4">
+                    {canAutoSubscribe
+                      ? `Get early access and updates at ${signedInEmail}.`
+                      : 'Never miss an update. Subscribe for early access to new arrivals.'}
+                  </p>
+                <form className="flex flex-col gap-2.5" aria-label="Newsletter" onSubmit={handleNewsletterSubmit}>
+                  {canAutoSubscribe ? (
+                    <>
+                      <div className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-lg text-sm text-gray-900">
+                        {signedInEmail}
+                      </div>
+                      <button
+                        type="submit"
+                        disabled={isSubmitting}
+                        className="bg-orange-600 text-white px-4 py-3 rounded-lg text-sm font-bold hover:bg-orange-700 transition disabled:opacity-70 disabled:cursor-not-allowed"
+                      >
+                        {isSubmitting ? 'Subscribing...' : 'Subscribe'}
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <label className="sr-only" htmlFor="footer-email">Email</label>
+                      <input
+                        id="footer-email"
+                        type="email"
+                        placeholder="Enter your email"
+                        value={email}
+                        onChange={(event) => setEmail(event.target.value)}
+                        className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-orange-500 transition"
+                      />
+                      <button
+                        type="submit"
+                        disabled={isSubmitting}
+                        className="bg-orange-600 text-white px-4 py-3 rounded-lg text-sm font-bold hover:bg-orange-700 transition disabled:opacity-70 disabled:cursor-not-allowed"
+                      >
+                        {isSubmitting ? 'Subscribing...' : 'Subscribe'}
+                      </button>
+                    </>
+                  )}
+                </form>
+                </>
+              )}
             </div>
           </div>
 

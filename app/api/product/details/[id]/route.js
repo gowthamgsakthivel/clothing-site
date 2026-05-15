@@ -14,7 +14,12 @@ export async function GET(request, context) {
 
     await connectDB();
 
-    const product = await ProductV2.findById(id).lean();
+    // Try to find by ID first, then by slug
+    let product = await ProductV2.findById(id).lean();
+    if (!product) {
+      product = await ProductV2.findOne({ slug: id }).lean();
+    }
+    
     if (!product) {
       return NextResponse.json({ success: false, message: "Product not found" }, { status: 404 });
     }

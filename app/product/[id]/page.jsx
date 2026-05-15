@@ -219,6 +219,62 @@ const Product = () => {
         () => getVisibleVariants(productData?.variants || []),
         [productData]
     );
+
+    // Get similar products - filter by category and gender
+    const similarProducts = useMemo(() => {
+        if (!Array.isArray(products) || !productDoc) {
+            return [];
+        }
+
+        return products
+            .filter(item => {
+                const product = item?.product;
+                if (!product) return false;
+                // Exclude current product
+                if (product._id === productDoc._id) return false;
+                // Match category
+                if (product.category !== productDoc.category) return false;
+                // Match gender
+                if (product.gender !== productDoc.gender) return false;
+                return true;
+            })
+            .slice(0, 5);
+    }, [products, productDoc]);
+
+    // Fallback: load admin-selected featured products when no similar products
+    const [featuredFallback, setFeaturedFallback] = useState([]);
+
+    useEffect(() => {
+        let mounted = true;
+
+        const loadFallback = async () => {
+            try {
+                // Only fetch if there are no similar products
+                if (similarProducts.length > 0) return;
+
+                const { data } = await axios.get('/api/featured-products');
+                if (!mounted) return;
+
+                if (data?.success && Array.isArray(data.featuredProducts)) {
+                    // Exclude current product if present
+                    const list = data.featuredProducts.filter(p => p?.product?._id !== productDoc?._id).slice(0, 5);
+                    setFeaturedFallback(list);
+                } else if (data?.success && Array.isArray(data.featuredProductIds)) {
+                    // If API returns only ids, avoid using it here
+                    setFeaturedFallback([]);
+                } else {
+                    setFeaturedFallback([]);
+                }
+            } catch (err) {
+                console.error('Failed to load featured fallback:', err);
+                setFeaturedFallback([]);
+            }
+        };
+
+        loadFallback();
+
+        return () => { mounted = false; };
+    }, [similarProducts, productDoc]);
     const summary = useMemo(
         () => (productData ? getProductSummary(productData) : null),
         [productData]
@@ -771,13 +827,30 @@ const Product = () => {
 
             <div className="flex flex-col items-center">
                 <div className="flex flex-col items-center mb-4 mt-16">
-                    <p className="text-3xl font-medium">Featured <span className="font-medium text-orange-600">Products</span></p>
-                    <div className="w-28 h-0.5 bg-orange-600 mt-2"></div>
+                    {(() => {
+                        const showingSimilar = similarProducts.length > 0;
+                        const showingFeatured = !showingSimilar && featuredFallback.length > 0;
+                        const titleMain = showingFeatured ? 'Featured' : 'Similar';
+                        return (
+                            <>
+                                <p className="text-3xl font-medium">{titleMain} <span className="font-medium text-orange-600">Products</span></p>
+                                <div className="w-28 h-0.5 bg-orange-600 mt-2"></div>
+                            </>
+                        );
+                    })()}
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 mt-6 pb-14 w-full">
-                    {products.slice(0, 5).map((product, index) => (
-                        <ProductCard key={product?.product?._id || index} product={product} />
-                    ))}
+                        {similarProducts.length > 0 ? (
+                            similarProducts.map((product, index) => (
+                                <ProductCard key={product?.product?._id || index} product={product} />
+                            ))
+                        ) : featuredFallback.length > 0 ? (
+                            featuredFallback.map((product, index) => (
+                                <ProductCard key={product?.product?._id || index} product={product} />
+                            ))
+                        ) : (
+                            <p className="text-gray-500 text-center py-8">No similar products found</p>
+                        )}
                 </div>
                 <button className="px-8 py-2 mb-16 border rounded text-gray-500/70 hover:bg-slate-50/90 transition">
                     See more

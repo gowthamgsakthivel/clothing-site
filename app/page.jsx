@@ -3,7 +3,8 @@ import HeaderSlider from "@/components/HeaderSlider";
 import HomeProducts from "@/components/HomeProducts";
 import Banner from "@/components/Banner";
 import NewsLetter from "@/components/NewsLetter";
-import FeaturedProduct from "@/components/FeaturedProduct";
+import SeriesSpotlight from "@/components/SeriesSpotlight";
+import ShopByCategory from "@/components/ShopByCategory";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import SEOMetadata from "@/components/SEOMetadata";
@@ -60,9 +61,10 @@ const Home = async () => {
       <div className="px-4 sm:px-6 md:px-16 lg:px-32 pt-16 md:pt-16">
         <HeaderSlider slides={homeSlides} />
         <HomeProducts />
-        <RecentlyViewed />
-        <FeaturedProduct products={featuredProducts} />
+        <ShopByCategory />
+        <SeriesSpotlight products={featuredProducts} />
         <Banner />
+        <RecentlyViewed />
         <NewsLetter />
       </div>
       <Footer />

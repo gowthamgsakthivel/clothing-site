@@ -7,7 +7,10 @@ import { getProductSummary } from '@/lib/v2ProductView';
 
 const ProductCard = ({ product }) => {
     const { currency, router, favorites, addFavorite, removeFavorite, user } = useAppContext();
-    const summary = getProductSummary(product);
+    // Support both full bundle objects and precomputed summary objects
+    const summary = (product && (product.offerPrice !== undefined || product.images !== undefined || product.name))
+        ? product
+        : getProductSummary(product);
     const isFavorite = favorites?.includes(summary?._id);
     const ratingValue = summary?.avgRating || 0;
     const ratingCount = summary?.ratingCount || 0;
