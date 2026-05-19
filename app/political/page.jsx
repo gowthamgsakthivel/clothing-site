@@ -170,6 +170,7 @@ const PoliticalPage = () => {
                           Explore More
                         </button>
                       </div>
+                    </div>
                   </div>
                 </div>
               </div>

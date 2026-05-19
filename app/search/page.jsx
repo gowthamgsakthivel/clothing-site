@@ -35,6 +35,7 @@ const FilterSection = ({ title, options, selected, onChange }) => (
                             } else {
                                 onChange(selected.filter(val => val !== option.value));
                             }
+                        }}
                     />
                     <span className="text-sm text-gray-700">{option.label}</span>
                 </label>
@@ -45,6 +46,7 @@ const FilterSection = ({ title, options, selected, onChange }) => (
 
 const SearchResults = () => {
     const { searchProducts, loadingStates } = useAppContext();
+    const searchParams = useSearchParams();
 
     // Extract query from URL
     const query = searchParams.get('q') || '';
@@ -57,7 +59,7 @@ const SearchResults = () => {
     });
 
     // Filtering state
-                                        <div className="container mx-auto px-4 sm:px-6 md:px-8 lg:px-32 py-6 md:py-8">
+    const [categories, setCategories] = useState([]);
     const [selectedCategories, setSelectedCategories] = useState([]);
     const [genderFilter, setGenderFilter] = useState([]);
     const [sortOption, setSortOption] = useState('relevance');
