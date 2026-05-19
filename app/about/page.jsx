@@ -1,4 +1,3 @@
-import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Image from "next/image";
 import { Oswald, Sora } from "next/font/google";
@@ -37,7 +36,6 @@ export const metadata = {
 export default function AboutPage() {
     return (
         <>
-            <Navbar />
             <div className={`min-h-screen bg-[#f7f4ef] text-[#0b0f12] ${bodyFont.className}`}>
                 {/* Hero */}
                 <section className="relative overflow-hidden bg-[#0b0f12] text-white">

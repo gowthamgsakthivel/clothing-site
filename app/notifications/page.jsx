@@ -1,7 +1,6 @@
 "use client"
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '@/context/AppContext';
-import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import Image from 'next/image';
 import Loading from '@/components/Loading';
@@ -98,8 +97,7 @@ const Notifications = () => {
                 keywords="notifications, stock alerts, sparrow sports, athletic wear, out of stock"
                 url="/notifications"
             />
-            <Navbar />
-            <div className="px-4 sm:px-6 md:px-16 lg:px-32 pt-16 md:pt-20 pb-12 md:pb-16 min-h-[calc(100vh-200px)]">
+            <div className="px-4 sm:px-6 md:px-16 lg:px-32 pb-12 md:pb-16 min-h-[calc(100vh-200px)]">
                 <h1 className="text-3xl font-medium mb-8">My Stock Notifications</h1>
 
                 {loading ? (

@@ -1,7 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '@/context/AppContext';
-import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import Loading from '@/components/Loading';
 import toast from 'react-hot-toast';
@@ -73,10 +72,9 @@ const ReferralPage = () => {
     window.open(urls[platform], '_blank', 'width=600,height=400');
   };
 
-  if (!user) {
+    if (!user) {
     return (
       <>
-        <Navbar />
         <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
           <div className="text-center max-w-md">
             <svg className="w-20 h-20 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -100,7 +98,6 @@ const ReferralPage = () => {
   if (loading) {
     return (
       <>
-        <Navbar />
         <div className="min-h-screen flex items-center justify-center">
           <Loading />
         </div>
@@ -111,7 +108,6 @@ const ReferralPage = () => {
 
   return (
     <>
-      <Navbar />
       <div className="min-h-screen bg-gradient-to-br from-orange-50 to-white py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-6xl mx-auto">
           {/* Header */}

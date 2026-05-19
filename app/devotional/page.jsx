@@ -5,7 +5,6 @@ import Link from 'next/link';
 import Image from 'next/image';
 import toast from 'react-hot-toast';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import SEOMetadata from '@/components/SEOMetadata';
 import { useAppContext } from '@/context/AppContext';
@@ -124,10 +123,9 @@ const DevotionalPage = () => {
   return (
     <>
       <SEOMetadata {...metadata} />
-      <Navbar />
       <main className="min-h-screen bg-white">
         <section className="relative w-full overflow-hidden bg-slate-900">
-          <div className="relative w-full h-80 md:h-[500px] lg:h-[600px]">
+          <div className="relative w-full h-[420px] md:h-[460px] lg:h-[520px]">
             {carouselSlides.map((slide, index) => (
               <div
                 key={slide.id}
@@ -144,31 +142,35 @@ const DevotionalPage = () => {
                     className="object-cover"
                     sizes="100vw"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-r from-slate-950/80 via-slate-900/60 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-900/55 to-transparent md:bg-gradient-to-r md:from-slate-950/80 md:via-slate-900/60 md:to-transparent" />
                 </div>
 
-                <div className="absolute inset-0 flex flex-col justify-center px-4 sm:px-8 md:px-12 lg:px-16 max-w-2xl">
-                  <div className="mb-4 inline-block w-fit">
-                    <span className="inline-block px-4 py-1.5 bg-emerald-500/90 text-white text-xs sm:text-sm font-bold rounded-full backdrop-blur-sm">
-                      {slide.badge}
-                    </span>
-                  </div>
-                  <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-white mb-3 leading-tight">
-                    {slide.title}
-                  </h1>
-                  <p className="text-lg sm:text-xl text-emerald-300 font-bold mb-4">
-                    {slide.subtitle}
-                  </p>
-                  <p className="text-sm sm:text-base text-slate-200 mb-8 max-w-md leading-relaxed">
-                    {slide.description}
-                  </p>
-                  <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-                    <button className="px-6 sm:px-8 py-3 bg-emerald-600 text-white font-bold rounded-lg hover:bg-emerald-700 transition-all duration-300 hover:scale-105 active:scale-95 w-fit">
-                      Shop Now
-                    </button>
-                    <button className="px-6 sm:px-8 py-3 border-2 border-white text-white font-bold rounded-lg hover:bg-white hover:text-slate-900 transition-all duration-300 w-fit">
-                      Explore More
-                    </button>
+                <div className="absolute inset-0 flex items-end md:items-center">
+                  <div className="w-full px-3 pb-3 sm:px-6 sm:pb-6 md:max-w-2xl md:px-12 lg:px-16 md:pb-0">
+                    <div className="rounded-2xl border border-white/10 bg-black/10 p-3 shadow-[0_10px_30px_rgba(0,0,0,0.12)] backdrop-blur-[2px] md:rounded-none md:border-0 md:bg-transparent md:p-0 md:shadow-none md:backdrop-blur-0">
+                      <div className="mb-2 flex w-full justify-start">
+                        <span className="inline-flex items-center rounded-full bg-emerald-500/85 px-2.5 py-0.5 text-[9px] sm:text-sm font-bold uppercase tracking-[0.16em] leading-none text-white backdrop-blur-sm">
+                          {slide.badge}
+                        </span>
+                      </div>
+                      <h1 className="max-w-lg text-[clamp(1.5rem,7vw,3.5rem)] font-black text-amber-100 leading-[0.94] tracking-tight">
+                        {slide.title}
+                      </h1>
+                      <p className="mt-1.5 max-w-md text-xs font-semibold text-amber-50 sm:text-xl sm:text-amber-200">
+                        {slide.subtitle}
+                      </p>
+                      <p className="hidden sm:block mt-2 max-w-md text-sm leading-relaxed text-amber-50/85 sm:text-base">
+                        {slide.description}
+                      </p>
+                      <div className="mt-3 flex flex-wrap gap-2 sm:mt-4 sm:grid sm:grid-cols-2 sm:gap-4">
+                        <button className="flex-1 min-w-[120px] rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm shadow-emerald-600/20 transition-all duration-300 hover:bg-emerald-700 active:scale-95 sm:min-w-0 sm:rounded-xl sm:px-6 sm:py-3 sm:text-base">
+                          Shop Now
+                        </button>
+                        <button className="flex-1 min-w-[120px] rounded-lg border border-white/20 bg-white/6 px-4 py-2.5 text-sm font-bold text-white transition-all duration-300 hover:bg-white hover:text-slate-900 sm:min-w-0 sm:rounded-xl sm:px-6 sm:py-3 sm:text-base">
+                          Explore More
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -190,7 +192,7 @@ const DevotionalPage = () => {
             <ChevronRight size={28} className="group-hover:scale-110 transition" />
           </button>
 
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-20">
+          <div className="absolute bottom-2 sm:bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-20">
             {carouselSlides.map((_, index) => (
               <button
                 key={index}
@@ -205,7 +207,7 @@ const DevotionalPage = () => {
             ))}
           </div>
 
-          <div className="absolute top-6 right-6 bg-black/50 text-white px-4 py-2 rounded-full text-sm font-bold backdrop-blur-sm z-20">
+          <div className="absolute top-4 right-4 sm:top-6 sm:right-6 bg-black/50 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-[10px] sm:text-sm font-bold backdrop-blur-sm z-20">
             {carouselIndex + 1} / {carouselSlides.length}
           </div>
         </section>

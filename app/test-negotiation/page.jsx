@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import { useAppContext } from '@/context/AppContext';
-import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import SEOMetadata from '@/components/SEOMetadata';
 import NegotiationHistory from '@/components/NegotiationHistory';
@@ -70,8 +69,6 @@ const TestNegotiation = () => {
                 keywords="test, api, negotiation"
                 url="/test-negotiation"
             />
-            <Navbar />
-
             <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
                 <div className="max-w-3xl mx-auto">
                     <div className="bg-white shadow-md rounded-lg p-6">

@@ -16,7 +16,7 @@ export default function FiltersSidebar({
     products
 }) {
     return (
-        <aside className="hidden lg:block w-72 pt-12 pr-8 max-h-screen overflow-y-auto">
+        <aside className="hidden lg:block w-72 pt-4 pr-8 max-h-screen overflow-y-auto">
             <div className="bg-white rounded-xl shadow p-6 border border-gray-100 space-y-6">
                 <div className="flex items-center justify-between">
                     <h3 className="font-semibold text-lg text-gray-900">Filters</h3>

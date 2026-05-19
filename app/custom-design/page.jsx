@@ -1,6 +1,5 @@
 'use client';
 import React, { useState, useRef } from 'react';
-import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { useAppContext } from '@/context/AppContext';
 import Image from 'next/image';
@@ -324,9 +323,7 @@ const CustomDesignPage = () => {
                 keywords="custom t-shirt, personalized clothing, custom design, t-shirt printing, custom apparel"
                 url="/custom-design"
             />
-            <Navbar />
-
-            <div className="min-h-screen bg-gradient-to-br from-white to-gray-100 py-12 px-4 sm:px-6 lg:px-8 pt-16 md:pt-20">
+            <div className="min-h-screen bg-gradient-to-br from-white to-gray-100 py-8 px-4 sm:px-6 lg:px-8">
                 <div className="max-w-5xl mx-auto">
                     <div className="text-center mb-12">
                         <h1 className="text-4xl font-bold text-gray-900 mb-4">Design Your Custom T-Shirt</h1>

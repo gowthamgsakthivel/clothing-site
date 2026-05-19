@@ -16,6 +16,7 @@ const Navbar = () => {
   const pathname = usePathname();
   const [showSearch, setShowSearch] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [showCategories, setShowCategories] = useState(false);
   const { openSignIn } = useClerk();
 
   const isActive = (href) => {
@@ -25,8 +26,8 @@ const Navbar = () => {
 
   return (
     <>
-      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-gray-200/50 text-gray-700 bg-white/80 backdrop-blur-md pl-4">
-        <div className="flex w-full items-center px-3 sm:px-4 lg:px-6 py-3">
+      <nav className="fixed top-0 left-0 right-0 z-50 h-[var(--nav-height)] md:h-[var(--nav-height-md)] border-b border-gray-200/50 text-gray-700 bg-white/80 backdrop-blur-md pl-4">
+        <div className="flex h-full w-full items-center px-3 sm:px-4 lg:px-6">
           <Image
             className="cursor-pointer w-24 md:w-28 shrink-0 ml-4 md:ml-6"
             onClick={() => router.push('/')}
@@ -210,7 +211,9 @@ const Navbar = () => {
                   className={`flex items-center gap-3 px-6 py-3 transition ${isActive('/all-products') ? 'bg-orange-50 text-orange-700 border-l-4 border-orange-600' : 'hover:bg-gray-50'}`}
                   onClick={() => setShowMobileMenu(false)}
                 >
-                  <BoxIcon />
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2l9 4.5-9 4.5-9-4.5L12 2zm-8 7.5 8 4 8-4v8.5l-8 4-8-4V9.5z" />
+                  </svg>
                   <span className="font-medium">Products</span>
                 </Link>
                 <Link
@@ -218,7 +221,9 @@ const Navbar = () => {
                   className={`flex items-center gap-3 px-6 py-3 transition ${isActive('/sports') ? 'bg-orange-50 text-orange-700 border-l-4 border-orange-600' : 'hover:bg-gray-50'}`}
                   onClick={() => setShowMobileMenu(false)}
                 >
-                  <BoxIcon />
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2a10 10 0 100 20 10 10 0 000-20zm6.2 6.5-2.6 1.1-2.2-2.2 1.1-2.6a8 8 0 013.7 3.7zM12 4.5l-1.1 2.6-2.6 1.1 2.2 2.2-1.1 2.6 2.6-1.1 2.6 1.1-1.1-2.6 2.2-2.2-2.6-1.1L12 4.5zm-6.2 4a8 8 0 013.7-3.7l1.1 2.6-2.2 2.2-2.6-1.1zm1.1 9.1 2.6-1.1 2.2 2.2-1.1 2.6a8 8 0 01-3.7-3.7zm10.3 0a8 8 0 01-3.7 3.7l-1.1-2.6 2.2-2.2 2.6 1.1z" />
+                  </svg>
                   <span className="font-medium">Sports</span>
                 </Link>
                 <Link
@@ -226,7 +231,9 @@ const Navbar = () => {
                   className={`flex items-center gap-3 px-6 py-3 transition ${isActive('/devotional') ? 'bg-orange-50 text-orange-700 border-l-4 border-orange-600' : 'hover:bg-gray-50'}`}
                   onClick={() => setShowMobileMenu(false)}
                 >
-                  <BoxIcon />
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                  </svg>
                   <span className="font-medium">Devotional</span>
                 </Link>
                 <Link
@@ -234,7 +241,9 @@ const Navbar = () => {
                   className={`flex items-center gap-3 px-6 py-3 transition ${isActive('/political') ? 'bg-orange-50 text-orange-700 border-l-4 border-orange-600' : 'hover:bg-gray-50'}`}
                   onClick={() => setShowMobileMenu(false)}
                 >
-                  <BoxIcon />
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M4 3h16v2H4V3zm1 4h3v14H5V7zm5 0h4v14h-4V7zm6 0h3v14h-3V7z" />
+                  </svg>
                   <span className="font-medium">Political</span>
                 </Link>
                 <Link
@@ -315,7 +324,54 @@ const Navbar = () => {
 
       {/* Mobile bottom navigation bar - Glassmorphism */}
       <div className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md border-t border-gray-200/50 md:hidden z-40 pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
-        <div className="flex items-center justify-around py-2 px-1">
+        <div className="relative">
+          <div
+            className={`absolute bottom-full left-1/2 mb-3 w-[92%] max-w-sm -translate-x-1/2 rounded-3xl border border-white/60 bg-gradient-to-br from-white/95 via-orange-50/70 to-white/90 p-4 shadow-[0_12px_40px_rgba(15,23,42,0.18)] backdrop-blur-xl ring-1 ring-orange-100/60 transition-all duration-300 ease-out ${showCategories ? 'opacity-100 translate-y-0 scale-100 pointer-events-auto' : 'opacity-0 translate-y-2 scale-95 pointer-events-none'}`}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-widest text-orange-600/90">Collections</p>
+                <p className="text-sm font-semibold text-gray-800">Browse categories</p>
+              </div>
+              <span className="h-8 w-8 rounded-full bg-white/80 border border-orange-100 text-orange-600 flex items-center justify-center shadow-sm">
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M7 11h10v2H7z" />
+                </svg>
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <Link
+                href="/all-products"
+                onClick={() => setShowCategories(false)}
+                className="group flex items-center justify-center rounded-2xl border border-orange-100/70 bg-white/90 px-3.5 py-3 text-sm font-semibold text-gray-800 shadow-sm transition hover:-translate-y-0.5 hover:border-orange-300 hover:shadow-md"
+              >
+                Products
+              </Link>
+              <Link
+                href="/sports"
+                onClick={() => setShowCategories(false)}
+                className="group flex items-center justify-center rounded-2xl border border-blue-100/70 bg-white/90 px-3.5 py-3 text-sm font-semibold text-gray-800 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md"
+              >
+                Sports
+              </Link>
+              <Link
+                href="/political"
+                onClick={() => setShowCategories(false)}
+                className="group flex items-center justify-center rounded-2xl border border-emerald-100/70 bg-white/90 px-3.5 py-3 text-sm font-semibold text-gray-800 shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-300 hover:shadow-md"
+              >
+                Political
+              </Link>
+              <Link
+                href="/devotional"
+                onClick={() => setShowCategories(false)}
+                className="group flex items-center justify-center rounded-2xl border border-amber-100/70 bg-white/90 px-3.5 py-3 text-sm font-semibold text-gray-800 shadow-sm transition hover:-translate-y-0.5 hover:border-amber-300 hover:shadow-md"
+              >
+                Devotional
+              </Link>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-around py-2 px-1">
           <Link
             href="/"
             className={`flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition min-w-[60px] ${isActive('/') && pathname === '/' ? 'bg-orange-100 text-orange-700' : 'hover:bg-gray-50 text-gray-600'}`}
@@ -324,22 +380,36 @@ const Navbar = () => {
             <span className="text-xs font-medium">Home</span>
           </Link>
 
-          <Link
-            href="/all-products"
-            className={`flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition min-w-[60px] ${isActive('/all-products') ? 'bg-orange-100 text-orange-700' : 'hover:bg-gray-50 text-gray-600'}`}
-          >
-            <BoxIcon />
-            <span className="text-xs font-medium">Shop</span>
-          </Link>
-
           <button
-            onClick={() => setShowSearch(!showSearch)}
+            onClick={() => {
+              setShowSearch(!showSearch);
+              setShowCategories(false);
+            }}
             className="flex flex-col items-center gap-1 px-3 py-2 hover:bg-gray-50 rounded-lg transition min-w-[60px] text-gray-600"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
             <span className="text-xs font-medium">Search</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setShowCategories((prev) => !prev);
+              setShowSearch(false);
+            }}
+            className={`flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition min-w-[60px] ${showCategories ? 'bg-gradient-to-b from-orange-100 to-orange-50 text-orange-700 ring-1 ring-orange-200' : 'hover:bg-gray-50 text-gray-600'}`}
+            aria-expanded={showCategories}
+            aria-label="Browse categories"
+          >
+            <span className="grid grid-cols-2 gap-0.5 rounded-md bg-white/70 p-1 shadow-sm ring-1 ring-black/5">
+              <span className={`h-1.5 w-1.5 rounded-sm ${showCategories ? 'bg-orange-600' : 'bg-gray-600'}`} />
+              <span className={`h-1.5 w-1.5 rounded-sm ${showCategories ? 'bg-orange-600' : 'bg-gray-600'}`} />
+              <span className={`h-1.5 w-1.5 rounded-sm ${showCategories ? 'bg-orange-600' : 'bg-gray-600'}`} />
+              <span className={`h-1.5 w-1.5 rounded-sm ${showCategories ? 'bg-orange-600' : 'bg-gray-600'}`} />
+            </span>
+            <span className="text-xs font-medium">Products</span>
           </button>
 
           <Link
@@ -357,6 +427,7 @@ const Navbar = () => {
             <BagIcon />
             <span className="text-xs font-medium">Orders</span>
           </Link>
+          </div>
         </div>
       </div>
 

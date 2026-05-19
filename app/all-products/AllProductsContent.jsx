@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, Suspense, useRef } from "react";
 import { useAppContext } from "@/context/AppContext";
 import { useSearchParams, useRouter } from "next/navigation";
-import Navbar from "@/components/Navbar";
+// Navbar provided by app layout
 import Footer from "@/components/Footer";
 import SEOMetadata from "@/components/SEOMetadata";
 import axios from "axios";
@@ -276,7 +276,7 @@ function AllProductsContent() {
 
     return (
         <>
-            <Navbar />
+            
             <SEOMetadata
                 title={getSeoTitle()}
                 description={getSeoDescription()}
@@ -288,7 +288,7 @@ function AllProductsContent() {
                 ].join(', ')}
                 url={`/all-products${searchParams.toString() ? `?${searchParams.toString()}` : ''}`}
             />
-            <div className="flex flex-col lg:flex-row w-full px-4 sm:px-6 md:px-16 lg:px-32 gap-4 lg:gap-0 pt-16 md:pt-20">
+            <div className="flex flex-col lg:flex-row w-full px-4 sm:px-6 md:px-16 lg:px-32 gap-4 lg:gap-0">
                 <FiltersSidebar
                     allCategories={allCategories}
                     availableBrands={availableBrands}
@@ -306,7 +306,7 @@ function AllProductsContent() {
                 />
                 {/* Main content */}
                 <div className="flex-1 flex flex-col items-start">
-                    <div className="flex flex-col items-end pt-12 w-full">
+                    <div className="flex flex-col items-end pt-0 sm:pt-2 w-full">
                         <p className="text-2xl font-medium">All products</p>
                         <div className="w-16 h-0.5 bg-orange-600 rounded-full mb-6"></div>
                     </div>
