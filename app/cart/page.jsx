@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { assets } from "@/assets/assets";
 import OrderSummary from "@/components/OrderSummary";
 import Image from "next/image";
-import Navbar from "@/components/Navbar";
+// Navbar provided by app layout
 import { useAppContext } from "@/context/AppContext";
 import LoadingOverlay from "@/components/LoadingOverlay";
 import Footer from "@/components/Footer";
@@ -163,14 +163,14 @@ const Cart = () => {
 
   return (
     <>
-      <Navbar />
+      
       <SEOMetadata
         title="Shopping Cart | Sparrow Sports"
         description="View and manage the items in your shopping cart at Sparrow Sports. Proceed to checkout, update quantities, or continue shopping."
         keywords="shopping cart, checkout, sports products, order summary"
         url="/cart"
       />
-      <div className="flex flex-col lg:flex-row gap-6 md:gap-10 px-4 sm:px-6 md:px-16 lg:px-32 pt-16 md:pt-20 mb-16 md:mb-20">
+      <div className="flex flex-col lg:flex-row gap-6 md:gap-10 px-4 sm:px-6 md:px-16 lg:px-32 mb-16 md:mb-20">
         <div className="flex-1 w-full overflow-x-auto">
           <LoadingOverlay isLoading={loadingStates.cart}>
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-3">

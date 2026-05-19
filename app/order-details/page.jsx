@@ -2,7 +2,7 @@
 import React, { Suspense, useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
 import { useSearchParams, useRouter } from 'next/navigation'
-import Navbar from '@/components/Navbar'
+// Navbar is provided by app layout
 import Footer from '@/components/Footer'
 import Loading from '@/components/Loading'
 import SEOMetadata from '@/components/SEOMetadata'
@@ -128,7 +128,7 @@ const OrderDetailsContent = () => {
 
     if (loading) {
         return (
-            <div className="min-h-screen pt-16 md:pt-20 px-4 sm:px-6 md:px-16 lg:px-32">
+            <div className="min-h-screen px-4 sm:px-6 md:px-16 lg:px-32">
                 <Loading />
             </div>
         )
@@ -136,7 +136,7 @@ const OrderDetailsContent = () => {
 
     if (error) {
         return (
-            <div className="min-h-screen pt-16 md:pt-20 px-4 sm:px-6 md:px-16 lg:px-32 flex items-center justify-center">
+            <div className="min-h-screen px-4 sm:px-6 md:px-16 lg:px-32 flex items-center justify-center">
                 <div className="text-center max-w-md">
                     <p className="text-lg font-semibold text-gray-800">{error}</p>
                     <p className="text-sm text-gray-500 mt-2">Please check your orders history.</p>
@@ -153,7 +153,6 @@ const OrderDetailsContent = () => {
 
     return (
         <>
-            <Navbar />
             <SEOMetadata
                 title="Order Details | Sparrow Sports"
                 description="View your order details, status timeline, and delivery information."
@@ -162,7 +161,7 @@ const OrderDetailsContent = () => {
                 noindex={true}
             />
 
-            <div className="min-h-screen bg-gray-50 pt-16 md:pt-20 pb-24 overflow-x-hidden">
+            <div className="min-h-screen bg-gray-50 pb-24 overflow-x-hidden">
                 <div className="px-4 sm:px-6 md:px-16 lg:px-32 space-y-6 max-w-5xl mx-auto">
                     <div className="rounded-2xl bg-white p-5 border border-gray-100">
                         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
@@ -324,7 +323,7 @@ const OrderDetailsContent = () => {
 const OrderDetailsPage = () => (
     <Suspense
         fallback={
-            <div className="min-h-screen pt-16 md:pt-20 px-4 sm:px-6 md:px-16 lg:px-32">
+            <div className="min-h-screen px-4 sm:px-6 md:px-16 lg:px-32">
                 <Loading />
             </div>
         }

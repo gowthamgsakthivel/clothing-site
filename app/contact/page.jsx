@@ -2,7 +2,6 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { toast } from "react-hot-toast";
 import { Mail, Phone, MapPin, Zap, Award, Users, Truck, Cog, Heart } from "lucide-react";
@@ -88,10 +87,8 @@ export default function ContactPage() {
 
     return (
         <>
-            <Navbar />
-            
             {/* Hero Section */}
-            <div className="relative w-full h-80 bg-cover bg-center pt-16 md:pt-20" style={{backgroundImage: 'linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url(https://images.unsplash.com/photo-1552664730-d307ca884978?w=1200&h=400&fit=crop)'}}>
+            <div className="relative w-full h-80 bg-cover bg-center" style={{backgroundImage: 'linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url(https://images.unsplash.com/photo-1552664730-d307ca884978?w=1200&h=400&fit=crop)'}}>
                 <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
                     <h1 className="text-5xl md:text-6xl font-bold text-white mb-4">Get in Touch</h1>
                     <p className="text-white text-lg max-w-2xl px-4">

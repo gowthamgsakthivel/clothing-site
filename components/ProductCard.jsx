@@ -1,9 +1,10 @@
 import React from 'react'
-import { assets } from '@/assets/assets'
 import Image from 'next/image';
+import { assets } from '@/assets/assets'
 import { useAppContext } from '@/context/AppContext';
 import toast from 'react-hot-toast';
 import { getProductSummary } from '@/lib/v2ProductView';
+import { Heart } from 'lucide-react';
 
 const ProductCard = ({ product }) => {
     const { currency, router, favorites, addFavorite, removeFavorite, user } = useAppContext();
@@ -61,15 +62,13 @@ const ProductCard = ({ product }) => {
                     </div>
                 )}
                 <button
-                    className={`absolute top-3 right-3 bg-white/90 backdrop-blur p-2.5 rounded-full shadow-sm opacity-0 group-hover/card:opacity-100 md:opacity-100 transition-all duration-300 hover:scale-110 ${isFavorite ? 'text-orange-600' : ''}`}
+                    className="absolute top-3 right-3 bg-white/90 backdrop-blur p-2.5 rounded-full shadow-sm opacity-100 transition-all duration-300 hover:scale-110"
                     onClick={handleFavoriteClick}
                     aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
                 >
-                    <Image
-                        className="h-3.5 w-3.5"
-                        src={assets.heart_icon}
-                        alt="heart_icon"
-                        style={{ filter: isFavorite ? 'invert(32%) sepia(98%) saturate(749%) hue-rotate(359deg) brightness(97%) contrast(101%)' : 'none' }}
+                    <Heart
+                        size={14}
+                        className={isFavorite ? 'fill-red-500 text-red-500' : 'text-gray-500'}
                     />
                 </button>
             </div>

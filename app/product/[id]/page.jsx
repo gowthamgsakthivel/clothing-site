@@ -2,7 +2,6 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { assets } from "@/assets/assets";
 import ProductCard from "@/components/ProductCard";
-import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Image from "next/image";
 import { useParams } from "next/navigation";
@@ -19,6 +18,7 @@ import ShareButton from "@/components/ShareButton";
 import React from "react";
 import toast from "react-hot-toast";
 import axios from "axios";
+import { Heart } from "lucide-react";
 import {
     buildColorSizeMatrix,
     findVariantForSelection,
@@ -386,8 +386,7 @@ const Product = () => {
                     : []
             }}
         />
-        <Navbar />
-        <div className="md:px-16 lg:px-32 pt-[60px] md:pt-24 space-y-8 md:space-y-10 pb-24 md:pb-0">
+        <div className="md:px-16 lg:px-32 space-y-8 md:space-y-10 pb-24 md:pb-0">
             {/* Main Product Layout - Sticky Desktop, Stacked Mobile */}
             <div className="flex flex-col md:flex-row gap-0 md:gap-12 lg:gap-16 relative items-start">
                 {/* Left Column: Images (Scrolls normally on desktop) */}
@@ -397,14 +396,12 @@ const Product = () => {
                         <button
                             type="button"
                             onClick={handleFavoriteClick}
-                            className={`absolute top-3 right-3 z-20 h-10 w-10 rounded-full bg-white/90 shadow-sm flex items-center justify-center ${isFavorite ? 'text-orange-600' : 'text-gray-700'}`}
+                            className="absolute top-3 right-3 z-20 h-10 w-10 rounded-full bg-white/90 shadow-sm flex items-center justify-center"
                             aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
                         >
-                            <Image
-                                className="h-4 w-4"
-                                src={assets.heart_icon}
-                                alt="heart_icon"
-                                style={{ filter: isFavorite ? 'invert(32%) sepia(98%) saturate(749%) hue-rotate(359deg) brightness(97%) contrast(101%)' : 'none' }}
+                            <Heart
+                                size={16}
+                                className={isFavorite ? 'fill-red-500 text-red-500' : 'text-gray-600'}
                             />
                         </button>
                         <div className="absolute top-3 left-2 right-2 z-10 flex items-center justify-between md:hidden pointer-events-none">

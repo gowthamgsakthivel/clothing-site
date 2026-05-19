@@ -2,7 +2,6 @@
 import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useAppContext } from '@/context/AppContext';
-import Navbar from '@/components/Navbar';
 import ProductCard from '@/components/ProductCard';
 import Loading from '@/components/Loading';
 import SearchBar from '@/components/SearchBar';
@@ -37,7 +36,6 @@ const FilterSection = ({ title, options, selected, onChange }) => (
                                 onChange(selected.filter(val => val !== option.value));
                             }
                         }}
-                        className="mr-2 h-4 w-4 accent-orange-600"
                     />
                     <span className="text-sm text-gray-700">{option.label}</span>
                 </label>
@@ -47,8 +45,8 @@ const FilterSection = ({ title, options, selected, onChange }) => (
 );
 
 const SearchResults = () => {
-    const searchParams = useSearchParams();
     const { searchProducts, loadingStates } = useAppContext();
+    const searchParams = useSearchParams();
 
     // Extract query from URL
     const query = searchParams.get('q') || '';
@@ -185,7 +183,6 @@ const SearchResults = () => {
 
     return (
         <>
-            <Navbar />
             <SEOMetadata
                 title={getMetadataTitle()}
                 description={getMetadataDescription()}
@@ -199,7 +196,7 @@ const SearchResults = () => {
                 ].join(', ')}
                 url={`/search?q=${encodeURIComponent(query)}`}
             />
-            <div className="container mx-auto px-4 sm:px-6 md:px-8 lg:px-32 py-6 md:py-8 pt-16 md:pt-20">
+            <div className="container mx-auto px-4 sm:px-6 md:px-8 lg:px-32 py-6 md:py-8">
                 <div className="mb-6">
                     <h1 className="text-2xl font-medium mb-2">
                         Search Results for &quot;{query}&quot;

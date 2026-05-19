@@ -8,7 +8,7 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
 import { Oswald, Sora } from 'next/font/google';
-import Navbar from '@/components/Navbar';
+// Navbar is provided globally in app layout
 import { getDisplayOrderCode } from '@/lib/codeGenerators';
 
 const headingFont = Oswald({ subsets: ['latin'], weight: ['400', '600', '700'] });
@@ -209,8 +209,7 @@ const ProfilePage = () => {
 
     return (
         <div className={`min-h-screen bg-slate-50 ${bodyFont.className}`}>
-            <Navbar />
-            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-16 sm:pt-20 pb-10 sm:pb-12">
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-10 sm:pb-12">
                 <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
                     <aside className="space-y-4">
                         <div className="rounded-2xl bg-white p-4 sm:p-5 shadow-sm">

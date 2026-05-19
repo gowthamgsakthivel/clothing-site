@@ -4,7 +4,6 @@ import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import Image from 'next/image';
 import { useAppContext } from '@/context/AppContext';
-import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import SEOMetadata from '@/components/SEOMetadata';
 import Link from 'next/link';
@@ -123,9 +122,7 @@ const MyDesignsPage = () => {
                 keywords="custom designs, t-shirt designs, design requests, custom apparel, my designs"
                 url="/my-designs"
             />
-            <Navbar />
-
-            <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 pt-16 md:pt-20">
+            <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
                 <div className="max-w-5xl mx-auto">
                     <div className="flex justify-between items-center mb-8">
                         <h1 className="text-3xl font-bold text-gray-900">My Design Requests</h1>

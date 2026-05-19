@@ -15,6 +15,23 @@
   }
 }
 
+/* Navbar safe top padding to offset fixed header */
+:root {
+  --nav-height: 64px; /* mobile (h-16) */
+  --nav-height-md: 80px; /* desktop (h-20) */
+}
+
+/* Use a wrapper class so pages control spacing themselves if needed */
+.page-with-navbar {
+  padding-top: var(--nav-height);
+}
+
+@media (min-width: 768px) {
+  .page-with-navbar {
+    padding-top: var(--nav-height-md);
+  }
+}
+
 ::-webkit-scrollbar {
   display: none;
 }

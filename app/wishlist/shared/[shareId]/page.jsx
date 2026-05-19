@@ -2,7 +2,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ProductCard from '@/components/ProductCard';
 import Loading from '@/components/Loading';
@@ -49,7 +48,6 @@ const SharedWishlistPage = () => {
 
   return (
     <>
-      <Navbar />
       <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           {loading ? (
