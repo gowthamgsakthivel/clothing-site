@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Image from "next/image";
 import Link from "next/link";
 
 const ShopByCategory = () => {
@@ -57,10 +58,12 @@ const ShopByCategory = () => {
               className="relative group overflow-hidden rounded-lg"
             >
               <div className="relative h-96 overflow-hidden bg-gray-900">
-                <img
+                <Image
                   src={category.image}
                   alt={category.name}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  fill
+                  sizes="(min-width: 1024px) 25vw, (min-width: 768px) 50vw, 100vw"
+                  className="object-cover group-hover:scale-105 transition-transform duration-300"
                 />
                 {/* Overlay */}
                 <div className="absolute inset-0 bg-black/40 group-hover:bg-black/50 transition-colors duration-300"></div>
