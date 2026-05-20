@@ -5,6 +5,43 @@ import NewsletterSubscriber from '@/models/NewsletterSubscriber';
 
 const emailPattern = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/;
 
+export async function GET(request) {
+    try {
+        const { userId } = await auth();
+
+        if (!userId) {
+            return NextResponse.json({
+                success: true,
+                isSubscribed: false
+            });
+        }
+
+        const user = await currentUser();
+        const email = user?.primaryEmailAddress?.emailAddress?.trim().toLowerCase();
+
+        if (!email) {
+            return NextResponse.json({
+                success: true,
+                isSubscribed: false
+            });
+        }
+
+        await connectDB();
+        const subscriber = await NewsletterSubscriber.findOne({ email });
+
+        return NextResponse.json({
+            success: true,
+            isSubscribed: Boolean(subscriber)
+        });
+    } catch (error) {
+        console.error('Newsletter check error:', error);
+        return NextResponse.json({
+            success: true,
+            isSubscribed: false
+        });
+    }
+}
+
 export async function POST(request) {
     try {
         const { userId } = await auth();

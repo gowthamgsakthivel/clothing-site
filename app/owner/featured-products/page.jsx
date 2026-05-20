@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
+import Image from 'next/image';
 import { Search, X, Check } from 'lucide-react';
 import { getProductSummary } from '@/lib/v2ProductView';
 
@@ -167,11 +168,15 @@ const FeaturedProductsPage = () => {
                     className="flex items-start gap-3 p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors"
                   >
                     {product.image && (
-                      <img
-                        src={product.image}
-                        alt={product.name}
-                        className="w-16 h-16 object-cover rounded border border-slate-200"
-                      />
+                      <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded border border-slate-200 bg-slate-100">
+                        <Image
+                          src={product.image}
+                          alt={product.name}
+                          fill
+                          sizes="64px"
+                          className="object-cover"
+                        />
+                      </div>
                     )}
                     <div className="flex-1 min-w-0">
                       <h3 className="text-sm font-semibold text-slate-900 truncate">{product.name}</h3>
@@ -231,11 +236,15 @@ const FeaturedProductsPage = () => {
                       className="w-full flex items-start gap-3 p-3 bg-slate-50 hover:bg-orange-50 rounded-lg transition-colors text-left"
                     >
                       {product.image && (
-                        <img
-                          src={product.image}
-                          alt={product.name}
-                          className="w-14 h-14 object-cover rounded border border-slate-200"
-                        />
+                        <div className="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded border border-slate-200 bg-slate-100">
+                          <Image
+                            src={product.image}
+                            alt={product.name}
+                            fill
+                            sizes="56px"
+                            className="object-cover"
+                          />
+                        </div>
                       )}
                       <div className="flex-1 min-w-0">
                         <h3 className="text-sm font-semibold text-slate-900 truncate">{product.name}</h3>
