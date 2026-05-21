@@ -8,6 +8,29 @@ import { rateLimit, escapeRegex } from "@/lib/rateLimit";
 // ✅ PRODUCTION FIX 3: Rate limiting for search endpoint
 const limiter = rateLimit({ limit: 120, window: 60 }); // 120 requests per minute
 
+const normalizeToken = (value) => String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ');
+
+const buildNormalizedFieldExpr = (field) => ({
+    $replaceAll: {
+        input: {
+            $toLower: {
+                $trim: { input: `$${field}` }
+            }
+        },
+        find: ' ',
+        replacement: ''
+    }
+});
+
+const tokenizeQuery = (value) => {
+    const normalized = normalizeToken(value);
+    const parts = normalized.split(' ').filter((part) => part.length >= 3);
+    return Array.from(new Set(parts));
+};
+
 export async function GET(request) {
     try {
         // ✅ Rate limit check
@@ -34,8 +57,11 @@ export async function GET(request) {
         const query = searchParams.get('q');
         const page = Math.max(1, parseInt(searchParams.get('page') || '1'));
         const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 50);
-        const category = searchParams.get('category');
-        const gender = searchParams.get('gender');
+        // Support multiple categories/genders via comma-separated values
+        const categoryParam = searchParams.get('category');
+        const genderParam = searchParams.get('gender');
+        const category = categoryParam ? categoryParam.split(',').map(normalizeToken).filter(Boolean) : [];
+        const gender = genderParam ? genderParam.split(',').map(normalizeToken).filter(Boolean) : [];
         const minPrice = Math.max(0, parseFloat(searchParams.get('minPrice') || '0'));
         const maxPrice = Math.min(parseFloat(searchParams.get('maxPrice') || '1000000'), 1000000);
         const sortBy = searchParams.get('sortBy') || 'createdAt';
@@ -44,25 +70,58 @@ export async function GET(request) {
         await connectDB();
 
         const filter = { status: 'active' };
-        if (category) {
-            filter.category = category;
+        const andConditions = [];
+        if (category && category.length > 0) {
+            andConditions.push({
+                $expr: {
+                    $in: [
+                        buildNormalizedFieldExpr('category'),
+                        category.map((value) => value.replace(/\s+/g, ''))
+                    ]
+                }
+            });
         }
-        if (gender) {
-            filter.genderCategory = gender;
+        if (gender && gender.length > 0) {
+            andConditions.push({
+                $expr: {
+                    $in: [
+                        buildNormalizedFieldExpr('genderCategory'),
+                        gender.map((value) => value.replace(/\s+/g, ''))
+                    ]
+                }
+            });
         }
         if (query && query.trim() !== '') {
-            const safeQuery = escapeRegex(query.trim());
-            const regex = new RegExp(safeQuery, 'i');
-            filter.$or = [
-                { name: regex },
-                { description: regex },
-                { brand: regex },
-                { category: regex }
-            ];
+            const normalizedQuery = normalizeToken(query).replace(/\s+/g, ' ');
+            const safeQuery = escapeRegex(normalizedQuery);
+            const phraseRegex = new RegExp(safeQuery, 'i');
+            const tokens = tokenizeQuery(query);
+            const tokenRegexes = tokens.map((token) => new RegExp(escapeRegex(token), 'i'));
+            andConditions.push({
+                $or: [
+                { name: phraseRegex },
+                { description: phraseRegex },
+                { brand: phraseRegex },
+                { category: phraseRegex },
+                ...(tokenRegexes.length
+                    ? [
+                        { name: { $in: tokenRegexes } },
+                        { description: { $in: tokenRegexes } },
+                        { brand: { $in: tokenRegexes } },
+                        { category: { $in: tokenRegexes } }
+                    ]
+                    : [])
+                ]
+            });
+        }
+
+        if (andConditions.length > 0) {
+            filter.$and = andConditions;
         }
 
         const safeOrder = sortOrder === 'asc' ? 1 : -1;
-        const sort = sortBy === 'price'
+        // Accept multiple sortBy names from UI: 'price', 'offerPrice', 'minOfferPrice', 'name', 'createdAt'
+        const sort = (sortBy === 'price' || sortBy === 'offerPrice' || sortBy === 'minOfferPrice')
             ? { minOfferPrice: safeOrder }
             : sortBy === 'name'
                 ? { name: safeOrder }
@@ -147,7 +206,7 @@ export async function GET(request) {
             },
             filters: {
                 appliedFilters: {
-                    query,
+                    query: query ? normalizeToken(query) : query,
                     category,
                     gender,
                     minPrice,
