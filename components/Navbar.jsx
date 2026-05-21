@@ -7,6 +7,7 @@ import Image from "next/image";
 import { useClerk, UserButton } from "@clerk/nextjs";
 import { usePathname } from "next/navigation";
 import SearchBar from "./SearchBar";
+import MobileSearchOverlay from "./MobileSearchOverlay";
 import UnifiedNotificationIcon from "./UnifiedNotificationIcon";
 import CartCounter from "./CartIcon";
 
@@ -14,14 +15,20 @@ const Navbar = () => {
 
   const { isAdmin, router, user } = useAppContext();
   const pathname = usePathname();
-  const [showSearch, setShowSearch] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showCategories, setShowCategories] = useState(false);
+  const [showMobileSearch, setShowMobileSearch] = useState(false);
   const { openSignIn } = useClerk();
 
   const isActive = (href) => {
     if (href === '/') return pathname === '/';
     return pathname.startsWith(href);
+  };
+
+  const openMobileSearch = () => {
+    setShowMobileMenu(false);
+    setShowCategories(false);
+    setShowMobileSearch(true);
   };
 
   return (
@@ -70,8 +77,8 @@ const Navbar = () => {
           </div>
 
           <ul className="hidden md:flex items-center gap-4 ml-auto">
-            <li className="min-w-[240px]">
-              <SearchBar showResultsInline={true} />
+            <li className="min-w-[420px]">
+              <SearchBar className="w-full" />
             </li>
             {
               user
@@ -185,7 +192,14 @@ const Navbar = () => {
             />
             <div className="fixed top-[60px] left-0 right-0 bg-white/95 backdrop-blur-md z-50 md:hidden border-b border-gray-200/50 shadow-xl max-h-[calc(100vh-120px)] overflow-y-auto w-full rounded-b-2xl">
               <div className="px-4 py-4">
-                <SearchBar showResultsInline={false} />
+                    <button
+                      type="button"
+                      onClick={openMobileSearch}
+                      className="flex w-full items-center gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-3 text-left text-sm text-gray-500 shadow-sm transition hover:border-orange-200 hover:text-orange-700"
+                    >
+                      <Image src={assets.search_icon} alt="search" width={18} height={18} />
+                      Search products, brands or categories
+                    </button>
               </div>
               <div className="py-2">
                 {isAdmin && (
@@ -382,8 +396,7 @@ const Navbar = () => {
 
           <button
             onClick={() => {
-              setShowSearch(!showSearch);
-              setShowCategories(false);
+              openMobileSearch();
             }}
             className="flex flex-col items-center gap-1 px-3 py-2 hover:bg-gray-50 rounded-lg transition min-w-[60px] text-gray-600"
           >
@@ -397,7 +410,7 @@ const Navbar = () => {
             type="button"
             onClick={() => {
               setShowCategories((prev) => !prev);
-              setShowSearch(false);
+              setShowMobileSearch(false);
             }}
             className={`flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition min-w-[60px] ${showCategories ? 'bg-gradient-to-b from-orange-100 to-orange-50 text-orange-700 ring-1 ring-orange-200' : 'hover:bg-gray-50 text-gray-600'}`}
             aria-expanded={showCategories}
@@ -431,22 +444,11 @@ const Navbar = () => {
         </div>
       </div>
 
-      {/* Mobile search bar that appears when search icon is clicked */}
-      {showSearch && (
-        <div className="md:hidden fixed top-[60px] left-0 right-0 bg-white/90 backdrop-blur-md px-4 py-4 border-b border-gray-200/50 shadow-lg z-40 rounded-b-2xl animate-fade-in-down">
-          <div className="flex items-center gap-3">
-            <SearchBar showResultsInline={false} />
-            <button
-              onClick={() => setShowSearch(false)}
-              className="text-gray-600 hover:text-gray-900 px-2"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-        </div>
-      )}
+      <MobileSearchOverlay
+        open={showMobileSearch}
+        onClose={() => setShowMobileSearch(false)}
+      />
+
     </>
   );
 };
