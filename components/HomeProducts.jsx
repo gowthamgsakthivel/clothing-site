@@ -69,8 +69,8 @@ const HomeProducts = () => {
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 md:gap-6 mt-6 pb-8 md:pb-14 w-full">
-          {displayProducts.map((product) => (
-            <ProductCard key={product?.product?._id} product={product} />
+          {displayProducts.map((product, index) => (
+            <ProductCard key={product?.product?._id} product={product} priority={index === 0} />
           ))}
         </div>
       )}

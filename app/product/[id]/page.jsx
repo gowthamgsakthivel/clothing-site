@@ -15,9 +15,48 @@ import { addToRecentlyViewed } from "@/lib/recentlyViewed";
 import SizeGuideModal from "@/components/SizeGuideModal";
 import SizeRecommendation from "@/components/SizeRecommendation";
 import { getSizeChart } from "@/lib/sizeGuideData";
+import { buildColorSizeMatrix, getAvailableSizes as getVariantSizes, getPriceSummary, getProductImages } from "@/lib/v2ProductView";
 import ShareButton from "@/components/ShareButton";
 import React from "react";
 import toast from "react-hot-toast";
+
+const normalizeProductData = (payload) => {
+    if (!payload) return null;
+
+    if (payload.product) {
+        const product = payload.product || {};
+        const variants = payload.variants || [];
+        const inventoryByVariantId = payload.inventoryByVariantId || {};
+        const priceSummary = getPriceSummary(variants);
+        const images = Array.isArray(product.image)
+            ? product.image
+            : Array.isArray(product.images)
+                ? product.images
+                : getProductImages(variants);
+
+        return {
+            ...product,
+            image: images,
+            offerPrice: Number.isFinite(product.offerPrice) ? product.offerPrice : priceSummary.offerPrice,
+            price: Number.isFinite(product.price) ? product.price : priceSummary.price,
+            inventory: buildColorSizeMatrix(variants, inventoryByVariantId),
+            sizes: getVariantSizes(variants),
+        };
+    }
+
+    const priceSummary = getPriceSummary(payload.variants || []);
+
+    return {
+        ...payload,
+        image: Array.isArray(payload.image)
+            ? payload.image
+            : Array.isArray(payload.images)
+                ? payload.images
+                : [],
+        offerPrice: Number.isFinite(payload.offerPrice) ? payload.offerPrice : priceSummary.offerPrice,
+        price: Number.isFinite(payload.price) ? payload.price : priceSummary.price,
+    };
+};
 
 const Product = () => {
 
@@ -40,9 +79,9 @@ const Product = () => {
     const fetchProductData = useCallback(async () => {
         // Safely find product and handle if products array is undefined
         if (Array.isArray(products)) {
-            const product = products.find(product => product?._id === id);
+            const product = products.find(item => item?.product?._id === id || item?._id === id);
             if (product) {
-                setProductData(product);
+                setProductData(normalizeProductData(product));
 
                 // Reset color and size selection when product changes
                 setSelectedColor(null);
@@ -67,7 +106,7 @@ const Product = () => {
                     return [];
                 };
 
-                const availableColors = getColorsFromProduct(product);
+                const availableColors = getColorsFromProduct(normalizeProductData(product));
                 if (availableColors.length > 0) {
                     // Find first color that has stock
                     const inStockColor = availableColors.find(c => c.stock > 0);
@@ -78,7 +117,21 @@ const Product = () => {
                         setSelectedColor(availableColors[0].color);
                     }
                 }
+                return;
             }
+        }
+
+        try {
+            const response = await fetch(`/api/product/details/${id}`);
+            const data = await response.json();
+
+            if (data.success && data.product) {
+                setProductData(normalizeProductData(data.product));
+                setSelectedColor(null);
+                setSelectedSize(null);
+            }
+        } catch (error) {
+            console.error('Failed to fetch product details', error);
         }
     }, [products, id]);
 
