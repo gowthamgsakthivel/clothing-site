@@ -62,6 +62,7 @@ const ShopByCategory = () => {
                   src={category.image}
                   alt={category.name}
                   fill
+                  unoptimized
                   sizes="(min-width: 1024px) 25vw, (min-width: 768px) 50vw, 100vw"
                   className="object-cover group-hover:scale-105 transition-transform duration-300"
                 />

@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 import { getProductSummary } from '@/lib/v2ProductView';
 import { Heart } from 'lucide-react';
 
-const ProductCard = ({ product }) => {
+const ProductCard = ({ product, priority = false }) => {
     const { currency, router, favorites, addFavorite, removeFavorite, user } = useAppContext();
     // Support both full bundle objects and precomputed summary objects
     const summary = (product && (product.offerPrice !== undefined || product.images !== undefined || product.name))
@@ -55,6 +55,7 @@ const ProductCard = ({ product }) => {
                         className="transition-transform duration-700 ease-out group-hover/card:scale-110 object-cover w-full h-full"
                         width={800}
                         height={800}
+                        priority={priority}
                     />
                 ) : (
                     <div className="flex items-center justify-center w-full h-full text-gray-400">
