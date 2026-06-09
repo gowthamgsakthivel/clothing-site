@@ -29,7 +29,15 @@ const orderSchema = new mongoose.Schema(
     shippingTotal: { type: Number, required: true, default: 0 },
     grandTotal: { type: Number, required: true, default: 0 },
     paymentMethod: { type: String, default: 'COD' },
-    paymentStatus: { type: String, default: 'pending' },
+      paymentStatus: { type: String, enum: ['pending','paid','failed','refunded'], default: 'pending' },
+      // Razorpay payment metadata
+      paymentMetadata: {
+        razorpay_order_id: { type: String, default: null, index: true },
+        razorpay_payment_id: { type: String, default: null, index: true },
+        razorpay_signature: { type: String, default: null },
+        refunds: { type: [{ id: String, status: String, amount: Number, createdAt: Date }], default: [] }
+      },
+      // Note: processedWebhookEvents removed in favor of a dedicated WebhookEvent collection
     shippingAddressId: { type: String, default: null },
     inventoryReservedAt: { type: Date, default: null }
   },

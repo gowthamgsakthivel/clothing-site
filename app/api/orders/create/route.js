@@ -5,6 +5,14 @@ import ProductV2 from '@/models/v2/Product';
 import ProductVariant from '@/models/v2/ProductVariant';
 import CustomDesign from '@/models/CustomDesign';
 import { createOrder } from '@/services/orders/OrderService';
+import OrderV2 from '@/models/v2/Order';
+
+// Helper used only inside this route to keep the route export surface valid.
+const findExistingOrderByPaymentId = async (paymentId) => {
+  if (!paymentId) return null;
+  const existing = await OrderV2.findOne({ 'paymentMetadata.razorpay_payment_id': paymentId }).lean();
+  return existing;
+};
 
 const parseCartKey = (productKey) => {
   let productId = productKey;
@@ -136,11 +144,22 @@ export async function POST(request) {
     const subtotal = mappedItems.reduce((sum, item) => sum + (item.totalPrice || 0), 0);
     const taxTotal = Math.floor(subtotal * 0.02);
 
+    // Idempotency: if caller included a Razorpay payment id, return existing order if present
+    const providedPaymentId = payload?.paymentDetails?.paymentId || payload?.paymentDetails?.payment_id || payload?.razorpay_payment_id || null;
+    if (providedPaymentId) {
+      const existing = await findExistingOrderByPaymentId(providedPaymentId);
+      if (existing && existing._id) {
+        return NextResponse.json({ success: true, data: { orderId: existing._id } }, { status: 200 });
+      }
+    }
+
     const orderResult = await createOrder({
       userId,
       items: mappedItems,
       paymentMethod: payload?.paymentMethod || 'Razorpay',
       paymentStatus: payload?.paymentStatus || 'Paid',
+      // Accept paymentDetails from client if provided (idempotency + metadata)
+      paymentDetails: payload?.paymentDetails || undefined,
       shippingAddressId: payload?.address,
       taxTotal,
       shippingTotal: 0,

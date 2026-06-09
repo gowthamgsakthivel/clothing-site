@@ -1,6 +1,8 @@
 import mongoose from 'mongoose';
 import connectDB from '@/config/db';
 import OrderV2 from '@/models/v2/Order';
+import PaymentAudit from '@/models/PaymentAudit';
+import WebhookEvent from '@/models/WebhookEvent';
 import { buildError } from '@/lib/errors';
 import Shipment from '@/models/v2/Shipment';
 import User from '@/models/User';
@@ -96,6 +98,18 @@ const createOrder = async (orderData) => {
         await reserveStock(item.sku, item.quantity, `order:${orderId}`, userId, { session });
       }
 
+      const paymentMetadata = {};
+      // Accept explicit payment details when available (e.g., from client after Razorpay verification)
+      if (orderData?.paymentDetails) {
+        paymentMetadata.razorpay_order_id = orderData.paymentDetails.orderId || null;
+        paymentMetadata.razorpay_payment_id = orderData.paymentDetails.paymentId || null;
+        paymentMetadata.razorpay_signature = orderData.paymentDetails.signature || null;
+      } else if (orderData?.razorpay_order_id || orderData?.razorpay_payment_id) {
+        paymentMetadata.razorpay_order_id = orderData.razorpay_order_id || null;
+        paymentMetadata.razorpay_payment_id = orderData.razorpay_payment_id || null;
+        paymentMetadata.razorpay_signature = orderData.razorpay_signature || null;
+      }
+
       await OrderV2.create([
         {
           _id: orderId,
@@ -111,7 +125,8 @@ const createOrder = async (orderData) => {
           shippingTotal: totals.shippingTotal,
           grandTotal: totals.grandTotal,
           shippingAddressId: orderData?.shippingAddressId || null,
-          inventoryReservedAt: new Date()
+          inventoryReservedAt: new Date(),
+          paymentMetadata: Object.keys(paymentMetadata).length ? paymentMetadata : undefined
         }
       ], { session });
     });
@@ -432,3 +447,99 @@ const getOrderById = async (orderId) => {
 };
 
 export { createOrder, cancelOrder, confirmShipment, packOrder, shipOrder, deliverOrder, getOrdersWithPagination, getOrderById };
+
+// Process Razorpay webhooks in an idempotent, replay-protected way.
+// This function will NOT create application orders; it only updates existing orders
+// with Razorpay payment metadata and status changes. Caller must validate webhook signature.
+const processRazorpayWebhook = async (eventPayload, eventId) => {
+  await connectDB();
+
+  if (!eventId) {
+    throw buildError({ message: 'Missing webhook event id', status: 400, code: 'MISSING_EVENT_ID' });
+  }
+
+  const eventType = eventPayload?.event || (eventPayload?.event && eventPayload.event);
+  const paymentEntity = eventPayload?.payload?.payment?.entity || null;
+  const refundEntity = eventPayload?.payload?.refund?.entity || null;
+
+  if (!paymentEntity && !refundEntity) {
+    // Nothing to act on
+    return { handled: false, message: 'No payment or refund entity present' };
+  }
+
+  // Try to find an order that already has matching Razorpay ids
+  const searchConditions = [];
+  if (paymentEntity?.id) searchConditions.push({ 'paymentMetadata.razorpay_payment_id': paymentEntity.id });
+  if (paymentEntity?.order_id) searchConditions.push({ 'paymentMetadata.razorpay_order_id': paymentEntity.order_id });
+
+  let order = null;
+  if (searchConditions.length) {
+    order = await OrderV2.findOne({ $or: searchConditions });
+  }
+
+  if (!order) {
+    // No matching order — create a payment audit record for reconciliation
+    try {
+      await PaymentAudit.create({ eventId, payload: eventPayload, receivedAt: new Date(), processed: false, reason: 'no_matching_order' });
+    } catch (err) {
+      // Best-effort: log and continue
+    }
+    return { handled: false, message: 'No matching order found' };
+  }
+
+  // Use a WebhookEvent collection to provide global replay protection / idempotency
+  const session = await mongoose.startSession();
+  try {
+    await session.withTransaction(async () => {
+      // Attempt to insert a webhook event record for this eventId. If it already exists, the event was processed.
+      try {
+        await WebhookEvent.create([{ eventId, orderId: order._id, payload: eventPayload }], { session });
+      } catch (err) {
+        // Duplicate key error => event already processed
+        const isDup = err && (err.code === 11000 || (err.message && err.message.includes('duplicate key')));
+        if (isDup) {
+          return;
+        }
+        throw err;
+      }
+
+      // Re-fetch the order in the transaction session
+      const ord = await OrderV2.findById(order._id).session(session);
+      if (!ord) throw buildError({ message: 'Order not found during webhook processing', status: 404 });
+
+      // Ensure paymentMetadata exists
+      ord.paymentMetadata = ord.paymentMetadata || { refunds: [] };
+
+      // Update metadata and status based on event type
+      if (eventType === 'payment.captured') {
+        ord.paymentMetadata.razorpay_payment_id = paymentEntity.id || ord.paymentMetadata.razorpay_payment_id;
+        ord.paymentMetadata.razorpay_order_id = paymentEntity.order_id || ord.paymentMetadata.razorpay_order_id;
+        ord.paymentStatus = 'paid';
+      } else if (eventType === 'payment.failed') {
+        ord.paymentMetadata.razorpay_payment_id = paymentEntity.id || ord.paymentMetadata.razorpay_payment_id;
+        ord.paymentMetadata.razorpay_order_id = paymentEntity.order_id || ord.paymentMetadata.razorpay_order_id;
+        ord.paymentStatus = 'failed';
+      } else if (eventType === 'refund.created' || eventType === 'refund.processed') {
+        const refund = refundEntity || {};
+        // Avoid duplicate refunds in metadata
+        const existing = (ord.paymentMetadata.refunds || []).find(r => r.id === refund.id);
+        if (!existing) {
+          ord.paymentMetadata.refunds = ord.paymentMetadata.refunds || [];
+          ord.paymentMetadata.refunds.push({ id: refund.id, status: refund.status || eventType, amount: refund.amount || 0, createdAt: refund.created_at ? new Date(refund.created_at * 1000) : new Date() });
+        }
+        if (eventType === 'refund.processed') {
+          ord.paymentStatus = 'refunded';
+        }
+      }
+
+      // Save changes
+      await ord.save({ session });
+    });
+  } finally {
+    await session.endSession();
+  }
+
+  return { handled: true, message: 'Processed' };
+};
+
+export { processRazorpayWebhook };

@@ -333,7 +333,7 @@ const AnalyticsV2Page = () => {
         <div className="bg-white border border-slate-200 rounded-2xl p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-semibold text-slate-900">Low Stock Alert</h3>
-            <Link href="/owner/inventory-v2" className="text-xs text-blue-600 hover:underline">
+            <Link href="/owner/inventory" className="text-xs text-blue-600 hover:underline">
               View Inventory
             </Link>
           </div>
