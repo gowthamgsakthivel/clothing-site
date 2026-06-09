@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import axios from 'axios';
 import { useAppContext } from '@/context/AppContext';
 import toast from 'react-hot-toast';
@@ -11,12 +11,7 @@ export default function OwnerMessages() {
     const [expanded, setExpanded] = useState(null);
     const [replyModal, setReplyModal] = useState({ open: false, contactId: null, subject: '', body: '' });
 
-    useEffect(() => {
-        if (!user) return;
-        fetchMessages();
-    }, [user]);
-
-    const fetchMessages = async () => {
+    const fetchMessages = useCallback(async () => {
         setLoading(true);
         try {
             const token = await getToken();
@@ -35,7 +30,12 @@ export default function OwnerMessages() {
         } finally {
             setLoading(false);
         }
-    }
+    }, [getToken]);
+
+    useEffect(() => {
+        if (!user) return;
+        fetchMessages();
+    }, [user, fetchMessages]);
 
     const updateContact = async (id, update) => {
         // Optimistic UI update: apply change locally and collapse expanded view

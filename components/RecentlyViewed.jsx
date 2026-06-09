@@ -40,7 +40,7 @@ const RecentlyViewed = ({ currentProductId = null, maxItems = 10 }) => {
         } catch (error) {
             console.error('Error loading recently viewed:', error);
         }
-    }, [currentProductId, maxItems, products, isMobile]);
+    }, [currentProductId, products, isMobile]);
 
     useEffect(() => {
         loadRecentlyViewed();

@@ -324,7 +324,7 @@ const OrdersV2Page = () => {
         </tr>
       );
     });
-  }, [actionState.action, actionState.orderId, currency, fetchOrderDetails, orders, retrySync, retryingId, runLifecycleAction, shipmentFilter]);
+  }, [actionState.action, actionState.orderId, currency, fetchOrderDetails, openPackModal, orders, retrySync, retryingId, shipmentFilter]);
 
   const summaryCounts = useMemo(() => {
     const counts = {
