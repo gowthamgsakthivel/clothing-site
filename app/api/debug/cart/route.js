@@ -1,6 +1,22 @@
 import { NextResponse } from "next/server";
+import { auth } from '@clerk/nextjs/server';
 
 export async function GET() {
+    if (process.env.NODE_ENV === 'production') {
+        return NextResponse.json({
+            success: false,
+            message: 'Not found'
+        }, { status: 404 });
+    }
+
+    const { userId } = await auth();
+    if (!userId) {
+        return NextResponse.json({
+            success: false,
+            message: 'Authentication required.'
+        }, { status: 401 });
+    }
+
     // This endpoint can be used to test cart parsing logic
     const testCartItems = {
         "67123abc_black_M": 2,
