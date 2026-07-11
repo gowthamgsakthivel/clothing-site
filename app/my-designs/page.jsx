@@ -84,8 +84,8 @@ const MyDesignsPage = () => {
         if (user) {
             fetchDesignRequests();
         } else {
-            // Redirect if not logged in
-            router.push('/login');
+            // Redirect if not logged in — use Clerk sign-in with return_to
+            router.push('/sign-in?return_to=%2Fmy-designs');
         }
     }, [user, router, fetchDesignRequests]);
 

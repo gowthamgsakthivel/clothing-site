@@ -4,6 +4,7 @@ import axios from "axios";
 import toast from "react-hot-toast";
 import LoadingButton from "./LoadingButton";
 import LoadingOverlay from "./LoadingOverlay";
+import { PAYMENT_RECOVERY_MESSAGE, recordPaymentRecoveryFallback } from "@/lib/paymentRecovery";
 
 // Razorpay script loader
 const loadRazorpayScript = () => {
@@ -118,40 +119,73 @@ const OrderSummary = () => {
             });
 
             if (verifyRes.data.success) {
+              const paymentDetails = {
+                orderId: response.razorpay_order_id,
+                paymentId: response.razorpay_payment_id,
+                signature: response.razorpay_signature
+              };
+
               // Place order in DB with Razorpay payment info
               const orderPayload = {
                 address: selectedAddress._id,
                 items: cartItemsArray,
                 paymentMethod: 'Razorpay',
-                paymentStatus: 'Paid'
+                paymentStatus: 'Paid',
+                paymentDetails
               };
 
               // Place order in DB with Razorpay payment info
-              const orderRes = await axios.post('/api/orders/create', orderPayload);
+              try {
+                const orderRes = await axios.post('/api/orders/create', orderPayload);
 
-              if (orderRes.data.success) {
-                toast.success('Payment successful! Order placed.');
-                setCartItems({});
-                const orderId = orderRes.data?.data?.orderId || orderRes.data?.orderId;
-                router.push(orderId ? `/order-placed?orderId=${orderId}` : '/order-placed');
-              } else {
-                console.error('Order creation failed with response:', orderRes.data);
+                if (orderRes.data.success) {
+                  toast.success('Payment successful! Order placed.');
+                  setCartItems({});
+                  const orderId = orderRes.data?.data?.orderId || orderRes.data?.orderId;
+                  router.push(orderId ? `/order-placed?orderId=${orderId}` : '/order-placed');
+                } else {
+                  console.error('Order creation failed with response:', orderRes.data);
 
-                // Create more detailed error message
-                let errorMsg = `Payment succeeded but order failed: ${orderRes.data.message || 'Unknown error'}`;
+                  const errorMessage = orderRes.data.message || 'Unknown error';
+                  await recordPaymentRecoveryFallback({
+                    razorpay_payment_id: response.razorpay_payment_id,
+                    razorpay_order_id: response.razorpay_order_id,
+                    amount: totalAmount,
+                    userId: user?.id || user?._id || null,
+                    errorMessage
+                  });
 
-                // Add details if available
-                if (orderRes.data.details) {
-                  console.error('Order validation details:', orderRes.data.details);
+                  console.error('razorpay.payment.order_creation_failed_after_verification', {
+                    paymentId: response.razorpay_payment_id,
+                    razorpayOrderId: response.razorpay_order_id,
+                    amount: totalAmount,
+                    userId: user?.id || user?._id || null,
+                    errorMessage
+                  });
+
+                  toast.error(PAYMENT_RECOVERY_MESSAGE, { duration: 8000 });
                 }
+              } catch (orderError) {
+                const errorMessage = orderError?.response?.data?.message || orderError?.message || 'Order creation failed';
 
-                toast.error(errorMsg, { duration: 6000 });
+                await recordPaymentRecoveryFallback({
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_order_id: response.razorpay_order_id,
+                  amount: totalAmount,
+                  userId: user?.id || user?._id || null,
+                  errorMessage
+                });
 
-                // Show a second toast with recovery instructions
-                setTimeout(() => {
-                  toast.error('Please contact support with your payment ID. Your payment was successful.',
-                    { duration: 8000 });
-                }, 1000);
+                console.error('razorpay.payment.order_creation_failed_after_verification', {
+                  paymentId: response.razorpay_payment_id,
+                  razorpayOrderId: response.razorpay_order_id,
+                  amount: totalAmount,
+                  userId: user?.id || user?._id || null,
+                  errorMessage,
+                  stack: orderError?.stack
+                });
+
+                toast.error(PAYMENT_RECOVERY_MESSAGE, { duration: 8000 });
               }
             } else {
               toast.error('Payment verification failed.');

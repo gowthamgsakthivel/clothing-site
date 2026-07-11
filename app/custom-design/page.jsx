@@ -177,7 +177,7 @@ const CustomDesignPage = () => {
 
         if (!user) {
             toast.error('Please sign in to submit a custom design request');
-            router.push('/login');
+            router.push('/sign-in?return_to=%2Fcustom-design');
             return;
         }
 

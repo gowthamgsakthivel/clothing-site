@@ -3,6 +3,7 @@ import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import Image from 'next/image';
 import { useAppContext } from '@/context/AppContext';
+import { PAYMENT_RECOVERY_MESSAGE, recordPaymentRecoveryFallback } from '@/lib/paymentRecovery';
 
 const CustomDesignPaymentModal = ({ design, onClose, onPaymentComplete }) => {
     const { getToken } = useAppContext();
@@ -216,36 +217,68 @@ const CustomDesignPaymentModal = ({ design, onClose, onPaymentComplete }) => {
                         if (verifyResponse.data.success) {
                             // Create the order with the payment details
                             console.log('Payment verified, creating order for design:', design._id);
-                            const orderResult = await axios.post(
-                                '/api/custom-design/convert-to-order',
-                                {
-                                    designId: design._id,
-                                    paymentMethod: 'Razorpay',
-                                    paymentStatus: 'Paid',
-                                    paymentDetails: {
-                                        orderId: response.razorpay_order_id,
-                                        paymentId: response.razorpay_payment_id,
-                                        signature: response.razorpay_signature
+                            try {
+                                const orderResult = await axios.post(
+                                    '/api/custom-design/convert-to-order',
+                                    {
+                                        designId: design._id,
+                                        paymentMethod: 'Razorpay',
+                                        paymentStatus: 'Paid',
+                                        paymentDetails: {
+                                            orderId: response.razorpay_order_id,
+                                            paymentId: response.razorpay_payment_id,
+                                            signature: response.razorpay_signature
+                                        }
                                     }
-                                }
-                            );
+                                );
 
-                            console.log('Convert to order API response:', orderResult.data);
-                            if (orderResult.data.success) {
-                                toast.success('Payment successful! Order placed successfully.');
-                                console.log('Order created successfully:', orderResult.data.order);
-                                if (typeof onPaymentComplete === 'function') {
-                                    onPaymentComplete(orderResult.data.order);
+                                console.log('Convert to order API response:', orderResult.data);
+                                if (orderResult.data.success) {
+                                    toast.success('Payment successful! Order placed successfully.');
+                                    console.log('Order created successfully:', orderResult.data.order);
+                                    if (typeof onPaymentComplete === 'function') {
+                                        onPaymentComplete(orderResult.data.order);
+                                    }
+                                    // Always ensure we redirect to the orders page
+                                    toast.success('Redirecting to My Orders page...');
+                                    setTimeout(() => {
+                                        window.location.href = '/my-orders';
+                                    }, 1500);
+                                    onClose();
+                                } else {
+                                    console.error('API returned error:', orderResult.data.message);
+                                    await recordPaymentRecoveryFallback({
+                                        razorpay_payment_id: response.razorpay_payment_id,
+                                        razorpay_order_id: response.razorpay_order_id,
+                                        amount: Number(design.quote?.amount || 0),
+                                        userId: design.userId || design.user || null,
+                                        errorMessage: orderResult.data.message || 'Order creation failed after payment verification'
+                                    });
+                                    console.error('razorpay.payment.order_creation_failed_after_verification', {
+                                        paymentId: response.razorpay_payment_id,
+                                        razorpayOrderId: response.razorpay_order_id,
+                                        amount: Number(design.quote?.amount || 0),
+                                        errorMessage: orderResult.data.message || 'Order creation failed after payment verification'
+                                    });
+                                    toast.error(PAYMENT_RECOVERY_MESSAGE, { duration: 8000 });
                                 }
-                                // Always ensure we redirect to the orders page
-                                toast.success('Redirecting to My Orders page...');
-                                setTimeout(() => {
-                                    window.location.href = '/my-orders';
-                                }, 1500);
-                                onClose();
-                            } else {
-                                console.error('API returned error:', orderResult.data.message);
-                                toast.error(orderResult.data.message || 'Payment was successful but order creation failed.');
+                            } catch (orderError) {
+                                const errorMessage = orderError?.response?.data?.message || orderError?.message || 'Order creation failed after payment verification';
+                                await recordPaymentRecoveryFallback({
+                                    razorpay_payment_id: response.razorpay_payment_id,
+                                    razorpay_order_id: response.razorpay_order_id,
+                                    amount: Number(design.quote?.amount || 0),
+                                    userId: design.userId || design.user || null,
+                                    errorMessage
+                                });
+                                console.error('razorpay.payment.order_creation_failed_after_verification', {
+                                    paymentId: response.razorpay_payment_id,
+                                    razorpayOrderId: response.razorpay_order_id,
+                                    amount: Number(design.quote?.amount || 0),
+                                    errorMessage,
+                                    stack: orderError?.stack
+                                });
+                                toast.error(PAYMENT_RECOVERY_MESSAGE, { duration: 8000 });
                             }
                         } else {
                             toast.error(verifyResponse.data.message || 'Payment verification failed');
