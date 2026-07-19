@@ -14,7 +14,7 @@ export async function GET(_request, { params }) {
   try {
     await requireAdmin();
 
-    const { id } = params || {};
+    const { id } = await params;
     if (!isValidObjectId(id)) {
       return NextResponse.json({
         success: false,
@@ -41,7 +41,7 @@ export async function PUT(request, { params }) {
   try {
     const { userId } = await requireAdmin();
 
-    const { id } = params || {};
+    const { id } = await params;
     if (!isValidObjectId(id)) {
       return NextResponse.json({
         success: false,
@@ -69,7 +69,7 @@ export async function PATCH(request, { params }) {
   try {
     const { userId } = await requireAdmin();
 
-    const { id } = params || {};
+    const { id } = await params;
     if (!isValidObjectId(id)) {
       return NextResponse.json({
         success: false,
@@ -97,7 +97,7 @@ export async function DELETE(_request, { params }) {
   try {
     const { userId } = await requireAdmin();
 
-    const { id } = params || {};
+    const { id } = await params;
     if (!isValidObjectId(id)) {
       return NextResponse.json({
         success: false,

@@ -293,6 +293,12 @@ const OwnerProductList = () => {
                                 View
                               </button>
                               <button
+                                onClick={() => router.push(`/owner/products/${product._id}`)}
+                                className="rounded-md border border-orange-200 bg-orange-50 px-2.5 py-1 text-xs text-orange-700 hover:bg-orange-100"
+                              >
+                                Edit
+                              </button>
+                              <button
                                 onClick={() => openVariantModal(product)}
                                 className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-600 hover:bg-slate-50"
                               >

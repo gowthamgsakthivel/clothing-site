@@ -10,7 +10,7 @@ export async function PUT(request, { params }) {
   try {
     await requireAdmin();
 
-    const { variantId } = params || {};
+    const { variantId } = await params;
     if (!isValidObjectId(variantId)) {
       return NextResponse.json({
         success: false,
@@ -42,7 +42,7 @@ export async function DELETE(_request, { params }) {
   try {
     await requireAdmin();
 
-    const { variantId } = params || {};
+    const { variantId } = await params;
     if (!isValidObjectId(variantId)) {
       return NextResponse.json({
         success: false,
