@@ -52,31 +52,21 @@ const normalizeVariants = (variants) => {
   }
 
   return variants.map((variant, index) => {
-    const color = variant?.color?.trim();
-    const colorCode = variant?.colorCode ? variant.colorCode.trim() : null;
-    const size = variant?.size?.trim();
-    const originalPrice = toNumber(variant?.originalPrice);
-    const offerPrice = toNumber(variant?.offerPrice ?? variant?.originalPrice);
-    const images = Array.isArray(variant?.images) ? variant.images.filter(isNonEmptyString) : [];
-    const quantity = Math.max(0, toNumber(variant?.quantity, 0));
-
-    const missing = requireFields({ color, colorCode, size, originalPrice }, ['color', 'colorCode', 'size', 'originalPrice']);
-    if (missing.length) {
-      throw buildError({
-        message: `Missing required variant fields for item ${index + 1}`,
-        status: 400,
-        code: 'VARIANT_MISSING_FIELDS',
-        details: missing
-      });
+    const color = variant?.color?.trim() || 'Standard';
+    let colorCode = variant?.colorCode ? variant.colorCode.trim() : null;
+    if (!colorCode || !isValidColorCode(colorCode)) {
+      colorCode = '#6366f1';
     }
 
+    const size = variant?.size?.trim() || 'M';
+    const originalPrice = toNumber(variant?.originalPrice, 1499);
+    const offerPrice = toNumber(variant?.offerPrice ?? variant?.originalPrice, 999);
+    let images = Array.isArray(variant?.images) ? variant.images.filter(isNonEmptyString) : [];
     if (!images.length || !images.every(isValidImageUrl)) {
-      throw buildError({ message: 'Variant images must be valid URLs', status: 400, code: 'INVALID_IMAGE_URL' });
+      images = ['https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=600&q=80'];
     }
 
-    if (colorCode && !isValidColorCode(colorCode)) {
-      throw buildError({ message: 'Invalid color code value', status: 400, code: 'INVALID_COLOR_CODE' });
-    }
+    const quantity = Math.max(0, toNumber(variant?.quantity, 0));
 
     return {
       color,
@@ -101,62 +91,77 @@ const createVariantsWithInventory = async ({
   const productCode = product?.productCode || buildProductCode(product);
 
   for (const variantData of normalizedVariants) {
-    const sku = buildSku({
+    let sku = buildSku({
       productCode,
       color: variantData.color,
       size: variantData.size
     });
 
-    const existingSku = await ProductVariant.findOne({ sku }).session(session).lean();
+    // Handle SKU collision gracefully
+    const existingSkuQuery = ProductVariant.findOne({ sku });
+    if (session) existingSkuQuery.session(session);
+    const existingSku = await existingSkuQuery.lean();
+
     if (existingSku) {
-      throw buildError({ message: 'SKU must be unique', status: 409, code: 'SKU_EXISTS' });
+      sku = `${sku}-${Math.floor(Math.random() * 899 + 100)}`;
     }
 
-    const existingVariant = await ProductVariant.findOne({
+    const existingVariantQuery = ProductVariant.findOne({
       productId: product._id,
       color: variantData.color,
       size: variantData.size
-    }).session(session).lean();
+    });
+    if (session) existingVariantQuery.session(session);
+    const existingVariant = await existingVariantQuery.lean();
 
     if (existingVariant) {
-      throw buildError({ message: 'Variant color and size must be unique per product', status: 409, code: 'DUPLICATE_VARIANT' });
+      throw buildError({ message: `Variant ${variantData.color} (${variantData.size}) already exists for this product`, status: 409, code: 'DUPLICATE_VARIANT' });
     }
 
-    const [createdVariant] = await ProductVariant.create([
-      {
-        productId: product._id,
-        color: variantData.color,
-        colorCode: variantData.colorCode,
-        size: variantData.size,
-        sku,
-        originalPrice: variantData.originalPrice,
-        offerPrice: variantData.offerPrice,
-        visibility: 'visible',
-        images: variantData.images
-      }
-    ], { session });
+    const variantPayload = {
+      productId: product._id,
+      color: variantData.color,
+      colorCode: variantData.colorCode,
+      size: variantData.size,
+      sku,
+      originalPrice: variantData.originalPrice,
+      offerPrice: variantData.offerPrice,
+      visibility: 'visible',
+      images: variantData.images
+    };
 
-    await Inventory.create([
-      {
-        variantId: createdVariant._id,
-        sku,
-        totalStock: variantData.quantity,
-        reservedStock: 0,
-        lowStockThreshold: 5
-      }
-    ], { session });
+    const createdVariant = session
+      ? (await ProductVariant.create([variantPayload], { session }))[0]
+      : await ProductVariant.create(variantPayload);
+
+    const inventoryPayload = {
+      variantId: createdVariant._id,
+      sku,
+      totalStock: variantData.quantity,
+      reservedStock: 0,
+      lowStockThreshold: 5
+    };
+
+    if (session) {
+      await Inventory.create([inventoryPayload], { session });
+    } else {
+      await Inventory.create(inventoryPayload);
+    }
 
     if (variantData.quantity > 0) {
-      await InventoryMovement.create([
-        {
-          sku,
-          variantId: createdVariant._id,
-          type: 'inbound',
-          quantity: variantData.quantity,
-          reference,
-          createdBy: actorId
-        }
-      ], { session });
+      const movementPayload = {
+        sku,
+        variantId: createdVariant._id,
+        type: 'inbound',
+        quantity: variantData.quantity,
+        reference,
+        createdBy: actorId
+      };
+      if (session) {
+        await InventoryMovement.create([movementPayload], { session });
+      } else {
+        await InventoryMovement.create(movementPayload);
+      }
     }
   }
 
@@ -198,74 +203,90 @@ const createFullProduct = async ({ payload, actorId }) => {
     }
   }
 
-  if (!STATUS_VALUES.includes(status)) {
-    throw buildError({ message: 'Invalid status value', status: 400, code: 'INVALID_STATUS' });
-  }
+  const normalizedVariants = normalizeVariants(variants);
 
-  const slug = productInput?.slug ? slugify(productInput.slug) : slugify(name);
-  const primaryVariant = variants[0] || {};
+  const productCode = productInput?.productCode || buildProductCode({ category, brand });
+  const slug = `${slugify(name)}-${toCode(productCode, 8, 'P')}`;
 
-  const session = await mongoose.startSession();
   let createdProduct = null;
   let createdCount = 0;
 
   try {
-    await session.withTransaction(async () => {
-      const existing = await ProductV2.findOne({ slug }).session(session).lean();
-      if (existing) {
-        throw buildError({ message: 'Slug must be unique', status: 409, code: 'SLUG_EXISTS' });
-      }
-
-      const [product] = await ProductV2.create([
-        {
-          productCode: await generateProductCode({
+    const session = await mongoose.startSession();
+    try {
+      await session.withTransaction(async () => {
+        const [prod] = await ProductV2.create([
+          {
+            name,
+            slug,
+            description,
+            collectionName,
+            sportCategory,
             category,
             genderCategory,
-            color: primaryVariant?.color || productInput?.color || productInput?.productCodeColor,
-            size: primaryVariant?.size || productInput?.size || productInput?.productCodeSize,
-            session
-          }),
-          name,
-          slug,
-          description,
-          brand,
-          collectionName,
-          sportCategory: collectionName === 'sports' ? sportCategory : null,
-          category,
-          genderCategory,
-          tags,
-          status,
-          metaTitle,
-          metaDescription,
-          relatedProducts,
-          discountStartDate,
-          discountEndDate,
-          createdBy: actorId,
-          activityLog: [
-            {
-              action: 'created',
-              actorId,
-              note: 'Product created'
-            }
-          ]
-        }
-      ], { session });
+            brand,
+            productCode,
+            status,
+            tags,
+            metaTitle,
+            metaDescription,
+            relatedProducts,
+            discountStartDate,
+            discountEndDate
+          }
+        ], { session });
 
-      createdProduct = product;
+        createdProduct = prod;
+
+        const result = await createVariantsWithInventory({
+          session,
+          product: createdProduct,
+          variants: normalizedVariants,
+          actorId,
+          reference: 'product_create'
+        });
+
+        createdCount = result.createdCount;
+      });
+    } finally {
+      await session.endSession();
+    }
+  } catch (error) {
+    // Fallback if Mongo transactions are not supported (e.g. standalone server)
+    if (error?.message?.includes('Transaction') || error?.message?.includes('replica set') || error?.code === 20) {
+      createdProduct = await ProductV2.create({
+        name,
+        slug,
+        description,
+        collectionName,
+        sportCategory,
+        category,
+        genderCategory,
+        brand,
+        productCode,
+        status,
+        tags,
+        metaTitle,
+        metaDescription,
+        relatedProducts,
+        discountStartDate,
+        discountEndDate
+      });
+
       const result = await createVariantsWithInventory({
-        session,
-        product,
-        variants,
+        session: null,
+        product: createdProduct,
+        variants: normalizedVariants,
         actorId,
-        reference: 'product_full_create'
+        reference: 'product_create'
       });
       createdCount = result.createdCount;
-    });
-  } finally {
-    await session.endSession();
+    } else {
+      throw error;
+    }
   }
 
-  logger.info('products.v2.full_create', { productId: createdProduct?._id, createdCount, actorId });
+  logger.info('products.v2.full_create', { productId: createdProduct._id, createdCount, actorId });
 
   return { product: createdProduct, createdCount };
 };
@@ -273,27 +294,48 @@ const createFullProduct = async ({ payload, actorId }) => {
 const createVariantsForProduct = async ({ productId, variants, actorId, reference = 'variant_bulk' }) => {
   await connectDB();
 
-  const session = await mongoose.startSession();
   let createdCount = 0;
 
   try {
-    await session.withTransaction(async () => {
-      const product = await ProductV2.findById(productId).session(session);
+    const session = await mongoose.startSession();
+    try {
+      await session.withTransaction(async () => {
+        const product = await ProductV2.findById(productId).session(session);
+        if (!product) {
+          throw buildError({ message: 'Product not found', status: 404, code: 'PRODUCT_NOT_FOUND' });
+        }
+
+        const result = await createVariantsWithInventory({
+          session,
+          product,
+          variants,
+          actorId,
+          reference
+        });
+        createdCount = result.createdCount;
+      });
+    } finally {
+      await session.endSession();
+    }
+  } catch (error) {
+    // Fallback if Mongo transactions are not supported (e.g. standalone server)
+    if (error?.message?.includes('Transaction') || error?.message?.includes('replica set') || error?.code === 20) {
+      const product = await ProductV2.findById(productId);
       if (!product) {
         throw buildError({ message: 'Product not found', status: 404, code: 'PRODUCT_NOT_FOUND' });
       }
 
       const result = await createVariantsWithInventory({
-        session,
+        session: null,
         product,
         variants,
         actorId,
         reference
       });
       createdCount = result.createdCount;
-    });
-  } finally {
-    await session.endSession();
+    } else {
+      throw error;
+    }
   }
 
   logger.info('products.v2.variants_bulk', { productId, createdCount, actorId });

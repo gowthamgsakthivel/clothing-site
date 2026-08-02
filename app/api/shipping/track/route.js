@@ -84,17 +84,29 @@ export async function GET(request) {
     const shipment = await Shipment.findOne({ orderId }).lean();
     if (!shipment) {
       return NextResponse.json({
-        success: false,
-        message: 'Shipment not found'
-      }, { status: 404 });
+        success: true,
+        isPending: true,
+        tracking: {
+          status: 'Order Placed',
+          courierName: 'Assigning Courier Partner',
+          estimatedDelivery: '0 - 5 Business Days',
+          message: 'Your order is being processed and prepared for packing. You will be notified as soon as it is shipped (Estimated Delivery: 0 - 5 days).'
+        }
+      }, { status: 200 });
     }
 
     const awbCode = shipment.awb || shipment.awbCode || null;
     if (!awbCode) {
       return NextResponse.json({
-        success: false,
-        message: 'Shipment not ready for tracking'
-      }, { status: 400 });
+        success: true,
+        isPending: true,
+        tracking: {
+          status: 'Order Packed & Queued for Shipping',
+          courierName: shipment.courierName || 'Shiprocket Partner Courier',
+          estimatedDelivery: '0 - 5 Business Days',
+          message: 'Your order has been packed and handed over to our shipping partner. Live tracking updates will appear as soon as the courier scans the parcel!'
+        }
+      }, { status: 200 });
     }
 
     if (!process.env.SHIPROCKET_EMAIL || !process.env.SHIPROCKET_PASSWORD) {

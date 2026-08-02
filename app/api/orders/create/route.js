@@ -1,16 +1,22 @@
 import { NextResponse } from 'next/server';
 import { getAuth } from '@clerk/nextjs/server';
+import connectDB from '@/config/db';
 import { buildError } from '@/lib/errors';
 import ProductV2 from '@/models/v2/Product';
 import ProductVariant from '@/models/v2/ProductVariant';
 import CustomDesign from '@/models/CustomDesign';
 import { createOrder } from '@/services/orders/OrderService';
 import OrderV2 from '@/models/v2/Order';
+import User from '@/models/User';
 
-// Helper used only inside this route to keep the route export surface valid.
-const findExistingOrderByPaymentId = async (paymentId) => {
-  if (!paymentId) return null;
-  const existing = await OrderV2.findOne({ 'paymentMetadata.razorpay_payment_id': paymentId }).lean();
+const findExistingOrderByPaymentId = async (paymentId, razorpayOrderId) => {
+  if (!paymentId && !razorpayOrderId) return null;
+  const conditions = [];
+  if (paymentId) conditions.push({ 'paymentMetadata.razorpay_payment_id': paymentId });
+  if (razorpayOrderId) conditions.push({ 'paymentMetadata.razorpay_order_id': razorpayOrderId });
+  if (!conditions.length) return null;
+
+  const existing = await OrderV2.findOne({ $or: conditions }).lean();
   return existing;
 };
 
@@ -49,11 +55,25 @@ export async function POST(request) {
       }, { status: 401 });
     }
 
+    await connectDB();
+
     const payload = await request.json();
     const items = Array.isArray(payload?.items) ? payload.items : [];
 
     if (!payload?.address || !items.length) {
       return NextResponse.json({ success: false, message: 'Invalid data' }, { status: 400 });
+    }
+
+    // Idempotency check before processing items
+    const providedPaymentId = payload?.paymentDetails?.paymentId || payload?.paymentDetails?.payment_id || payload?.razorpay_payment_id || null;
+    const providedRazorpayOrderId = payload?.paymentDetails?.orderId || payload?.paymentDetails?.razorpay_order_id || payload?.razorpay_order_id || null;
+
+    if (providedPaymentId || providedRazorpayOrderId) {
+      const existing = await findExistingOrderByPaymentId(providedPaymentId, providedRazorpayOrderId);
+      if (existing && existing._id) {
+        await User.findByIdAndUpdate(userId, { $set: { cartItems: {} } }).catch(() => {});
+        return NextResponse.json({ success: true, data: { orderId: existing._id } }, { status: 200 });
+      }
     }
 
     const mappedItems = [];
@@ -142,30 +162,24 @@ export async function POST(request) {
     }
 
     const subtotal = mappedItems.reduce((sum, item) => sum + (item.totalPrice || 0), 0);
-    const taxTotal = Math.floor(subtotal * 0.02);
-
-    // Idempotency: if caller included a Razorpay payment id, return existing order if present
-    const providedPaymentId = payload?.paymentDetails?.paymentId || payload?.paymentDetails?.payment_id || payload?.razorpay_payment_id || null;
-    if (providedPaymentId) {
-      const existing = await findExistingOrderByPaymentId(providedPaymentId);
-      if (existing && existing._id) {
-        return NextResponse.json({ success: true, data: { orderId: existing._id } }, { status: 200 });
-      }
-    }
+    const taxTotal = Math.round(subtotal - (subtotal / 1.05));
+    const shippingTotal = 0;
+    const grandTotal = subtotal; // Product price is GST inclusive
 
     const orderResult = await createOrder({
       userId,
       items: mappedItems,
       paymentMethod: payload?.paymentMethod || 'Razorpay',
       paymentStatus: payload?.paymentStatus || 'Paid',
-      // Accept paymentDetails from client if provided (idempotency + metadata)
       paymentDetails: payload?.paymentDetails || undefined,
       shippingAddressId: payload?.address,
       taxTotal,
-      shippingTotal: 0,
+      shippingTotal,
       discountTotal: 0,
-      grandTotal: subtotal + taxTotal
+      grandTotal
     });
+
+    await User.findByIdAndUpdate(userId, { $set: { cartItems: {} } }).catch(() => {});
 
     if (customDesignIds.length && orderResult?.order?._id) {
       await CustomDesign.updateMany(

@@ -7,14 +7,16 @@ import { useAppContext } from '@/context/AppContext';
 import Link from 'next/link';
 import { getDisplayOrderCode } from '@/lib/codeGenerators';
 import {
-  Drawer,
-  EmptyState,
-  Pagination,
-  StatusBadge
+  Pagination
 } from '@/components/ui';
+import {
+  ShoppingBag, Search, RefreshCw, ExternalLink,
+  X, CheckCircle2, FileText, ShieldAlert, Box,
+  Truck, PackageCheck, Ban, Printer, AlertTriangle
+} from 'lucide-react';
 
 const STATUS_OPTIONS = [
-  { value: 'all', label: 'All' },
+  { value: 'all', label: 'All Statuses' },
   { value: 'placed', label: 'Placed' },
   { value: 'packed', label: 'Packed' },
   { value: 'shipped', label: 'Shipped' },
@@ -23,119 +25,110 @@ const STATUS_OPTIONS = [
 ];
 
 const SORT_OPTIONS = [
-  { value: 'createdAt:desc', label: 'Newest first' },
-  { value: 'createdAt:asc', label: 'Oldest first' }
+  { value: 'createdAt:desc', label: 'Newest First' },
+  { value: 'createdAt:asc', label: 'Oldest First' },
+  { value: 'grandTotal:desc', label: 'Highest Amount' },
+  { value: 'grandTotal:asc', label: 'Lowest Amount' }
 ];
 
 const SUMMARY_FILTERS = [
-  { key: 'all', label: 'All' },
+  { key: 'all', label: 'All Orders' },
   { key: 'placed', label: 'Placed' },
   { key: 'packed', label: 'Packed' },
   { key: 'shipped', label: 'Shipped' },
   { key: 'delivered', label: 'Delivered' },
+  { key: 'cancelled', label: 'Cancelled' },
   { key: 'rto', label: 'RTO' },
   { key: 'failed', label: 'Failed Sync' }
 ];
 
 const OrdersV2Page = () => {
-  const { getToken, user, currency } = useAppContext();
+  const { getToken } = useAppContext();
+
   const [orders, setOrders] = useState([]);
   const [pagination, setPagination] = useState({ currentPage: 1, totalPages: 1, total: 0 });
-  const [page, setPage] = useState(1);
-  const [limit] = useState(10);
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [shipmentFilter, setShipmentFilter] = useState('all');
-  const [search, setSearch] = useState('');
-  const [sortValue, setSortValue] = useState('createdAt:desc');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [retryingId, setRetryingId] = useState(null);
-  const [printingId, setPrintingId] = useState(null);
+
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [shipmentFilter, setShipmentFilter] = useState('all');
+  const [sortValue, setSortValue] = useState('createdAt:desc');
+  const [page, setPage] = useState(1);
+
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [detailsOrder, setDetailsOrder] = useState(null);
   const [detailsShipment, setDetailsShipment] = useState(null);
-  const [detailsLoading, setDetailsLoading] = useState(false);
+
   const [actionState, setActionState] = useState({ orderId: null, action: null });
+  const [retryingId, setRetryingId] = useState(null);
+
+  // Pack Modal State
   const [packModalOpen, setPackModalOpen] = useState(false);
   const [packOrderId, setPackOrderId] = useState(null);
   const [packForm, setPackForm] = useState({
     lengthCm: '25',
-    breadthCm: '20',
-    heightCm: '3',
-    weightKg: '0.3'
+    breadthCm: '18',
+    heightCm: '10',
+    weightKg: '0.8'
   });
+
+  // Cancel Modal State
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [cancelOrderTarget, setCancelOrderTarget] = useState(null);
 
   const fetchOrders = useCallback(async () => {
     try {
       setLoading(true);
       setError('');
-
-      if (!user?.id) {
-        setError('Authentication not ready. Please try again.');
-        return;
-      }
-
       const token = await getToken();
-      const params = new URLSearchParams();
-      const [sort, order] = sortValue.split(':');
 
-      params.set('page', String(page));
-      params.set('limit', String(limit));
-      params.set('sort', sort || 'createdAt');
-      params.set('order', order || 'desc');
-
-      if (statusFilter !== 'all') {
-        params.set('status', statusFilter);
-      }
-
-      if (search.trim()) {
-        params.set('search', search.trim());
-      }
-
-      const response = await axios.get(`/api/admin/orders?${params.toString()}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const [sortField, sortOrder] = sortValue.split(':');
+      const response = await axios.get('/api/admin/orders', {
+        params: {
+          page,
+          limit: 10,
+          status: statusFilter === 'all' ? undefined : statusFilter,
+          search: search.trim() || undefined,
+          sort: sortField,
+          order: sortOrder
+        },
+        headers: { Authorization: `Bearer ${token}` }
+      });
 
       if (!response.data?.success) {
-        throw new Error(response.data?.message || 'Failed to load orders');
+        throw new Error(response.data?.message || 'Failed to fetch orders');
       }
 
       setOrders(response.data.data.orders || []);
       setPagination(response.data.data.pagination || { currentPage: 1, totalPages: 1, total: 0 });
     } catch (err) {
-      const message = err?.message || 'Failed to load orders';
-      setError(message);
-      toast.error(message);
+      setError(err?.response?.data?.message || err?.message || 'Error loading orders');
     } finally {
       setLoading(false);
     }
-  }, [getToken, limit, page, search, sortValue, statusFilter, user]);
+  }, [getToken, page, search, sortValue, statusFilter]);
 
   useEffect(() => {
-    if (user?.id) {
-      fetchOrders();
-    }
-  }, [fetchOrders, user]);
+    fetchOrders();
+  }, [fetchOrders]);
 
   const fetchOrderDetails = useCallback(async (orderId) => {
     try {
-      setDetailsLoading(true);
       const token = await getToken();
-      const response = await axios.get(`/api/admin/orders/${orderId}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const response = await axios.get(`/api/admin/orders/${orderId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
 
-      if (!response.data?.success) {
-        throw new Error(response.data?.message || 'Failed to load order');
+      if (response.data?.success) {
+        setDetailsOrder(response.data.data.order);
+        setDetailsShipment(response.data.data.shipment);
+        setDetailsOpen(true);
+      } else {
+        toast.error('Failed to load order details');
       }
-
-      setDetailsOrder(response.data.data.order);
-      setDetailsShipment(response.data.data.shipment);
-      setDetailsOpen(true);
     } catch (err) {
-      toast.error(err?.message || 'Failed to load order');
-    } finally {
-      setDetailsLoading(false);
+      toast.error('Failed to load order details');
     }
   }, [getToken]);
 
@@ -145,51 +138,66 @@ const OrdersV2Page = () => {
     try {
       setRetryingId(shipmentId);
       const token = await getToken();
-      const response = await axios.post(`/api/admin/shipments/${shipmentId}/retry`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const response = await axios.post(`/api/admin/shipments/${shipmentId}/retry`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
 
       if (!response.data?.success) {
         throw new Error(response.data?.message || 'Retry failed');
       }
 
-      toast.success('Shiprocket sync triggered');
+      toast.success('Shipment retried successfully');
       await fetchOrders();
-      if (detailsOrder?._id) {
-        await fetchOrderDetails(detailsOrder._id);
-      }
     } catch (err) {
-      const message = err?.message || 'Retry failed';
-      toast.error(message);
+      toast.error(err?.response?.data?.message || err?.message || 'Retry failed');
     } finally {
       setRetryingId(null);
     }
-  }, [detailsOrder?._id, fetchOrderDetails, fetchOrders, getToken]);
+  }, [fetchOrders, getToken]);
 
   const runLifecycleAction = useCallback(async (orderId, action, payload = {}) => {
     if (!orderId || !action) return;
 
+    // Optimistic UI state update
+    setOrders((prev) => prev.map((o) => {
+      if (o._id === orderId) {
+        let newStatus = o.status;
+        if (action === 'pack') newStatus = 'packed';
+        if (action === 'ship') newStatus = 'shipped';
+        if (action === 'deliver') newStatus = 'delivered';
+        if (action === 'cancel') newStatus = 'cancelled';
+        return { ...o, status: newStatus };
+      }
+      return o;
+    }));
+
     try {
       setActionState({ orderId, action });
       const token = await getToken();
-      const response = await axios.patch(`/api/admin/orders/${orderId}/${action}`,
+      const response = await axios.patch(
+        `/api/admin/orders/${orderId}/${action}`,
         payload,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      if (!response.data?.success) {
-        throw new Error(response.data?.message || 'Action failed');
+      if (response.data?.success) {
+        toast.success(`Order ${action}ed successfully`);
+      } else {
+        toast.error(response.data?.message || `Failed to ${action} order`);
       }
-
-      toast.success(`Order ${action}ed`);
       await fetchOrders();
-      if (detailsOrder?._id) {
-        await fetchOrderDetails(detailsOrder._id);
+      if (detailsOrder?._id === orderId) {
+        await fetchOrderDetails(orderId);
       }
     } catch (err) {
-      const message = err?.message || 'Action failed';
-      toast.error(message);
+      const errorMsg = err?.response?.data?.message || err?.message || `Failed to ${action} order`;
+      if (err?.response?.status === 409) {
+        toast.success(`Order status updated (${action})`);
+        await fetchOrders();
+      } else {
+        toast.error(errorMsg);
+        await fetchOrders(); // Rollback to server truth
+      }
     } finally {
       setActionState({ orderId: null, action: null });
     }
@@ -220,15 +228,46 @@ const OrdersV2Page = () => {
       return;
     }
 
-    await runLifecycleAction(packOrderId, 'pack', { packageDetails: parsed });
+    const currentOrderId = packOrderId;
     closePackModal();
+    const loadingToastId = toast.loading('Packing order and generating shipping label...');
+
+    try {
+      await runLifecycleAction(currentOrderId, 'pack', { packageDetails: parsed });
+    } finally {
+      toast.dismiss(loadingToastId);
+    }
   }, [closePackModal, packForm, packOrderId, runLifecycleAction]);
 
-  const printLabel = useCallback(async (shipmentId) => {
-    // Deprecated: User prints label from Shiprocket directly after paying there.
-    // Keeping function structure in case it's needed later, but removed UI buttons.
-    return;
-  }, []);
+  const openCancelModal = (order) => {
+    setCancelOrderTarget(order);
+    setCancelModalOpen(true);
+  };
+
+  const confirmCancelOrder = async () => {
+    if (!cancelOrderTarget) return;
+    const targetId = cancelOrderTarget._id;
+    setCancelModalOpen(false);
+    setCancelOrderTarget(null);
+    await runLifecycleAction(targetId, 'cancel');
+  };
+
+  const getStatusBadgeStyle = (status) => {
+    switch (status) {
+      case 'placed':
+        return 'bg-blue-50 text-blue-700 border-blue-200';
+      case 'packed':
+        return 'bg-amber-50 text-amber-700 border-amber-200';
+      case 'shipped':
+        return 'bg-indigo-50 text-indigo-700 border-indigo-200';
+      case 'delivered':
+        return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+      case 'cancelled':
+        return 'bg-rose-50 text-rose-700 border-rose-200';
+      default:
+        return 'bg-slate-100 text-slate-700 border-slate-200';
+    }
+  };
 
   const rows = useMemo(() => {
     if (!orders.length) return null;
@@ -249,74 +288,135 @@ const OrdersV2Page = () => {
       const shipment = order.shipment;
       const trackingLink = shipment?.trackingUrl || null;
       const canRetry = shipment?.externalStatus === 'failed';
-      const rowStatus = shipment?.externalStatus;
-      const rowHighlight = rowStatus === 'failed'
-        ? 'bg-red-50'
-        : rowStatus === 'rto'
-          ? 'bg-orange-50'
-          : rowStatus === 'delivered'
-            ? 'bg-emerald-50/40'
-            : '';
 
-      const canPack = order.status === 'placed';
-      const canCancel = !['shipped', 'delivered', 'cancelled'].includes(order.status);
+      const isPlaced = order.status === 'placed';
+      const isPacked = order.status === 'packed';
+      const isShipped = order.status === 'shipped';
+      const isDelivered = order.status === 'delivered';
+      const isCancelled = order.status === 'cancelled';
+      const canCancel = !isDelivered && !isCancelled;
+
+      const isBusy = actionState.orderId === order._id;
 
       return (
-        <tr key={order._id} className={`border-b border-slate-100 transition-colors ${rowHighlight || 'hover:bg-slate-50'}`}>
-          <td className="px-4 py-4 text-sm font-semibold text-blue-600">#{getDisplayOrderCode(order)}</td>
-          <td className="px-4 py-4 text-sm">
-            <p className="font-semibold text-slate-800">{order.customerName || 'Guest'}</p>
-            <p className="text-xs text-slate-500 max-w-[120px] truncate" title={order.customerEmail || order.userId}>
+        <tr key={order._id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+          <td className="px-6 py-4 font-mono font-bold text-indigo-600">
+            #{getDisplayOrderCode(order)}
+          </td>
+          <td className="px-6 py-4">
+            <p className="font-bold text-slate-900">{order.customerName || 'Guest'}</p>
+            <p className="text-[11px] text-slate-500 max-w-[140px] truncate" title={order.customerEmail || order.userId}>
               {order.customerEmail || order.userId}
             </p>
           </td>
-          <td className="px-4 py-4 text-sm">
-            <StatusBadge type="order" value={order.paymentStatus || 'pending'} className="capitalize" />
+          <td className="px-6 py-4">
+            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-extrabold capitalize ${order.paymentStatus === 'paid' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'}`}>
+              {order.paymentStatus || 'pending'}
+            </span>
           </td>
-          <td className="px-4 py-4 text-sm">
-            <StatusBadge type="order" value={order.status} />
+          <td className="px-6 py-4">
+            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-extrabold capitalize border ${getStatusBadgeStyle(order.status)}`}>
+              {order.status}
+            </span>
           </td>
-          <td className="px-4 py-4 text-sm">
-            <StatusBadge type="shipment" value={shipment?.externalStatus || 'unknown'} />
+          <td className="px-6 py-4">
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-slate-100 text-slate-700 border border-slate-200 capitalize">
+              {shipment?.externalStatus || 'not_created'}
+            </span>
             {trackingLink && shipment?.trackingId && (
-              <a href={trackingLink} target="_blank" rel="noreferrer" className="block mt-1 text-xs text-blue-600 hover:underline">
-                Track Parcel
+              <a href={trackingLink} target="_blank" rel="noreferrer" className="flex items-center gap-1 mt-1 text-[11px] text-indigo-600 hover:text-indigo-700 font-semibold">
+                Track <ExternalLink className="w-3 h-3" />
               </a>
             )}
           </td>
-          <td className="px-4 py-4 text-sm font-semibold text-slate-900">{currency}{order.grandTotal?.toFixed(2)}</td>
-          <td className="px-4 py-4 text-sm text-slate-500">
+          <td className="px-6 py-4 font-mono font-black text-slate-900">
+            ₹{order.grandTotal?.toFixed(2)}
+          </td>
+          <td className="px-6 py-4 text-xs text-slate-500 font-mono">
             {order.createdAt ? new Date(order.createdAt).toLocaleDateString() : '--'}
           </td>
-          <td className="px-4 py-4 text-sm">
-            <div className="flex flex-wrap items-center justify-end gap-2">
+          <td className="px-6 py-4 text-right">
+            <div className="flex items-center justify-end gap-1.5 flex-wrap">
+              {/* Details Drawer Trigger */}
               <button
                 type="button"
                 onClick={() => fetchOrderDetails(order._id)}
-                className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+                className="px-2.5 py-1 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all shadow-xs"
               >
-                View
+                Details
               </button>
 
-              {canPack && (
+              {/* Printable Invoice Link */}
+              <Link
+                href={`/owner/orders/${order._id}/invoice`}
+                target="_blank"
+                className="p-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 hover:text-indigo-600 transition-all"
+                title="Print Invoice"
+              >
+                <Printer className="w-3.5 h-3.5" />
+              </Link>
+
+              {/* Pack Action */}
+              {isPlaced && (
                 <button
                   type="button"
-                  disabled={actionState.orderId === order._id && actionState.action === 'pack'}
+                  disabled={isBusy}
                   onClick={() => openPackModal(order._id)}
-                  className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-50 transition-colors shadow-sm"
+                  className="px-3 py-1 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold transition-all shadow-xs disabled:opacity-50 flex items-center gap-1"
                 >
-                  {actionState.orderId === order._id && actionState.action === 'pack' ? 'Packing...' : 'Pack Order'}
+                  <Box className="w-3.5 h-3.5" />
+                  <span>{isBusy && actionState.action === 'pack' ? 'Packing...' : 'Pack'}</span>
                 </button>
               )}
 
+              {/* Ship Action */}
+              {isPacked && (
+                <button
+                  type="button"
+                  disabled={isBusy}
+                  onClick={() => runLifecycleAction(order._id, 'ship')}
+                  className="px-3 py-1 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold transition-all shadow-xs disabled:opacity-50 flex items-center gap-1"
+                >
+                  <Truck className="w-3.5 h-3.5" />
+                  <span>{isBusy && actionState.action === 'ship' ? 'Shipping...' : 'Ship'}</span>
+                </button>
+              )}
+
+              {/* Deliver Action */}
+              {isShipped && (
+                <button
+                  type="button"
+                  disabled={isBusy}
+                  onClick={() => runLifecycleAction(order._id, 'deliver')}
+                  className="px-3 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold transition-all shadow-xs disabled:opacity-50 flex items-center gap-1"
+                >
+                  <PackageCheck className="w-3.5 h-3.5" />
+                  <span>{isBusy && actionState.action === 'deliver' ? 'Delivering...' : 'Deliver'}</span>
+                </button>
+              )}
+
+              {/* Cancel Action */}
+              {canCancel && (
+                <button
+                  type="button"
+                  disabled={isBusy}
+                  onClick={() => openCancelModal(order)}
+                  className="px-2.5 py-1 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold transition-all disabled:opacity-50"
+                  title="Cancel Order"
+                >
+                  {isBusy && actionState.action === 'cancel' ? 'Cancelling...' : 'Cancel'}
+                </button>
+              )}
+
+              {/* Retry Sync */}
               {canRetry && (
                 <button
                   type="button"
                   disabled={retryingId === shipment?._id}
                   onClick={() => retrySync(shipment?._id)}
-                  className="rounded-md border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-100 disabled:opacity-50 transition-colors"
+                  className="px-2.5 py-1 rounded-xl border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-700 text-xs font-bold transition-all"
                 >
-                  {retryingId === shipment?._id ? 'Retrying...' : 'Retry Sync'}
+                  {retryingId === shipment?._id ? 'Syncing...' : 'Retry'}
                 </button>
               )}
             </div>
@@ -324,7 +424,7 @@ const OrdersV2Page = () => {
         </tr>
       );
     });
-  }, [actionState.action, actionState.orderId, currency, fetchOrderDetails, openPackModal, orders, retrySync, retryingId, shipmentFilter]);
+  }, [actionState.action, actionState.orderId, fetchOrderDetails, openPackModal, orders, retrySync, retryingId, shipmentFilter, runLifecycleAction]);
 
   const summaryCounts = useMemo(() => {
     const counts = {
@@ -333,6 +433,7 @@ const OrdersV2Page = () => {
       packed: 0,
       shipped: 0,
       delivered: 0,
+      cancelled: 0,
       rto: 0,
       failed: 0
     };
@@ -354,66 +455,75 @@ const OrdersV2Page = () => {
   }, [orders]);
 
   return (
-    <div className="space-y-6 text-sm">
-      <div className="flex flex-wrap items-center justify-between gap-4">
+    <div className="space-y-8 pb-10">
+      {/* Header Banner */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white border border-slate-200/80 p-6 rounded-3xl shadow-sm">
         <div>
-          <h2 className="text-3xl font-black tracking-tight text-slate-900">Orders Management</h2>
-          <p className="text-slate-500">Manage orders, sync with Shiprocket, and track shipments in real-time.</p>
+          <div className="flex items-center gap-2">
+            <h2 className="text-2xl font-black text-slate-900 tracking-tight">Orders & Fulfillment</h2>
+            <span className="px-2.5 py-0.5 text-[10px] font-extrabold bg-indigo-50 text-indigo-700 rounded-full border border-indigo-200">
+              Live Logistics
+            </span>
+          </div>
+          <p className="text-xs text-slate-500 mt-1">Manage sales orders, pack shipments, transition states, and print invoices.</p>
         </div>
-        <div className="flex flex-wrap gap-3">
-          <button type="button" className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
-            Export CSV
-          </button>
+
+        <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={fetchOrders}
             disabled={loading}
-            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-sm disabled:opacity-50 active:scale-95"
           >
-            {loading ? 'Syncing...' : 'Sync All Orders'}
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            <span>{loading ? 'Syncing...' : 'Sync Orders'}</span>
           </button>
         </div>
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="relative flex-1 min-w-[260px]">
+      {/* Filter Toolbar */}
+      <div className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm space-y-4">
+        <div className="flex flex-col sm:flex-row items-center gap-4">
+          <div className="relative flex-1 w-full">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               value={search}
               onChange={(event) => {
                 setPage(1);
                 setSearch(event.target.value);
               }}
-              placeholder="Search Order ID, Phone, or Email"
-              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-200"
+              placeholder="Search by Order ID, Customer Name, Email, or Phone..."
+              className="w-full rounded-2xl border border-slate-200 bg-slate-50/50 py-2.5 pl-10 pr-4 text-xs text-slate-800 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm"
             />
           </div>
-          <div className="hidden lg:block h-10 w-px bg-slate-200" />
-          <div className="flex flex-wrap gap-3">
+
+          <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
             <select
               value={statusFilter}
               onChange={(event) => {
                 setPage(1);
                 setStatusFilter(event.target.value);
               }}
-              className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700"
+              className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 focus:outline-none focus:border-indigo-500"
             >
               {STATUS_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>{option.label}</option>
               ))}
             </select>
+
             <select
               value={sortValue}
               onChange={(event) => {
                 setPage(1);
                 setSortValue(event.target.value);
               }}
-              className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700"
+              className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 focus:outline-none focus:border-indigo-500"
             >
               {SORT_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>{option.label}</option>
               ))}
             </select>
+
             <button
               type="button"
               onClick={() => {
@@ -422,16 +532,15 @@ const OrdersV2Page = () => {
                 setSortValue('createdAt:desc');
                 setPage(1);
               }}
-              className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-600 hover:bg-slate-50"
+              className="h-10 px-3.5 rounded-xl border border-slate-200 bg-slate-50 text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-all"
             >
-              Clear Filters
+              Reset
             </button>
           </div>
         </div>
-      </div>
 
-      <div className="border-b border-slate-200 bg-white">
-        <div className="flex gap-6 overflow-x-auto px-2">
+        {/* Tab Filters */}
+        <div className="flex gap-2 overflow-x-auto pt-2 border-t border-slate-100 scrollbar-none">
           {SUMMARY_FILTERS.map((filter) => {
             const isActive = filter.key === 'all'
               ? statusFilter === 'all' && shipmentFilter === 'all'
@@ -443,7 +552,9 @@ const OrdersV2Page = () => {
               <button
                 key={filter.key}
                 type="button"
-                className={`flex flex-col items-center border-b-2 px-4 py-3 text-sm ${isActive ? 'border-blue-600 text-slate-900' : 'border-transparent text-slate-500 hover:text-slate-700'
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-extrabold transition-all whitespace-nowrap ${isActive
+                    ? 'bg-indigo-600 text-white shadow-sm border border-indigo-600'
+                    : 'bg-slate-50 text-slate-600 border border-slate-200 hover:text-slate-900 hover:border-slate-300'
                   }`}
                 onClick={() => {
                   if (filter.key === 'all') {
@@ -463,278 +574,348 @@ const OrdersV2Page = () => {
                   setPage(1);
                 }}
               >
-                <span className={`font-semibold ${filter.key === 'failed' ? 'text-rose-600' : ''}`}>{filter.label}</span>
-                <span className="text-xs text-slate-400">{summaryCounts[filter.key] ?? 0}</span>
+                <span>{filter.label}</span>
+                <span className={`px-2 py-0.2 rounded-full text-[10px] font-mono font-black ${isActive ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'}`}>
+                  {summaryCounts[filter.key] ?? 0}
+                </span>
               </button>
             );
           })}
         </div>
       </div>
 
-      {error ? (
-        <EmptyState
-          title="Error Loading Orders"
-          description={error}
-          action={(
+      {/* Table Container */}
+      <div className="rounded-3xl border border-slate-200/80 bg-white shadow-sm overflow-hidden">
+        {error ? (
+          <div className="p-12 text-center">
+            <ShieldAlert className="w-10 h-10 text-rose-500 mx-auto mb-3" />
+            <p className="text-sm font-bold text-slate-900">Error loading orders</p>
+            <p className="text-xs text-slate-500 mt-1">{error}</p>
             <button
-              type="button"
               onClick={fetchOrders}
-              className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              className="mt-4 px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold"
             >
-              Try Again
+              Retry
             </button>
-          )}
-        />
-      ) : orders.length === 0 && !loading ? (
-        <EmptyState
-          title="No orders found"
-          description="No orders match your current filters."
-        />
-      ) : (
-        <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-slate-50 border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500 font-semibold">
-                <th className="p-4">Order ID</th>
-                <th className="p-4">Customer</th>
-                <th className="p-4">Payment</th>
-                <th className="p-4">Fulfillment</th>
-                <th className="p-4">Shipment</th>
-                <th className="p-4">Total</th>
-                <th className="p-4">Date</th>
-                <th className="p-4 text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 text-sm">
-              {loading ? (
+          </div>
+        ) : orders.length === 0 && !loading ? (
+          <div className="p-16 text-center">
+            <ShoppingBag className="w-12 h-12 text-slate-400 mx-auto mb-3" />
+            <h4 className="text-base font-extrabold text-slate-900">No orders matching criteria</h4>
+            <p className="text-xs text-slate-500 mt-1">Try resetting your search query or filter tags.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50 text-[10px] font-extrabold text-slate-500 uppercase tracking-widest border-b border-slate-100">
                 <tr>
-                  <td colSpan={8} className="p-6 text-center text-slate-500">Loading orders...</td>
+                  <th className="px-6 py-4">Order ID</th>
+                  <th className="px-6 py-4">Customer</th>
+                  <th className="px-6 py-4">Payment</th>
+                  <th className="px-6 py-4">Fulfillment</th>
+                  <th className="px-6 py-4">Shipment</th>
+                  <th className="px-6 py-4">Grand Total</th>
+                  <th className="px-6 py-4">Date</th>
+                  <th className="px-6 py-4 text-right">Actions</th>
                 </tr>
-              ) : rows}
-            </tbody>
-          </table>
-        </div>
-      )}
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {loading ? (
+                  <tr>
+                    <td colSpan={8} className="px-6 py-12 text-center text-slate-500 font-medium">
+                      Loading orders...
+                    </td>
+                  </tr>
+                ) : rows}
+              </tbody>
+            </table>
+          </div>
+        )}
 
-      <div className="rounded-xl border border-slate-200 bg-white p-4">
-        <Pagination
-          page={pagination.currentPage}
-          totalPages={pagination.totalPages}
-          onPageChange={setPage}
-        />
+        <div className="p-4 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between">
+          <Pagination
+            page={pagination.currentPage}
+            totalPages={pagination.totalPages}
+            onPageChange={setPage}
+          />
+        </div>
       </div>
 
-      <Drawer
-        open={detailsOpen}
-        title="Order Summary"
-        onClose={() => setDetailsOpen(false)}
-        footer={(
-          <div className="flex flex-wrap items-center justify-between w-full">
-            <button
-              type="button"
-              disabled={!detailsOrder || ['shipped', 'delivered', 'cancelled'].includes(detailsOrder?.status) || actionState.action === 'cancel'}
-              onClick={() => runLifecycleAction(detailsOrder?._id, 'cancel')}
-              className="rounded-lg px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 disabled:opacity-50 transition-colors"
-            >
-              {actionState.action === 'cancel' ? 'Cancelling...' : 'Cancel Order'}
-            </button>
-
-            <div className="flex items-center gap-2">
-              {detailsOrder?._id && (
-                <Link
-                  href={`/owner/orders/${detailsOrder._id}/invoice`}
-                  target="_blank"
-                  className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors shadow-sm flex items-center gap-2"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9V2h12v7" /><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><path d="M6 14h12v8H6z" /></svg>
-                  Print Invoice
-                </Link>
-              )}
-
-              <button
-                type="button"
-                onClick={() => setDetailsOpen(false)}
-                className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
-              >
-                Close
-              </button>
-
-              {detailsOrder?.status === 'placed' && (
+      {/* Order Detail Drawer Modal */}
+      {detailsOpen && detailsOrder && (
+        <div className="fixed inset-0 z-50 flex justify-end bg-slate-900/30 backdrop-blur-sm transition-opacity">
+          <div className="w-full max-w-2xl bg-white border-l border-slate-200 h-full overflow-y-auto p-6 sm:p-8 flex flex-col justify-between shadow-2xl">
+            <div className="space-y-6">
+              <div className="flex items-center justify-between pb-6 border-b border-slate-100">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 rounded-2xl bg-indigo-50 border border-indigo-100 text-indigo-600">
+                    <FileText className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-black text-slate-900 tracking-tight">
+                      Order #{getDisplayOrderCode(detailsOrder)}
+                    </h3>
+                    <p className="text-xs text-slate-500 font-mono">ID: {detailsOrder._id}</p>
+                  </div>
+                </div>
                 <button
-                  type="button"
-                  disabled={actionState.action === 'pack'}
-                  onClick={() => openPackModal(detailsOrder?._id)}
-                  className="rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                  onClick={() => setDetailsOpen(false)}
+                  className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all"
                 >
-                  {actionState.action === 'pack' ? 'Packing...' : 'Pack Order'}
+                  <X className="w-5 h-5" />
                 </button>
-              )}
+              </div>
 
-              {detailsOrder?.status === 'packed' && (
-                <div className="rounded-lg bg-indigo-50 px-3 py-2 text-[11px] font-semibold text-indigo-700 border border-indigo-100">
-                  Shipping status will sync from Shiprocket events
+              {/* Specs Grid */}
+              <div className="grid grid-cols-2 gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-200">
+                <div>
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Customer</span>
+                  <p className="text-sm font-bold text-slate-900 mt-0.5">{detailsOrder.customerName || 'Guest'}</p>
+                  <p className="text-xs text-slate-500">{detailsOrder.customerEmail || detailsOrder.userId}</p>
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Payment</span>
+                  <span className="inline-block mt-1 px-2.5 py-0.5 text-xs font-extrabold bg-emerald-50 text-emerald-700 rounded-full border border-emerald-200 capitalize">
+                    {detailsOrder.paymentMethod || 'Razorpay'} ({detailsOrder.paymentStatus || 'Paid'})
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Fulfillment Status</span>
+                  <span className={`inline-block mt-1 px-2.5 py-0.5 text-xs font-extrabold rounded-full border capitalize ${getStatusBadgeStyle(detailsOrder.status)}`}>
+                    {detailsOrder.status}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Grand Total</span>
+                  <p className="text-base font-black text-emerald-600 font-mono mt-0.5">
+                    ₹{detailsOrder.grandTotal?.toFixed(2)}
+                  </p>
+                </div>
+              </div>
+
+              {/* Order Items List */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider">Line Items ({detailsOrder.items?.length || 0})</h4>
+                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                  {detailsOrder.items?.map((item, idx) => (
+                    <div key={idx} className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between text-xs">
+                      <div>
+                        <p className="font-bold text-slate-900">{item.designName || item.productName || 'Catalog Product'}</p>
+                        <p className="text-[10px] font-mono text-slate-500 mt-0.5">
+                          SKU: {item.sku} {item.size ? `| Size: ${item.size}` : ''} {item.color ? `| Color: ${item.color}` : ''}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-mono font-bold text-slate-900">₹{item.totalPrice?.toFixed(2)}</p>
+                        <p className="text-[10px] text-slate-500">Qty: {item.quantity}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Shipment Info */}
+              {detailsShipment && (
+                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+                  <h4 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider">Shiprocket Logistics</h4>
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    <div>
+                      <span className="text-slate-500">AWB:</span>
+                      <span className="font-mono font-bold text-slate-800 ml-2">{detailsShipment.awb || '--'}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500">Courier:</span>
+                      <span className="font-bold text-slate-800 ml-2">{detailsShipment.courier || '--'}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500">Status:</span>
+                      <span className="font-bold text-indigo-600 ml-2 capitalize">{detailsShipment.externalStatus || '--'}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500">Tracking ID:</span>
+                      <span className="font-mono font-bold text-slate-800 ml-2">{detailsShipment.trackingId || '--'}</span>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
-          </div>
-        )}
-      >
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 p-4 rounded-xl border border-slate-100 mb-6">
-          <div className="space-y-4">
-            <div>
-              <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Order ID</p>
-              <p className="text-sm font-semibold text-slate-900">#{detailsOrder?._id || '--'}</p>
-            </div>
-            <div>
-              <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Customer</p>
-              <p className="text-sm font-semibold text-slate-900">{detailsOrder?.customerName || 'Guest'}</p>
-              <p className="text-xs text-slate-500">{detailsOrder?.customerEmail || detailsOrder?.userId}</p>
-            </div>
-            <div>
-              <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Payment</p>
-              <StatusBadge type="order" value={detailsOrder?.paymentStatus || 'pending'} />
-            </div>
-          </div>
-          <div className="space-y-4">
-            <div>
-              <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Order Status</p>
-              <StatusBadge type="order" value={detailsOrder?.status} />
-            </div>
-            <div>
-              <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Date</p>
-              <p className="text-sm font-medium text-slate-900">
-                {detailsOrder?.createdAt ? new Date(detailsOrder.createdAt).toLocaleString() : '--'}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Total</p>
-              <p className="text-sm font-bold text-slate-900">{currency}{detailsOrder?.grandTotal?.toFixed(2) || '0.00'}</p>
-            </div>
-          </div>
-        </div>
 
-        <div className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
-          <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/50 px-4 py-3">
-            <h4 className="text-sm font-bold text-slate-900">Shipment Details</h4>
-            {detailsShipment?.trackingUrl && detailsShipment?.trackingId ? (
-              <a
-                href={detailsShipment.trackingUrl}
+            <div className="pt-6 border-t border-slate-100 flex items-center justify-between gap-3">
+              <Link
+                href={`/owner/orders/${detailsOrder._id}/invoice`}
                 target="_blank"
-                rel="noreferrer"
-                className="text-xs font-semibold text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-1"
+                className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-800 text-xs font-bold"
               >
-                Track Package
-              </a>
-            ) : null}
-          </div>
-          <div className="p-4 grid grid-cols-2 gap-4 text-sm text-slate-700">
-            <div>
-              <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">AWB</p>
-              <p className="font-medium text-slate-900">{detailsShipment?.awb || '--'}</p>
-            </div>
-            <div>
-              <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Courier</p>
-              <p className="font-medium text-slate-900">{detailsShipment?.courier || '--'}</p>
-            </div>
-            <div>
-              <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">External Status</p>
-              <div className="mt-1">
-                <StatusBadge type="shipment" value={detailsShipment?.externalStatus || 'unknown'} />
-              </div>
-            </div>
-            <div>
-              <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Tracking ID</p>
-              <p className="font-medium text-slate-900">{detailsShipment?.trackingId || '--'}</p>
-            </div>
+                <Printer className="w-4 h-4 text-indigo-600" />
+                <span>Print Invoice</span>
+              </Link>
 
-            {detailsShipment?.externalStatus === 'failed' && (
-              <div className="col-span-2 pt-2 border-t border-slate-100 mt-2">
-                <button
-                  type="button"
-                  onClick={() => retrySync(detailsShipment?._id)}
-                  disabled={detailsLoading}
-                  className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-100 disabled:opacity-50 transition-colors w-full"
-                >
-                  {detailsLoading ? 'Retrying Sync...' : 'Retry Shiprocket Sync'}
-                </button>
+              <div className="flex items-center gap-2">
+                {detailsOrder.status === 'placed' && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDetailsOpen(false);
+                      openPackModal(detailsOrder._id);
+                    }}
+                    className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold shadow-sm"
+                  >
+                    Pack Order
+                  </button>
+                )}
+
+                {detailsOrder.status === 'packed' && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDetailsOpen(false);
+                      runLifecycleAction(detailsOrder._id, 'ship');
+                    }}
+                    className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold shadow-sm"
+                  >
+                    Mark Shipped
+                  </button>
+                )}
+
+                {detailsOrder.status === 'shipped' && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDetailsOpen(false);
+                      runLifecycleAction(detailsOrder._id, 'deliver');
+                    }}
+                    className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold shadow-sm"
+                  >
+                    Mark Delivered
+                  </button>
+                )}
+
+                {detailsOrder.status !== 'delivered' && detailsOrder.status !== 'cancelled' && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDetailsOpen(false);
+                      openCancelModal(detailsOrder);
+                    }}
+                    className="px-4 py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold"
+                  >
+                    Cancel Order
+                  </button>
+                )}
               </div>
-            )}
+            </div>
           </div>
         </div>
-      </Drawer>
+      )}
 
+      {/* Package Dimension Modal */}
       {packModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-md rounded-xl bg-white border border-slate-200 shadow-xl">
-            <div className="px-5 py-4 border-b border-slate-100">
-              <h3 className="text-base font-bold text-slate-900">Enter Packed Dimensions</h3>
-              <p className="text-xs text-slate-500 mt-1">These values are sent to Shiprocket for shipment creation.</p>
-            </div>
-
-            <div className="p-5 space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <label className="text-xs font-semibold text-slate-600">
-                  Length (cm)
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={packForm.lengthCm}
-                    onChange={(event) => setPackForm((prev) => ({ ...prev, lengthCm: event.target.value }))}
-                    className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700"
-                  />
-                </label>
-                <label className="text-xs font-semibold text-slate-600">
-                  Breadth (cm)
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={packForm.breadthCm}
-                    onChange={(event) => setPackForm((prev) => ({ ...prev, breadthCm: event.target.value }))}
-                    className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700"
-                  />
-                </label>
-                <label className="text-xs font-semibold text-slate-600">
-                  Height (cm)
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={packForm.heightCm}
-                    onChange={(event) => setPackForm((prev) => ({ ...prev, heightCm: event.target.value }))}
-                    className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700"
-                  />
-                </label>
-                <label className="text-xs font-semibold text-slate-600">
-                  Weight (kg)
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.001"
-                    value={packForm.weightKg}
-                    onChange={(event) => setPackForm((prev) => ({ ...prev, weightKg: event.target.value }))}
-                    className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700"
-                  />
-                </label>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/30 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md rounded-3xl bg-white border border-slate-200 shadow-2xl p-6 space-y-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-2xl bg-indigo-50 border border-indigo-100 text-indigo-600">
+                <Box className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-base font-extrabold text-slate-900">Enter Packed Box Specs</h3>
+                <p className="text-xs text-slate-500">Data will be pushed to Shiprocket API for shipping label generation.</p>
               </div>
             </div>
 
-            <div className="px-5 py-4 border-t border-slate-100 flex justify-end gap-2">
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              <div>
+                <label className="text-slate-600 font-bold block mb-1">Length (cm)</label>
+                <input
+                  type="number"
+                  value={packForm.lengthCm}
+                  onChange={(e) => setPackForm((prev) => ({ ...prev, lengthCm: e.target.value }))}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-800 font-mono focus:border-indigo-500 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="text-slate-600 font-bold block mb-1">Breadth (cm)</label>
+                <input
+                  type="number"
+                  value={packForm.breadthCm}
+                  onChange={(e) => setPackForm((prev) => ({ ...prev, breadthCm: e.target.value }))}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-800 font-mono focus:border-indigo-500 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="text-slate-600 font-bold block mb-1">Height (cm)</label>
+                <input
+                  type="number"
+                  value={packForm.heightCm}
+                  onChange={(e) => setPackForm((prev) => ({ ...prev, heightCm: e.target.value }))}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-800 font-mono focus:border-indigo-500 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="text-slate-600 font-bold block mb-1">Weight (kg)</label>
+                <input
+                  type="number"
+                  value={packForm.weightKg}
+                  onChange={(e) => setPackForm((prev) => ({ ...prev, weightKg: e.target.value }))}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-800 font-mono focus:border-indigo-500 focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
               <button
                 type="button"
                 onClick={closePackModal}
-                className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                className="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={submitPack}
-                disabled={!packOrderId || (actionState.orderId === packOrderId && actionState.action === 'pack')}
-                className="rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+                className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm"
               >
-                {actionState.orderId === packOrderId && actionState.action === 'pack' ? 'Packing...' : 'Save & Pack'}
+                Confirm & Pack Order
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cancel Order Confirmation Modal */}
+      {cancelModalOpen && cancelOrderTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/30 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md rounded-3xl bg-white border border-slate-200 shadow-2xl p-6 space-y-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-2xl bg-rose-50 border border-rose-100 text-rose-600">
+                <AlertTriangle className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-base font-extrabold text-slate-900">Cancel Order #{getDisplayOrderCode(cancelOrderTarget)}?</h3>
+                <p className="text-xs text-slate-500">This action will release reserved stock back into inventory.</p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-200">
+              Are you sure you want to cancel order for <strong>{cancelOrderTarget.customerName || cancelOrderTarget.userId}</strong> worth <strong>₹{cancelOrderTarget.grandTotal?.toFixed(2)}</strong>?
+            </p>
+
+            <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => {
+                  setCancelModalOpen(false);
+                  setCancelOrderTarget(null);
+                }}
+                className="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50"
+              >
+                Keep Order
+              </button>
+              <button
+                type="button"
+                onClick={confirmCancelOrder}
+                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-sm"
+              >
+                Yes, Cancel Order
               </button>
             </div>
           </div>

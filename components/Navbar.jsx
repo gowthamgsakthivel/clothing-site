@@ -12,13 +12,16 @@ import UnifiedNotificationIcon from "./UnifiedNotificationIcon";
 import CartCounter from "./CartIcon";
 
 const Navbar = () => {
-
-  const { isAdmin, router, user } = useAppContext();
   const pathname = usePathname();
+  const { isAdmin, router, user } = useAppContext();
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showCategories, setShowCategories] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   const { openSignIn } = useClerk();
+
+  if (pathname?.startsWith('/owner')) {
+    return null;
+  }
 
   const isActive = (href) => {
     if (href === '/') return pathname === '/';

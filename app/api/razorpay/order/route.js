@@ -9,7 +9,7 @@ import ProductVariant from '@/models/v2/ProductVariant';
 import User from '@/models/User';
 
 const CURRENCY = 'INR';
-const TAX_RATE = 0.02;
+const TAX_RATE = 0.05;
 const CUSTOM_DESIGN_RECEIPT_PATTERN = /^custom_design_([a-fA-F0-9]{24})$/;
 
 const createError = (message, status = 400) => {
@@ -41,19 +41,24 @@ const parseCartKey = (productKey) => {
 };
 
 const normalizeReceipt = (receipt) => {
-    if (typeof receipt !== 'string') {
+    if (typeof receipt !== 'string' || !receipt.trim()) {
         return '';
     }
 
-    return receipt.trim();
+    // Razorpay strictly enforces receipt length <= 40 characters
+    return receipt.trim().slice(0, 40);
 };
 
 const createRazorpayClient = () => {
-    const keyId = process.env.RAZORPAY_KEY_ID;
-    const keySecret = process.env.RAZORPAY_KEY_SECRET;
+    let keyId = (process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || '').trim();
+    let keySecret = (process.env.RAZORPAY_KEY_SECRET || '').trim();
+
+    // Ignore placeholder ## strings
+    if (keyId.startsWith('#')) keyId = '';
+    if (keySecret.startsWith('#')) keySecret = '';
 
     if (!keyId || !keySecret) {
-        throw createError('Razorpay is not configured', 500);
+        throw createError('Razorpay credentials are not configured in environment variables', 500);
     }
 
     return new Razorpay({
@@ -77,11 +82,14 @@ const resolveCustomDesignAmount = async ({ userId, customDesignId }) => {
         throw createError('Custom design is not approved yet.', 400);
     }
 
+    const shortId = String(customDesignId).slice(-12);
+    const timeStamp = Date.now().toString().slice(-8);
+
     return {
         amountRupees: Number(design.quote.amount),
         sourceType: 'custom_design',
         sourceId: customDesignId,
-        receipt: `custom_design_${customDesignId}`
+        receipt: `cd_${shortId}_${timeStamp}`
     };
 };
 
@@ -187,15 +195,21 @@ const resolveCartAmount = async ({ userId }) => {
         });
     }
 
-    const taxTotal = Math.floor(subtotal * TAX_RATE);
+    const taxTotal = Math.round(subtotal - (subtotal / 1.05));
+    const shippingTotal = 0;
+    const amountRupees = subtotal; // Product price is GST inclusive
+
+    const userSuffix = String(userId).slice(-8);
+    const timeStamp = Date.now().toString().slice(-8);
 
     return {
-        amountRupees: subtotal + taxTotal,
+        amountRupees,
         sourceType: 'cart',
         lineItems,
         subtotal,
         taxTotal,
-        receipt: `cart_${userId}_${Date.now()}`
+        shippingTotal,
+        receipt: `cart_${userSuffix}_${timeStamp}`
     };
 };
 
@@ -264,10 +278,12 @@ export async function POST(request) {
         }
 
         const razorpay = createRazorpayClient();
+        const finalReceipt = normalizeReceipt(body.receipt) || paymentContext.receipt;
+
         const order = await razorpay.orders.create({
             amount: Math.round(paymentContext.amountRupees * 100),
             currency: CURRENCY,
-            receipt: normalizeReceipt(body.receipt) || paymentContext.receipt,
+            receipt: finalReceipt,
             notes: {
                 userId,
                 sourceType: paymentContext.sourceType,
@@ -288,7 +304,7 @@ export async function POST(request) {
             payload: {
                 sourceType: paymentContext.sourceType,
                 sourceId: paymentContext.sourceId || null,
-                receipt: normalizeReceipt(body.receipt) || paymentContext.receipt,
+                receipt: finalReceipt,
                 amountRupees: paymentContext.amountRupees,
                 taxTotal: paymentContext.taxTotal || 0,
                 subtotal: paymentContext.subtotal || paymentContext.amountRupees,
@@ -301,6 +317,7 @@ export async function POST(request) {
             order
         });
     } catch (error) {
+        console.error('Razorpay Order Creation Error:', error);
         return NextResponse.json({
             success: false,
             message: error?.message || 'Unable to create payment order'

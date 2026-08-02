@@ -129,10 +129,54 @@ const createOrder = async (orderData) => {
           paymentMetadata: Object.keys(paymentMetadata).length ? paymentMetadata : undefined
         }
       ], { session });
+
+      // Automatically clear user's cart in database upon successful order creation
+      await User.findByIdAndUpdate(userId, { $set: { cartItems: {} } }, { session }).catch(() => {});
     });
+  } catch (txError) {
+    if (txError?.message?.includes('Transaction') || txError?.message?.includes('standalone')) {
+      const orderCode = await generateOrderCode({});
+      for (const item of items) {
+        if (!isCustomDesignItem(item)) {
+          await reserveStock(item.sku, item.quantity, `order:${orderId}`, userId);
+        }
+      }
+
+      const paymentMetadata = {};
+      if (orderData?.paymentDetails) {
+        paymentMetadata.razorpay_order_id = orderData.paymentDetails.orderId || null;
+        paymentMetadata.razorpay_payment_id = orderData.paymentDetails.paymentId || null;
+        paymentMetadata.razorpay_signature = orderData.paymentDetails.signature || null;
+      }
+
+      await OrderV2.create({
+        _id: orderId,
+        orderCode,
+        userId,
+        status: 'placed',
+        paymentStatus: (orderData?.paymentStatus || 'pending').toString().toLowerCase(),
+        paymentMethod: orderData?.paymentMethod || 'COD',
+        items,
+        subtotal: totals.subtotal,
+        discountTotal: totals.discountTotal,
+        taxTotal: totals.taxTotal,
+        shippingTotal: totals.shippingTotal,
+        grandTotal: totals.grandTotal,
+        shippingAddressId: orderData?.shippingAddressId || null,
+        inventoryReservedAt: new Date(),
+        paymentMetadata: Object.keys(paymentMetadata).length ? paymentMetadata : undefined
+      });
+
+      await User.findByIdAndUpdate(userId, { $set: { cartItems: {} } }).catch(() => {});
+    } else {
+      throw txError;
+    }
   } finally {
     await session.endSession();
   }
+
+  // Double check user cart is cleared in database
+  await User.findByIdAndUpdate(userId, { $set: { cartItems: {} } }).catch(() => {});
 
   const order = await OrderV2.findById(orderId).lean();
   return { order };

@@ -4,6 +4,7 @@ import { AppContextProvider } from "@/context/AppContext";
 import { Toaster } from "react-hot-toast";
 import { ClerkProvider } from "@clerk/nextjs";
 import Navbar from '@/components/Navbar';
+import ClientLayoutWrapper from '@/components/ClientLayoutWrapper';
 
 const outfit = Outfit({ subsets: ['latin'], weight: ["300", "400", "500"] })
 
@@ -110,9 +111,9 @@ export default function RootLayout({ children }) {
           />
           <AppContextProvider>
             <Navbar />
-            <div className="page-with-navbar">
+            <ClientLayoutWrapper>
               {children}
-            </div>
+            </ClientLayoutWrapper>
           </AppContextProvider>
         </body>
       </html>
