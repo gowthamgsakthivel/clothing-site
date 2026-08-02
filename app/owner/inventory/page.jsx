@@ -1,60 +1,77 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
+import Image from 'next/image';
+import Link from 'next/link';
 import axios from 'axios';
+import { useSearchParams } from 'next/navigation';
 import { useAppContext } from '@/context/AppContext';
 import { toast } from 'react-hot-toast';
 import {
     Package, Palette, Plus, Search, RefreshCw,
     Save, CheckCircle2, AlertTriangle, ShieldCheck, X,
-    Sparkles, Edit3
+    Sparkles, Edit3, ExternalLink
 } from 'lucide-react';
 
 const COLOR_MAP = {
+    black: '#000000',
+    white: '#ffffff',
     red: '#ef4444',
-    purple: '#a855f7',
+    crimson: '#dc2626',
+    maroon: '#800000',
     blue: '#3b82f6',
-    indigo: '#6366f1',
+    royal: '#1d4ed8',
+    navy: '#1e3a8a',
+    sky: '#0ea5e9',
+    cyan: '#06b6d4',
+    teal: '#14b8a6',
     green: '#22c55e',
     emerald: '#10b981',
+    lime: '#84cc16',
     yellow: '#eab308',
     amber: '#f59e0b',
     orange: '#f97316',
     pink: '#ec4899',
+    magenta: '#d946ef',
+    purple: '#a855f7',
+    violet: '#7c3aed',
+    indigo: '#6366f1',
     rose: '#f43f5e',
-    black: '#000000',
-    white: '#ffffff',
     gray: '#6b7280',
     grey: '#6b7280',
-    navy: '#1e3a8a',
-    cyan: '#06b6d4',
-    teal: '#14b8a6',
-    maroon: '#800000',
-    gold: '#ffd700',
     silver: '#c0c0c0',
-    brown: '#78350f'
+    gold: '#ffd700',
+    brown: '#78350f',
+    beige: '#f5f5dc',
+    cream: '#fffdd0',
+    charcoal: '#36454f'
 };
 
-const getDynamicColorHex = (colorName, colorCode) => {
-    if (colorCode && colorCode !== '#6366f1' && /^#[0-9A-Fa-f]{6}$/.test(colorCode)) {
-        return colorCode;
-    }
+const getDynamicColorHex = (colorName, fallbackCode) => {
     const nameLower = (colorName || '').trim().toLowerCase();
-    for (const [key, hex] of Object.entries(COLOR_MAP)) {
-        if (nameLower.includes(key)) return hex;
+    if (nameLower) {
+        for (const [key, hex] of Object.entries(COLOR_MAP)) {
+            if (nameLower.includes(key)) return hex;
+        }
     }
-    return colorCode || '#6366f1';
+    if (fallbackCode && /^#[0-9A-Fa-f]{6}$/.test(fallbackCode)) {
+        return fallbackCode;
+    }
+    return '#000000';
 };
 
 const AVAILABLE_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
 
-const OwnerInventory = () => {
+const OwnerInventoryContent = () => {
     const { getToken } = useAppContext();
+    const searchParams = useSearchParams();
+    const urlQueryParam = searchParams.get('search') || searchParams.get('product') || '';
+
     const [loading, setLoading] = useState(true);
     const [inventoryItems, setInventoryItems] = useState([]);
     const [stockEdits, setStockEdits] = useState({});
     const [selectedProductKey, setSelectedProductKey] = useState(null);
-    const [searchTerm, setSearchTerm] = useState('');
+    const [searchTerm, setSearchTerm] = useState(urlQueryParam);
     const [isUpdating, setIsUpdating] = useState(false);
 
     // Modal state for adding a new color & size variants
@@ -124,8 +141,15 @@ const OwnerInventory = () => {
             const reservedStock = item.reservedStock || 0;
             const availableStock = Math.max(0, totalStock - reservedStock);
 
+            const isNonUnsplashImage = (img) => img && typeof img === 'string' && img.trim().length > 0 && !img.includes('unsplash.com');
+
             const productId = item.variantId?.productId?._id || item.productId || item._id;
-            const sampleImage = item.variantId?.images?.[0] || item.images?.[0] || item.image || '';
+            const itemImage = item.variantId?.images?.find(isNonUnsplashImage) ||
+                              item.variantId?.productId?.image ||
+                              (Array.isArray(item.variantId?.productId?.images) ? item.variantId?.productId?.images.find(isNonUnsplashImage) : null) ||
+                              item.variantId?.images?.[0] ||
+                              '';
+
             const sampleOriginalPrice = item.variantId?.originalPrice || item.originalPrice || 1499;
             const sampleOfferPrice = item.variantId?.offerPrice || item.offerPrice || 999;
 
@@ -133,11 +157,13 @@ const OwnerInventory = () => {
                 groups[productName] = {
                     productName,
                     productId,
-                    sampleImage,
+                    sampleImage: itemImage,
                     sampleOriginalPrice,
                     sampleOfferPrice,
                     colors: {}
                 };
+            } else if (isNonUnsplashImage(itemImage) && !isNonUnsplashImage(groups[productName].sampleImage)) {
+                groups[productName].sampleImage = itemImage;
             }
 
             if (!groups[productName].colors[rawColor]) {
@@ -164,6 +190,24 @@ const OwnerInventory = () => {
 
     const productNamesList = useMemo(() => Object.keys(groupedProducts), [groupedProducts]);
 
+    useEffect(() => {
+        if (urlQueryParam) {
+            setSearchTerm(urlQueryParam);
+        }
+    }, [urlQueryParam]);
+
+    useEffect(() => {
+        if (urlQueryParam && productNamesList.length > 0) {
+            const queryLower = urlQueryParam.toLowerCase().trim();
+            const exactMatch = productNamesList.find(name => name.toLowerCase().trim() === queryLower);
+            const partialMatch = productNamesList.find(name => name.toLowerCase().includes(queryLower));
+            const matched = exactMatch || partialMatch;
+            if (matched) {
+                setSelectedProductKey(matched);
+            }
+        }
+    }, [urlQueryParam, productNamesList]);
+
     const filteredProductNames = useMemo(() => {
         if (!searchTerm.trim()) return productNamesList;
         const term = searchTerm.toLowerCase();
@@ -176,10 +220,13 @@ const OwnerInventory = () => {
     }, [groupedProducts, productNamesList, searchTerm]);
 
     const activeProduct = useMemo(() => {
-        if (!selectedProductKey && filteredProductNames.length > 0) {
+        if (selectedProductKey && groupedProducts[selectedProductKey]) {
+            return groupedProducts[selectedProductKey];
+        }
+        if (filteredProductNames.length > 0) {
             return groupedProducts[filteredProductNames[0]];
         }
-        return groupedProducts[selectedProductKey] || groupedProducts[filteredProductNames[0]] || null;
+        return null;
     }, [filteredProductNames, groupedProducts, selectedProductKey]);
 
     const handleStockChange = (sku, currentStock, delta) => {
@@ -246,7 +293,7 @@ const OwnerInventory = () => {
             colorCode: '#ef4444',
             originalPrice: String(activeProduct.sampleOriginalPrice || 1499),
             offerPrice: String(activeProduct.sampleOfferPrice || 999),
-            imageUrl: activeProduct.sampleImage || 'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=600&q=80',
+            imageUrl: activeProduct.sampleImage || '',
             sizes: {
                 XS: { selected: false, quantity: 10 },
                 S: { selected: true, quantity: 15 },
@@ -289,7 +336,7 @@ const OwnerInventory = () => {
             return;
         }
 
-        const imageUrl = newColorForm.imageUrl.trim() || 'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=600&q=80';
+        const imageUrl = newColorForm.imageUrl.trim() || activeProduct.sampleImage || '';
 
         const variantsToCreate = selectedSizes.map(([size, data]) => ({
             color: colorName,
@@ -297,7 +344,7 @@ const OwnerInventory = () => {
             size,
             originalPrice: Number(data.originalPrice || newColorForm.originalPrice || activeProduct?.sampleOriginalPrice || 1499),
             offerPrice: Number(data.offerPrice || newColorForm.offerPrice || activeProduct?.sampleOfferPrice || 999),
-            images: [imageUrl],
+            images: imageUrl ? [imageUrl] : [],
             quantity: Number(data.quantity || 0)
         }));
 
@@ -397,7 +444,7 @@ const OwnerInventory = () => {
                             />
                         </div>
 
-                        <div className="space-y-1.5 max-h-[520px] overflow-y-auto pr-1">
+                        <div className="space-y-1.5 max-h-[540px] overflow-y-auto pr-1">
                             {filteredProductNames.length === 0 ? (
                                 <div className="p-8 text-center text-xs text-slate-400 font-medium">
                                     No products found matching criteria.
@@ -415,17 +462,34 @@ const OwnerInventory = () => {
                                         <div
                                             key={name}
                                             onClick={() => setSelectedProductKey(name)}
-                                            className={`p-3 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${isSelected
-                                                    ? 'bg-indigo-50/60 border-indigo-200 text-slate-900 shadow-sm'
+                                            className={`p-2.5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${isSelected
+                                                    ? 'bg-indigo-50/70 border-indigo-300 text-slate-900 shadow-sm'
                                                     : 'bg-white border-slate-200/80 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
                                                 }`}
                                         >
+                                            <div className="relative h-11 w-11 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden shrink-0">
+                                                {group.sampleImage ? (
+                                                    <Image
+                                                        src={group.sampleImage}
+                                                        alt={name}
+                                                        fill
+                                                        sizes="44px"
+                                                        className="object-cover"
+                                                    />
+                                                ) : (
+                                                    <div className="h-full w-full flex items-center justify-center text-slate-400">
+                                                        <Package className="w-5 h-5" />
+                                                    </div>
+                                                )}
+                                            </div>
+
                                             <div className="min-w-0 flex-1">
                                                 <p className="font-bold text-xs truncate">{name}</p>
                                                 <p className="text-[10px] font-mono text-slate-500 mt-0.5">
-                                                    {Object.keys(group.colors).length} Colors
+                                                    {Object.keys(group.colors).length} Colors • ₹{group.sampleOfferPrice || group.sampleOriginalPrice || 999}
                                                 </p>
                                             </div>
+
                                             <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold shrink-0 ${totalProductStock > 5 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'}`}>
                                                 {totalProductStock} units
                                             </span>
@@ -447,21 +511,62 @@ const OwnerInventory = () => {
                     ) : activeProduct ? (
                         <div>
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 mb-6 border-b border-slate-100">
-                                <div>
-                                    <h3 className="text-lg font-black text-slate-900">{activeProduct.productName}</h3>
-                                    <p className="text-xs text-slate-500 mt-0.5 font-mono">
-                                        Catalog ID: {String(activeProduct.productId).slice(-8)}
-                                    </p>
+                                <div className="flex items-center gap-3.5">
+                                    <div className="relative h-14 w-14 rounded-2xl bg-slate-100 border border-slate-200 overflow-hidden shrink-0 shadow-xs">
+                                        {activeProduct.sampleImage ? (
+                                            <Image
+                                                src={activeProduct.sampleImage}
+                                                alt={activeProduct.productName}
+                                                fill
+                                                sizes="56px"
+                                                className="object-cover"
+                                            />
+                                        ) : (
+                                            <div className="h-full w-full flex items-center justify-center text-slate-400">
+                                                <Package className="w-6 h-6" />
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div>
+                                        <h3 className="text-lg font-black text-slate-900">{activeProduct.productName}</h3>
+                                        <div className="flex items-center gap-2 mt-0.5 text-xs text-slate-500 font-mono">
+                                            <span>Catalog ID: {String(activeProduct.productId).slice(-8)}</span>
+                                            <span>•</span>
+                                            <span className="text-emerald-700 font-bold">₹{activeProduct.sampleOfferPrice || activeProduct.sampleOriginalPrice || 999}</span>
+                                        </div>
+                                    </div>
                                 </div>
 
-                                <button
-                                    type="button"
-                                    onClick={openAddVariantModal}
-                                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-bold transition-all shadow-sm shrink-0"
-                                >
-                                    <Plus className="w-4 h-4" />
-                                    <span>Add Color & Variants</span>
-                                </button>
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <Link
+                                        href={`/product/${activeProduct.productId}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-bold transition-all shadow-xs shrink-0"
+                                        title="Open public customer product page in a new tab"
+                                    >
+                                        <ExternalLink className="w-3.5 h-3.5 text-indigo-600" />
+                                        <span>View Store Page</span>
+                                    </Link>
+
+                                    <Link
+                                        href={`/owner/products/${activeProduct.productId}`}
+                                        className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-bold transition-all shadow-xs shrink-0"
+                                        title="Edit full product details, prices, and description"
+                                    >
+                                        <Edit3 className="w-3.5 h-3.5" />
+                                        <span>Edit Details</span>
+                                    </Link>
+
+                                    <button
+                                        type="button"
+                                        onClick={openAddVariantModal}
+                                        className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-sm shrink-0"
+                                    >
+                                        <Plus className="w-4 h-4" />
+                                        <span>Add Color & Variants</span>
+                                    </button>
+                                </div>
                             </div>
 
                             <div className="space-y-6">
@@ -498,21 +603,32 @@ const OwnerInventory = () => {
                                                             )}
                                                         </div>
 
-                                                        <div className="flex items-center gap-1.5 bg-slate-50 p-1 rounded-xl border border-slate-200">
+                                                        <div className="flex items-center gap-1 bg-slate-100/80 p-1 rounded-xl border border-slate-200/80">
                                                             <button
                                                                 type="button"
                                                                 onClick={() => handleStockChange(skuRecord.sku, skuRecord.totalStock, -1)}
-                                                                className="w-6 h-6 rounded-lg bg-white hover:bg-slate-100 text-slate-700 flex items-center justify-center font-bold text-xs transition-all shadow-xs border border-slate-200"
+                                                                className="w-7 h-7 rounded-lg bg-white hover:bg-slate-200 text-slate-700 flex items-center justify-center font-bold text-xs transition-all shadow-xs border border-slate-200"
                                                             >
                                                                 -
                                                             </button>
-                                                            <span className="font-mono font-extrabold text-xs text-slate-900 w-7 text-center">
-                                                                {skuRecord.totalStock}
-                                                            </span>
+                                                            <input
+                                                                type="number"
+                                                                value={skuRecord.totalStock}
+                                                                onChange={(e) => {
+                                                                    const val = parseInt(e.target.value, 10);
+                                                                    const newStock = isNaN(val) ? 0 : Math.max(0, val);
+                                                                    setStockEdits((prev) => ({
+                                                                        ...prev,
+                                                                        [skuRecord.sku]: newStock
+                                                                    }));
+                                                                }}
+                                                                className="font-mono font-extrabold text-xs text-slate-900 w-10 text-center bg-transparent focus:outline-none focus:bg-white focus:rounded-lg focus:ring-1 focus:ring-indigo-500"
+                                                                min="0"
+                                                            />
                                                             <button
                                                                 type="button"
                                                                 onClick={() => handleStockChange(skuRecord.sku, skuRecord.totalStock, 1)}
-                                                                className="w-6 h-6 rounded-lg bg-white hover:bg-slate-100 text-slate-700 flex items-center justify-center font-bold text-xs transition-all shadow-xs border border-slate-200"
+                                                                className="w-7 h-7 rounded-lg bg-white hover:bg-slate-200 text-slate-700 flex items-center justify-center font-bold text-xs transition-all shadow-xs border border-slate-200"
                                                             >
                                                                 +
                                                             </button>
@@ -740,5 +856,11 @@ const OwnerInventory = () => {
         </div>
     );
 };
+
+const OwnerInventory = () => (
+    <Suspense fallback={<div className="p-16 text-center text-slate-500 font-medium">Loading inventory...</div>}>
+        <OwnerInventoryContent />
+    </Suspense>
+);
 
 export default OwnerInventory;

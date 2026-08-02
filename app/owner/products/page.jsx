@@ -8,7 +8,7 @@ import { toast } from 'react-hot-toast';
 import Image from 'next/image';
 import {
   Boxes, Plus, Search, Filter, RefreshCw, Trash2, Edit3,
-  Sparkles, Layers, Image as ImageIcon, CheckCircle2, X
+  Sparkles, Layers, Image as ImageIcon, CheckCircle2, X, ExternalLink
 } from 'lucide-react';
 
 const OwnerProducts = () => {
@@ -25,12 +25,13 @@ const OwnerProducts = () => {
       setLoading(true);
       const token = await getToken();
 
-      const response = await axios.get('/api/admin/products', {
+      const response = await axios.get('/api/admin/products?limit=200&includeVariants=true', {
         headers: { Authorization: `Bearer ${token}` }
       });
 
       if (response.data.success) {
-        setProducts(response.data.products || []);
+        const rawProducts = response.data.data?.products || response.data.products || [];
+        setProducts(rawProducts);
       } else {
         toast.error(response.data.message || 'Failed to fetch products');
       }
@@ -237,13 +238,44 @@ const OwnerProducts = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <div className="flex items-center justify-end gap-2">
+                        <div className="flex items-center justify-end gap-2 flex-wrap">
+                          <Link
+                            href={`/product/${product._id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-bold transition-all shadow-xs"
+                            title="Open public customer product page in a new tab"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5 text-indigo-600" />
+                            <span>View Page</span>
+                          </Link>
+
+                          <Link
+                            href={`/owner/products/${product._id}`}
+                            className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-bold transition-all shadow-xs"
+                            title="Edit full product details, prices, and imagery"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                            <span>Edit Details</span>
+                          </Link>
+
+                          <Link
+                            href={`/owner/inventory?search=${encodeURIComponent(product.name)}`}
+                            className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs font-bold transition-all shadow-xs"
+                            title="Direct access to stock quantities and size matrix"
+                          >
+                            <Boxes className="w-3.5 h-3.5" />
+                            <span>Inventory</span>
+                          </Link>
+
                           <button
                             onClick={() => setSelectedProduct(product)}
-                            className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all shadow-sm"
+                            className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all shadow-xs"
+                            title="Quick view variant SKUs"
                           >
                             Variants
                           </button>
+
                           <button
                             onClick={() => setDeleteConfirmation(product._id)}
                             className="p-1.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 transition-all"
@@ -326,7 +358,33 @@ const OwnerProducts = () => {
               ))}
             </div>
 
-            <div className="flex justify-end pt-4 border-t border-slate-100">
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-slate-100">
+              <div className="flex flex-wrap items-center gap-2">
+                <Link
+                  href={`/product/${selectedProduct._id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all shadow-xs flex items-center gap-1.5"
+                  title="Open public customer product page in a new tab"
+                >
+                  <ExternalLink className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>View Store Page</span>
+                </Link>
+                <Link
+                  href={`/owner/products/${selectedProduct._id}`}
+                  className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-sm flex items-center gap-1.5"
+                >
+                  <Edit3 className="w-3.5 h-3.5" />
+                  <span>Edit Product Details</span>
+                </Link>
+                <Link
+                  href={`/owner/inventory?search=${encodeURIComponent(selectedProduct.name)}`}
+                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-sm flex items-center gap-1.5"
+                >
+                  <Boxes className="w-3.5 h-3.5" />
+                  <span>Manage Stock</span>
+                </Link>
+              </div>
               <button
                 onClick={() => setSelectedProduct(null)}
                 className="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50"

@@ -288,9 +288,9 @@ const listInventory = async ({
       .limit(Number(limit))
       .populate({
         path: 'variantId',
-        // include pricing fields so UI can show original/offer prices
-        select: 'color colorCode size productId originalPrice offerPrice sku',
-        populate: { path: 'productId', select: 'name' }
+        // include pricing and images fields so UI can show product images and prices
+        select: 'color colorCode size productId originalPrice offerPrice sku images',
+        populate: { path: 'productId', select: 'name brand category image images' }
       })
       .lean(),
     Inventory.countDocuments(filter)
