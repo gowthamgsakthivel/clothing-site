@@ -293,8 +293,8 @@ const OrderDetailsContent = () => {
                                 Track Order
                             </button>
                             <button
-                                disabled
-                                className="h-11 rounded-lg border border-gray-300 text-gray-400 text-sm font-semibold cursor-not-allowed"
+                                onClick={() => window.open(`/owner/orders/${order._id}/invoice`, '_blank')}
+                                className="h-11 rounded-lg border border-gray-300 hover:bg-gray-50 text-gray-700 text-sm font-semibold transition"
                             >
                                 Download Invoice
                             </button>

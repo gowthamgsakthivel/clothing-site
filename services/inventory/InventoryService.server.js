@@ -360,11 +360,29 @@ const bulkUpdateStock = async ({ updates, actorId = null, reference = 'admin_bul
     throw buildError({ message: 'Updates are required', status: 400, code: 'UPDATES_REQUIRED' });
   }
 
-  const session = await mongoose.startSession();
   const results = [];
 
   try {
-    await session.withTransaction(async () => {
+    const session = await mongoose.startSession();
+    try {
+      await session.withTransaction(async () => {
+        for (const update of updates) {
+          const sku = update?.sku;
+          const quantityChange = update?.quantityChange;
+          if (!sku || !Number.isFinite(toNumber(quantityChange, NaN))) {
+            throw buildError({ message: 'Invalid update payload', status: 400, code: 'INVALID_UPDATE' });
+          }
+
+          const result = await updateStock(sku, quantityChange, reference, actorId, { session });
+          results.push({ sku, inventory: result.inventory });
+        }
+      });
+    } finally {
+      await session.endSession();
+    }
+  } catch (error) {
+    // Fallback if Mongo transactions are not supported (e.g. standalone server)
+    if (error?.message?.includes('Transaction') || error?.message?.includes('replica set') || error?.code === 20) {
       for (const update of updates) {
         const sku = update?.sku;
         const quantityChange = update?.quantityChange;
@@ -372,12 +390,12 @@ const bulkUpdateStock = async ({ updates, actorId = null, reference = 'admin_bul
           throw buildError({ message: 'Invalid update payload', status: 400, code: 'INVALID_UPDATE' });
         }
 
-        const result = await updateStock(sku, quantityChange, reference, actorId, { session });
+        const result = await updateStock(sku, quantityChange, reference, actorId, { session: null });
         results.push({ sku, inventory: result.inventory });
       }
-    });
-  } finally {
-    await session.endSession();
+    } else {
+      throw error;
+    }
   }
 
   return { results };

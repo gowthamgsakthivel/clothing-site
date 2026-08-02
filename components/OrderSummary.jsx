@@ -81,7 +81,11 @@ const OrderSummary = () => {
     try {
       setLoadingStates(prev => ({ ...prev, payment: true }));
 
-      const totalAmount = getCartAmount() + Math.floor(getCartAmount() * 0.02);
+      const subtotal = getCartAmount();
+      const taxTotal = Math.round(subtotal - (subtotal / 1.05));
+      const shippingTotal = 0;
+      const totalAmount = subtotal; // GST is already included in displayed product price
+
       const loaded = await loadRazorpayScript();
       if (!loaded) {
         toast.error('Failed to load Razorpay SDK');
@@ -141,6 +145,9 @@ const OrderSummary = () => {
                 if (orderRes.data.success) {
                   toast.success('Payment successful! Order placed.');
                   setCartItems({});
+                  if (typeof fetchUserData === 'function') {
+                    await fetchUserData().catch(() => {});
+                  }
                   const orderId = orderRes.data?.data?.orderId || orderRes.data?.orderId;
                   router.push(orderId ? `/order-placed?orderId=${orderId}` : '/order-placed');
                 } else {
@@ -300,47 +307,34 @@ const OrderSummary = () => {
             <hr className="border-gray-500/30 my-5" />
 
             {/* Free Shipping Progress Bar */}
-            <div className="bg-orange-50/50 rounded-xl p-4 border border-orange-100 mb-6 relative overflow-hidden">
-              <div className="flex items-center gap-2 mb-2 relative z-10">
-                <svg className="w-5 h-5 text-orange-500 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            <div className="bg-emerald-50/60 rounded-xl p-4 border border-emerald-200/80 mb-6 flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
                 </svg>
-                {getCartAmount() >= 2000 ? (
-                  <span className="text-sm font-semibold text-orange-800">You&apos;ve unlocked FREE Shipping! 🎉</span>
-                ) : (
-                  <span className="text-sm font-medium text-orange-800">
-                    Add <span className="font-bold">₹{2000 - getCartAmount()}</span> more for FREE Shipping!
-                  </span>
-                )}
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2 mt-3 relative z-10">
-                <div
-                  className="bg-gradient-to-r from-orange-400 to-orange-500 h-2 rounded-full transition-all duration-1000 ease-out"
-                  style={{ width: `${Math.min((getCartAmount() / 2000) * 100, 100)}%` }}
-                ></div>
+              <div>
+                <span className="text-xs font-black text-emerald-900 block">FREE Shipping Unlocked! 🎉</span>
+                <span className="text-[11px] text-emerald-700 font-medium">Enjoy 100% free delivery on all sportswear orders.</span>
               </div>
             </div>
 
             <div className="space-y-4">
               <div className="flex justify-between text-base font-medium">
-                <p className="uppercase text-gray-600">Items {getCartCount()}</p>
+                <p className="uppercase text-gray-600">Subtotal ({getCartCount()} Items)</p>
                 <p className="text-gray-800">{currency}{getCartAmount()}</p>
+              </div>
+              <div className="flex justify-between text-xs text-gray-500">
+                <p>Includes 5% GST</p>
+                <p>{currency}{Math.round(getCartAmount() - (getCartAmount() / 1.05))}</p>
               </div>
               <div className="flex justify-between">
                 <p className="text-gray-600">Shipping Fee</p>
-                {getCartAmount() >= 2000 ? (
-                  <p className="font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded text-sm">FREE</p>
-                ) : (
-                  <p className="font-medium text-gray-800">₹99</p>
-                )}
-              </div>
-              <div className="flex justify-between">
-                <p className="text-gray-600">Tax (2%)</p>
-                <p className="font-medium text-gray-800">{currency}{Math.floor(getCartAmount() * 0.02)}</p>
+                <p className="font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded text-sm">FREE</p>
               </div>
               <div className="flex justify-between text-lg md:text-xl font-bold border-t pt-4 mt-2">
-                <p>Total</p>
-                <p>{currency}{getCartAmount() + Math.floor(getCartAmount() * 0.02) + (getCartAmount() >= 2000 ? 0 : 99)}</p>
+                <p>Total Payable</p>
+                <p>{currency}{getCartAmount()}</p>
               </div>
             </div>
           </div>

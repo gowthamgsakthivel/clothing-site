@@ -18,17 +18,33 @@ export default function OrderInvoicePage({ params }) {
         async function loadOrder() {
             try {
                 const token = await getToken();
-                if (!token) return;
-                const res = await axios.get(`/api/admin/orders/${orderId}`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                if (res.data?.success) {
-                    setOrder(res.data.data.order);
+                let fetchedOrder = null;
+                try {
+                    const res = await axios.get(`/api/admin/orders/${orderId}`, {
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
+                    if (res.data?.success) {
+                        fetchedOrder = res.data.data.order;
+                    }
+                } catch (adminErr) {
+                    const res = await axios.get('/api/orders/list', {
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
+                    if (res.data?.success && Array.isArray(res.data.orders)) {
+                        const matched = res.data.orders.find((o) => o._id === orderId || o.id === orderId);
+                        if (matched) {
+                            fetchedOrder = matched;
+                        }
+                    }
+                }
+
+                if (fetchedOrder) {
+                    setOrder(fetchedOrder);
                 } else {
-                    setError(res.data?.message || 'Failed to open invoice');
+                    setError('Order invoice not found or unauthorized');
                 }
             } catch (err) {
-                setError(err.message);
+                setError(err.message || 'Failed to load invoice');
             } finally {
                 setLoading(false);
             }
@@ -116,8 +132,9 @@ export default function OrderInvoicePage({ params }) {
                         </thead>
                         <tbody className="divide-y divide-slate-200">
                             {order.items?.map((item, idx) => {
-                                const taxAmount = (item.totalPrice * 0.05); // Calculating 5% based on total for this line
-                                const grandLineTotal = item.totalPrice + taxAmount; // Show final line total with tax for invoice, assuming exclusive. If inclusive, this logic can be adjusted.
+                                const lineTotal = Number(item.totalPrice || (item.unitPrice * item.quantity) || 0);
+                                const netAmount = lineTotal / 1.05;
+                                const taxAmount = lineTotal - netAmount;
 
                                 return (
                                     <tr key={idx} className="text-sm text-slate-800 border-b border-slate-200">
@@ -129,9 +146,9 @@ export default function OrderInvoicePage({ params }) {
                                         </td>
                                         <td className="p-3 border-r border-slate-300 text-center font-bold bg-slate-50/50">{item.quantity}</td>
                                         <td className="p-3 border-r border-slate-300 text-right whitespace-nowrap">{currency}{item.unitPrice?.toFixed(2)}</td>
-                                        <td className="p-3 border-r border-slate-300 text-right font-medium text-slate-700 whitespace-nowrap">{currency}{item.totalPrice?.toFixed(2)}</td>
+                                        <td className="p-3 border-r border-slate-300 text-right font-medium text-slate-700 whitespace-nowrap">{currency}{netAmount.toFixed(2)}</td>
                                         <td className="p-3 border-r border-slate-300 text-right text-slate-600 whitespace-nowrap">{currency}{taxAmount.toFixed(2)}</td>
-                                        <td className="p-3 text-right font-black text-slate-900 bg-slate-50/50 whitespace-nowrap">{currency}{grandLineTotal.toFixed(2)}</td>
+                                        <td className="p-3 text-right font-black text-slate-900 bg-slate-50/50 whitespace-nowrap">{currency}{lineTotal.toFixed(2)}</td>
                                     </tr>
                                 );
                             })}
@@ -141,14 +158,18 @@ export default function OrderInvoicePage({ params }) {
 
                 {/* Summary Footer */}
                 <div className="flex justify-end">
-                    <div className="w-72 space-y-3 text-sm text-slate-600">
+                    <div className="w-80 space-y-3 text-sm text-slate-600">
                         <div className="flex justify-between">
-                            <span>Subtotal</span>
-                            <span className="font-semibold text-slate-900">{currency}{order.subtotal?.toFixed(2)}</span>
+                            <span>Net Amount (Excl. GST)</span>
+                            <span className="font-semibold text-slate-900">{currency}{(order.grandTotal / 1.05).toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between">
-                            <span>Shipping</span>
-                            <span className="font-semibold text-slate-900">{currency}{order.shippingTotal?.toFixed(2)}</span>
+                            <span>GST (5% Included)</span>
+                            <span className="font-semibold text-slate-900">{currency}{(order.grandTotal - (order.grandTotal / 1.05)).toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span>Shipping Fee</span>
+                            <span className="font-bold text-emerald-600">FREE</span>
                         </div>
                         {order.discountTotal > 0 && (
                             <div className="flex justify-between text-green-600">
@@ -157,7 +178,7 @@ export default function OrderInvoicePage({ params }) {
                             </div>
                         )}
                         <div className="flex justify-between border-t border-slate-900 pt-3 mt-3">
-                            <span className="font-bold text-slate-900 uppercase tracking-widest">Grand Total</span>
+                            <span className="font-bold text-slate-900 uppercase tracking-widest">Grand Total (Incl. GST)</span>
                             <span className="text-xl font-black text-slate-900">{currency}{order.grandTotal?.toFixed(2)}</span>
                         </div>
                     </div>

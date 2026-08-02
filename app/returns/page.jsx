@@ -85,7 +85,7 @@ const ReturnsPage = () => {
             if (ordersRes.data.success) {
                 // Filter only delivered orders
                 const deliveredOrders = ordersRes.data.orders.filter(
-                    order => order.status === 'Delivered'
+                    order => ['delivered', 'completed'].includes(order.status?.toLowerCase())
                 );
                 setOrders(deliveredOrders);
             }

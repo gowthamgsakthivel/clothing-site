@@ -378,53 +378,55 @@ const OrderPlaced = () => {
                     {trackingLoading ? 'Refreshing…' : 'Refresh Status'}
                   </button>
                 </div>
-                <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-gray-700">
+                <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm text-gray-700">
                   <div>
-                    <p className="text-xs text-gray-500">Courier</p>
-                    <p className="font-semibold text-gray-900 mt-1">{order.courierName || 'Assigning Courier'}</p>
+                    <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider">Estimated Delivery</p>
+                    <p className="font-extrabold text-emerald-700 text-sm mt-1 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 inline-block">
+                      🚚 0 - 5 Business Days
+                    </p>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500">Shipment Status</p>
+                    <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider">Courier</p>
+                    <p className="font-semibold text-gray-900 mt-1">{order.courierName || 'Assigning Courier Partner'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider">Shipment Status</p>
                     <div className="mt-1">
                       <ShipmentStatusBadge status={order.shipmentStatus || 'Processing'} />
                     </div>
                   </div>
                   {order.awbCode && (
                     <div>
-                      <p className="text-xs text-gray-500">AWB</p>
-                      <p className="font-semibold text-gray-900 mt-1">{order.awbCode}</p>
+                      <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider">AWB / Tracking ID</p>
+                      <p className="font-mono font-bold text-gray-900 mt-1">{order.awbCode}</p>
                     </div>
                   )}
                   {order.trackingUrl && (
                     <div>
-                      <p className="text-xs text-gray-500">Tracking Link</p>
-                      <a className="font-semibold text-orange-600 mt-1 inline-block" href={order.trackingUrl} target="_blank" rel="noreferrer">
-                        Open Tracking
+                      <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider">Live Tracking Link</p>
+                      <a className="font-bold text-indigo-600 hover:text-indigo-800 mt-1 inline-flex items-center gap-1" href={order.trackingUrl} target="_blank" rel="noreferrer">
+                        Track on Courier Portal ↗
                       </a>
                     </div>
                   )}
                 </div>
+
                 {trackingLoading && (
                   <div className="mt-4 space-y-3 animate-pulse">
-                    {Array.from({ length: 3 }).map((_, idx) => (
-                      <div key={idx} className="h-16 rounded-xl bg-gray-100" />
+                    {Array.from({ length: 2 }).map((_, idx) => (
+                      <div key={idx} className="h-14 rounded-xl bg-gray-100" />
                     ))}
                   </div>
                 )}
 
-                {!trackingLoading && trackingError && (
-                  <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-                    {trackingError}
+                {!trackingLoading && trackingEvents.length === 0 && (
+                  <div className="mt-4 rounded-2xl border border-indigo-100 bg-indigo-50/50 p-4 text-xs text-indigo-900 leading-relaxed space-y-1">
+                    <p className="font-extrabold text-sm text-indigo-950">📦 Dispatch & Delivery Information</p>
+                    <p>Your order has been packed and is being handed over to our courier partner. You will receive real-time location updates here as soon as the courier scans the parcel for pickup (Delivery window: <strong>0 to 5 Business Days</strong>).</p>
                   </div>
                 )}
 
-                {!trackingLoading && !trackingError && trackingEvents.length === 0 && (
-                  <div className="mt-4 rounded-xl border border-gray-100 bg-gray-50 p-4 text-sm text-gray-600">
-                    Tracking updates will appear once the courier scans the shipment.
-                  </div>
-                )}
-
-                {!trackingLoading && !trackingError && trackingEvents.length > 0 && (
+                {!trackingLoading && trackingEvents.length > 0 && (
                   <div className="mt-4 space-y-3">
                     {trackingEvents.map((event, index) => (
                       <TrackingEventCard key={`${event?.date || event?.event_date || 'event'}-${index}`} event={event} />
@@ -459,7 +461,10 @@ const OrderPlaced = () => {
                   >
                     Continue Shopping
                   </Link>
-                  <button className="w-full rounded-lg border border-gray-300 text-gray-700 py-3 font-semibold hover:bg-gray-50 transition">
+                  <button
+                    onClick={() => window.open(`/owner/orders/${order.id}/invoice`, '_blank')}
+                    className="w-full rounded-lg border border-gray-300 text-gray-700 py-3 font-semibold hover:bg-gray-50 transition"
+                  >
                     Download Invoice
                   </button>
                 </div>
