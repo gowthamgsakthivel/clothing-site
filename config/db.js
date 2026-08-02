@@ -27,9 +27,16 @@ async function connectDB() {
                 throw new Error("MONGODB_URI is not defined in environment variables");
             }
 
+            let connectionUri = process.env.MONGODB_URI.trim();
+            // Check if URI already specifies a database name
+            const hasDatabaseInUri = /^mongodb(\+srv)?:\/\/[^\/]+\/[a-zA-Z0-9_\-]+/i.test(connectionUri);
+            if (!hasDatabaseInUri) {
+                connectionUri = `${connectionUri.replace(/\/+$/, '')}/sparrow-sports`;
+            }
+
             console.log("Connecting to MongoDB...");
             cached.promise = mongoose.connect(
-                `${process.env.MONGODB_URI}/sparrow-sports`,
+                connectionUri,
                 opts
             ).then(connection => {
                 console.log("MongoDB connected successfully");

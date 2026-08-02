@@ -44,7 +44,11 @@ const buildSku = ({ productCode, color, size }) => {
   return `SS-${productCode}-${colorCode}-${sizeCode}`;
 };
 
-const isValidImageUrl = (value) => typeof value === 'string' && /^https?:\/\//i.test(value);
+const isValidImageUrl = (value) => typeof value === 'string' && value.trim().length > 0 && (
+  /^https?:\/\//i.test(value.trim()) ||
+  /^\//.test(value.trim()) ||
+  /^data:image\//i.test(value.trim())
+);
 
 const normalizeVariants = (variants) => {
   if (!Array.isArray(variants) || !variants.length) {
@@ -62,9 +66,7 @@ const normalizeVariants = (variants) => {
     const originalPrice = toNumber(variant?.originalPrice, 1499);
     const offerPrice = toNumber(variant?.offerPrice ?? variant?.originalPrice, 999);
     let images = Array.isArray(variant?.images) ? variant.images.filter(isNonEmptyString) : [];
-    if (!images.length || !images.every(isValidImageUrl)) {
-      images = ['https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=600&q=80'];
-    }
+    images = images.filter(isValidImageUrl);
 
     const quantity = Math.max(0, toNumber(variant?.quantity, 0));
 
