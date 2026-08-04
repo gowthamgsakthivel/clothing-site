@@ -393,14 +393,27 @@ const Product = () => {
             }}
         />
         <Navbar />
-        <div className="px-4 sm:px-6 md:px-16 lg:px-32 pt-20 md:pt-24 space-y-8 md:space-y-10">
+        <div className="px-3 sm:px-6 md:px-16 lg:px-32 pt-[var(--nav-height)] md:pt-24 space-y-6 md:space-y-10">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-12 lg:gap-16">
                 <div className="px-0 sm:px-2 lg:px-4 xl:px-6">
-                    <div className="rounded-2xl md:rounded-lg overflow-hidden bg-gray-500/10 mb-4 relative aspect-[4/5]">
+                    <div className="rounded-2xl md:rounded-lg overflow-hidden bg-gray-500/10 mb-4 relative aspect-[4/5] p-2.5 sm:p-4">
+                        {/* Floating Back Button (Mobile) */}
+                        <button
+                            type="button"
+                            onClick={() => router.back()}
+                            className="absolute top-3 left-3 z-20 h-10 w-10 rounded-full bg-white/90 shadow-sm flex items-center justify-center md:hidden backdrop-blur-xs hover:bg-white transition"
+                            aria-label="Go back"
+                        >
+                            <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                            </svg>
+                        </button>
+
+                        {/* Floating Wishlist Button */}
                         <button
                             type="button"
                             onClick={handleFavoriteClick}
-                            className={`absolute top-3 right-3 z-20 h-10 w-10 rounded-full bg-white/90 shadow-sm flex items-center justify-center ${isFavorite ? 'text-orange-600' : 'text-gray-700'}`}
+                            className={`absolute top-3 right-3 z-20 h-10 w-10 rounded-full bg-white/90 shadow-sm flex items-center justify-center backdrop-blur-xs hover:bg-white transition ${isFavorite ? 'text-orange-600' : 'text-gray-700'}`}
                             aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
                         >
                             <Image
@@ -410,18 +423,6 @@ const Product = () => {
                                 style={{ filter: isFavorite ? 'invert(32%) sepia(98%) saturate(749%) hue-rotate(359deg) brightness(97%) contrast(101%)' : 'none' }}
                             />
                         </button>
-                        <div className="absolute top-3 left-2 right-2 z-10 flex items-center justify-between md:hidden pointer-events-none">
-                            <button
-                                type="button"
-                                onClick={() => router.back()}
-                                className="h-10 w-10 rounded-full bg-white/90 shadow-sm flex items-center justify-center pointer-events-auto"
-                                aria-label="Go back"
-                            >
-                                <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                                </svg>
-                            </button>
-                        </div>
                         {/* Show badge only if selected color has less than 10 units */}
                         {selectedColor && getColorObj(selectedColor) && getColorObj(selectedColor).stock < 10 && (
                             <span className="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded z-10">

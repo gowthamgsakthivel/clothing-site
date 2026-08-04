@@ -1,5 +1,5 @@
 'use client'
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAppContext } from '@/context/AppContext';
 import { toast } from 'react-hot-toast';
 import axios from 'axios';
@@ -78,7 +78,53 @@ const AddProduct = () => {
     const [isUploadingImages, setIsUploadingImages] = useState(false);
 
     const availableSizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
-    const categories = ['T-Shirt', 'Shirt', 'Pants', 'Shorts', 'Hoodie', 'Jacket', 'Accessories'];
+    const [categoriesList, setCategoriesList] = useState(['T-Shirt', 'Shirt', 'Pants', 'Shorts', 'Hoodie', 'Jacket', 'Accessories']);
+    const [isAddingNewCategory, setIsAddingNewCategory] = useState(false);
+    const [newCategoryName, setNewCategoryName] = useState('');
+
+    useEffect(() => {
+        async function fetchExistingCategories() {
+            try {
+                const token = await getToken();
+                const response = await axios.get('/api/admin/products?limit=200', {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                if (response.data?.success) {
+                    const fetchedProducts = response.data.data?.products || response.data.products || [];
+                    const dbCategories = fetchedProducts.map(p => p.category).filter(Boolean);
+                    setCategoriesList(prev => Array.from(new Set([...prev, ...dbCategories])));
+                }
+            } catch (error) {
+                console.error('Error loading existing categories:', error);
+            }
+        }
+        fetchExistingCategories();
+    }, [getToken]);
+
+    const handleAddNewCategory = () => {
+        const trimmed = newCategoryName.trim();
+        if (!trimmed) {
+            toast.error('Please enter a category name');
+            return;
+        }
+
+        const existingMatch = categoriesList.find(c => c.toLowerCase() === trimmed.toLowerCase());
+        if (existingMatch) {
+            setProductData(prev => ({ ...prev, category: existingMatch }));
+            setIsAddingNewCategory(false);
+            setNewCategoryName('');
+            toast.success(`Selected existing category: ${existingMatch}`);
+            return;
+        }
+
+        const formattedName = trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+        setCategoriesList(prev => [...prev, formattedName]);
+        setProductData(prev => ({ ...prev, category: formattedName }));
+        setIsAddingNewCategory(false);
+        setNewCategoryName('');
+        toast.success(`New category "${formattedName}" added & selected!`);
+    };
+
     const sportCategories = [
         { value: 'cricket', label: 'Cricket' },
         { value: 'football', label: 'Football' },
@@ -338,16 +384,6 @@ const AddProduct = () => {
                     </div>
                     <p className="text-xs text-slate-500 mt-1">Configure product specs, upload high-res images, and initialize variant inventory.</p>
                 </div>
-
-                <button
-                    type="submit"
-                    form="add-product-form"
-                    disabled={isLoading || isUploadingImages}
-                    className="flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold transition-all shadow-sm disabled:opacity-50 active:scale-95"
-                >
-                    <Plus className="w-4 h-4" />
-                    <span>{isUploadingImages ? 'Uploading Images...' : (isLoading ? 'Publishing...' : 'Publish Product')}</span>
-                </button>
             </div>
 
             {/* Main Form Container */}
@@ -417,18 +453,62 @@ const AddProduct = () => {
                         )}
 
                         <div>
-                            <label className="text-[10px] font-extrabold uppercase text-slate-500 block mb-1.5">Apparel Type Category *</label>
-                            <select
-                                value={productData.category}
-                                onChange={(e) => setProductData(prev => ({ ...prev, category: e.target.value }))}
-                                className="w-full rounded-2xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-slate-900 font-semibold focus:bg-white focus:border-indigo-500 focus:outline-none"
-                                required
-                            >
-                                <option value="">Select Category</option>
-                                {categories.map((cat) => (
-                                    <option key={cat} value={cat}>{cat}</option>
-                                ))}
-                            </select>
+                            <div className="flex items-center justify-between mb-1.5">
+                                <label className="text-[10px] font-extrabold uppercase text-slate-500 block">Apparel Type Category *</label>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsAddingNewCategory(!isAddingNewCategory)}
+                                    className="text-[11px] font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1 cursor-pointer"
+                                >
+                                    <Plus className="w-3 h-3" />
+                                    <span>{isAddingNewCategory ? 'Select Existing' : 'Add New Category'}</span>
+                                </button>
+                            </div>
+
+                            {isAddingNewCategory ? (
+                                <div className="flex items-center gap-2">
+                                    <input
+                                        type="text"
+                                        value={newCategoryName}
+                                        onChange={(e) => setNewCategoryName(e.target.value)}
+                                        placeholder="e.g. Tank Top, Cap, Sleeveless"
+                                        className="w-full rounded-2xl border border-indigo-300 bg-indigo-50/40 px-4 py-2.5 text-slate-900 font-semibold focus:bg-white focus:border-indigo-500 focus:outline-none"
+                                        autoFocus
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                                e.preventDefault();
+                                                handleAddNewCategory();
+                                            }
+                                        }}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={handleAddNewCategory}
+                                        className="px-4 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shrink-0 shadow-sm transition-all cursor-pointer"
+                                    >
+                                        Add & Select
+                                    </button>
+                                </div>
+                            ) : (
+                                <select
+                                    value={productData.category}
+                                    onChange={(e) => {
+                                        if (e.target.value === '__ADD_NEW__') {
+                                            setIsAddingNewCategory(true);
+                                        } else {
+                                            setProductData(prev => ({ ...prev, category: e.target.value }));
+                                        }
+                                    }}
+                                    className="w-full rounded-2xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-slate-900 font-semibold focus:bg-white focus:border-indigo-500 focus:outline-none"
+                                    required
+                                >
+                                    <option value="">Select Category</option>
+                                    {categoriesList.map((cat) => (
+                                        <option key={cat} value={cat}>{cat}</option>
+                                    ))}
+                                    <option value="__ADD_NEW__" className="font-bold text-indigo-600">+ Add New Custom Category...</option>
+                                </select>
+                            )}
                         </div>
 
                         <div>
@@ -562,6 +642,23 @@ const AddProduct = () => {
                             />
                         ))}
                     </div>
+                </div>
+
+                {/* Save & Publish Bottom Action Banner */}
+                <div className="rounded-3xl border border-indigo-100 bg-gradient-to-r from-indigo-50/80 via-purple-50/50 to-white p-6 sm:p-8 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div>
+                        <h4 className="text-base font-black text-slate-900">Ready to Publish Product?</h4>
+                        <p className="text-xs text-slate-500 mt-0.5">Double-check basic specs, images, and color variants before publishing to store catalog.</p>
+                    </div>
+
+                    <button
+                        type="submit"
+                        disabled={isLoading || isUploadingImages}
+                        className="w-full sm:w-auto flex items-center justify-center gap-2.5 px-8 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-extrabold transition-all shadow-md hover:shadow-lg disabled:opacity-50 active:scale-95 cursor-pointer shrink-0"
+                    >
+                        <Plus className="w-5 h-5" />
+                        <span>{isUploadingImages ? 'Uploading Images...' : (isLoading ? 'Publishing Product...' : 'Save & Publish Product')}</span>
+                    </button>
                 </div>
             </form>
         </div>

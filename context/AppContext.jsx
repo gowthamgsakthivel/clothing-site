@@ -376,10 +376,17 @@ export const AppContextProvider = (props) => {
 
     useEffect(() => {
         if (user) {
-            fetchUserData()
-            fetchFavorites()
+            const userRole = user?.publicMetadata?.role;
+            setIsAdmin(userRole === "admin");
+            fetchUserData();
+            fetchFavorites();
+        } else {
+            setIsAdmin(false);
+            setUserData(null);
+            setFavorites([]);
+            setCartItems({});
         }
-    }, [user])
+    }, [user]);
 
     // Add search function using the new API endpoint
     const searchProducts = useCallback(async (searchQuery, options = {}) => {

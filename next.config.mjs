@@ -52,12 +52,12 @@ const nextConfig = {
   /**
    * Webpack safety tweaks (optional but recommended)
    */
-  webpack: (config) => {
-    config.infrastructureLogging = {
-      level: "error",
-    };
-    return config;
-  },
+  // webpack: (config) => {
+  //   config.infrastructureLogging = {
+  //     level: "error",
+  //   };
+  //   return config;
+  // },
 };
 
 export default nextConfig;

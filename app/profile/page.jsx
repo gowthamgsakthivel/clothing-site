@@ -119,6 +119,27 @@ const ProfilePage = () => {
         }
     };
 
+    const handleSetPrimaryAddress = async (targetAddress) => {
+        try {
+            const { data } = await axios.put(`/api/address/${targetAddress._id}`, {
+                fullName: targetAddress.fullName,
+                phoneNumber: targetAddress.phoneNumber,
+                pincode: targetAddress.pincode,
+                area: targetAddress.area,
+                city: targetAddress.city,
+                state: targetAddress.state,
+                isDefault: true
+            });
+            if (data.success) {
+                toast.success('Set as primary delivery address');
+                fetchUserData();
+            }
+        } catch (error) {
+            console.error('Error setting primary address:', error);
+            toast.error('Failed to set primary address');
+        }
+    };
+
     const handleEditAddress = (address) => {
         setEditingAddress(address);
         setAddressForm({
@@ -649,10 +670,18 @@ const ProfilePage = () => {
                                                     <p className="text-xs text-gray-500">{address.state} - {address.pincode}</p>
                                                     <p className="mt-2 text-xs text-gray-500">Phone: {address.phoneNumber}</p>
                                                 </div>
-                                                {address.isDefault && (
-                                                    <span className="rounded-full bg-green-100 px-3 py-1 text-[11px] font-semibold text-green-700">
-                                                        Default
+                                                {address.isDefault ? (
+                                                    <span className="rounded-full bg-emerald-50 border border-emerald-200 px-3 py-1 text-[11px] font-bold text-emerald-700">
+                                                        ⭐ Primary Address
                                                     </span>
+                                                ) : (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleSetPrimaryAddress(address)}
+                                                        className="rounded-full border border-indigo-200 bg-indigo-50/50 hover:bg-indigo-100 px-3 py-1 text-[11px] font-bold text-indigo-700 transition cursor-pointer"
+                                                    >
+                                                        Set as Primary
+                                                    </button>
                                                 )}
                                             </div>
                                             <div className="mt-4 flex flex-wrap gap-2">

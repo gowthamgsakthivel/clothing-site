@@ -32,6 +32,21 @@ const ensureUniqueSlug = async (slug, excludeId = null) => {
   return !existing;
 };
 
+const normalizeCategory = (cat) => {
+  if (!cat || typeof cat !== 'string') return '';
+  const trimmed = cat.trim();
+  if (!trimmed) return '';
+  return trimmed
+    .split(/\s+/)
+    .map((word) =>
+      word
+        .split('-')
+        .map((sub) => (sub.length > 0 ? sub.charAt(0).toUpperCase() + sub.slice(1).toLowerCase() : ''))
+        .join('-')
+    )
+    .join(' ');
+};
+
 const createProduct = async ({ payload, createdBy }) => {
   await connectDB();
 
@@ -40,7 +55,7 @@ const createProduct = async ({ payload, createdBy }) => {
   const brand = payload?.brand?.trim();
   const collectionName = payload?.collectionName?.trim();
   const sportCategory = payload?.sportCategory ? payload.sportCategory.trim().toLowerCase() : null;
-  const category = payload?.category?.trim();
+  const category = normalizeCategory(payload?.category);
   const genderCategory = payload?.genderCategory || 'Unisex';
   const status = payload?.status || 'draft';
   const tags = Array.isArray(payload?.tags) ? payload.tags.filter(isNonEmptyString) : [];
@@ -154,7 +169,7 @@ const updateProduct = async ({ productId, payload, actorId }) => {
     }
     product.sportCategory = product.collectionName === 'sports' ? nextSportCategory : null;
   }
-  if (payload?.category) product.category = payload.category.trim();
+  if (payload?.category) product.category = normalizeCategory(payload.category);
   if (payload?.genderCategory) product.genderCategory = payload.genderCategory;
   if (payload?.status) product.status = payload.status;
   if (payload?.metaTitle !== undefined) product.metaTitle = payload.metaTitle.trim();
@@ -261,12 +276,12 @@ const getProductsWithPagination = async ({
   order = 'desc',
   includeVariants = false
 } = {}) => {
-  await connectDB();
-
   const filters = {};
   if (status) filters.status = status;
   if (collectionName) filters.collectionName = collectionName;
-  if (category) filters.category = category;
+  if (category) {
+    filters.category = normalizeCategory(category);
+  }
   if (search) {
     filters.name = { $regex: search, $options: 'i' };
   }
