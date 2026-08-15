@@ -13,7 +13,7 @@ const ShopByCategory = () => {
       tag: "⚡ High Performance",
       slug: "men",
       query: "?gender=Men",
-      image: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=800&h=1000&fit=crop&q=80",
+      image: "/assets/img/running.png",
       description: "Jerseys, Shorts & Tees"
     },
     {
@@ -22,7 +22,7 @@ const ShopByCategory = () => {
       tag: "🔥 Trending",
       slug: "women",
       query: "?gender=Women",
-      image: "https://images.unsplash.com/photo-1518611012118-696072aa579a?w=800&h=1000&fit=crop&q=80",
+      image: "/assets/img/upper.png",
       description: "Activewear & Tops"
     },
     {
@@ -31,7 +31,7 @@ const ShopByCategory = () => {
       tag: "⭐ All Stars",
       slug: "kids",
       query: "?gender=Kids",
-      image: "https://images.unsplash.com/photo-1503584623341-d0a7df51c8a1?w=800&h=1000&fit=crop&q=80",
+      image: "/assets/img/cricket_jersey.png",
       description: "Youth Sports Gear"
     },
     {
@@ -40,7 +40,7 @@ const ShopByCategory = () => {
       tag: "🏆 100+ Styles",
       slug: "all-products",
       query: "",
-      image: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800&h=1000&fit=crop&q=80",
+      image: "/assets/img/basketball_jersey.png",
       description: "Explore Full Catalog"
     }
   ];
@@ -82,7 +82,6 @@ const ShopByCategory = () => {
                   src={category.image}
                   alt={category.name}
                   fill
-                  unoptimized
                   sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 50vw"
                   className="object-cover transition-transform duration-700 ease-out group-hover:scale-110"
                 />

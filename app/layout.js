@@ -6,7 +6,12 @@ import { ClerkProvider } from "@clerk/nextjs";
 import Navbar from '@/components/Navbar';
 import ClientLayoutWrapper from '@/components/ClientLayoutWrapper';
 
-const outfit = Outfit({ subsets: ['latin'], weight: ["300", "400", "500"] })
+const outfit = Outfit({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-outfit',
+  adjustFontFallback: false,
+});
 
 export const metadata = {
   metadataBase: new URL('https://sparrow-sports.vercel.app'),
@@ -57,7 +62,7 @@ export default function RootLayout({ children }) {
   return (
     <ClerkProvider>
       <html lang="en" data-scroll-behavior="smooth" suppressHydrationWarning>
-        <body className={`${outfit.className} antialiased text-gray-700`} suppressHydrationWarning>
+        <body className={`${outfit.variable} ${outfit.className} antialiased text-gray-700`} suppressHydrationWarning>
           <Toaster
             position="top-center"
             reverseOrder={false}

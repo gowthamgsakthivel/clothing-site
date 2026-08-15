@@ -24,6 +24,7 @@ export async function POST(request) {
       data: result
     }, { status: 201 });
   } catch (error) {
+    console.error('Error in /api/admin/products/full-create:', error);
     const normalized = buildError(error);
     return NextResponse.json({
       success: false,

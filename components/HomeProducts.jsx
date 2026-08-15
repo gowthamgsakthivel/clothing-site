@@ -53,8 +53,23 @@ const HomeProducts = () => {
       <p className="text-xl md:text-2xl lg:text-3xl font-medium text-left w-full px-4 md:px-0">Popular products</p>
 
       {isLoading ? (
-        <div className="w-full py-12 flex justify-center">
-          <Loading />
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 md:gap-6 mt-6 pb-8 md:pb-14 w-full">
+          {Array.from({ length: 10 }).map((_, idx) => (
+            <div
+              key={idx}
+              className="flex flex-col items-start w-full bg-white rounded-2xl sm:rounded-3xl p-2 sm:p-3 border border-slate-100 shadow-xs animate-pulse"
+            >
+              <div className="bg-slate-100 rounded-xl sm:rounded-2xl w-full aspect-[4/5]" />
+              <div className="w-full pt-3 space-y-2">
+                <div className="h-3.5 bg-slate-200 rounded-md w-3/4" />
+                <div className="h-2.5 bg-slate-100 rounded-md w-1/2" />
+                <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                  <div className="h-4 bg-slate-200 rounded-md w-14" />
+                  <div className="h-6 w-12 bg-slate-200 rounded-full" />
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       ) : displayProducts.length === 0 ? (
         <div className="w-full py-12 text-center text-gray-500">

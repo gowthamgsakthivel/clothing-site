@@ -4,6 +4,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { toast } from 'react-hot-toast';
 import { useAppContext } from '@/context/AppContext';
 import { Star, Trash2, RefreshCw, MessageSquare, ShieldAlert, Sparkles } from 'lucide-react';
+import Loading from '@/components/Loading';
 
 const AdminReviewsPage = () => {
   const { getToken } = useAppContext();
@@ -96,9 +97,8 @@ const AdminReviewsPage = () => {
 
       {/* Reviews Grid / List */}
       {loading ? (
-        <div className="p-16 text-center text-slate-500 font-medium bg-white border border-slate-200 rounded-3xl">
-          <div className="h-10 w-10 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent mx-auto mb-3" />
-          Loading product reviews...
+        <div className="p-10 text-center text-slate-500 font-medium bg-white border border-slate-200 rounded-3xl">
+          <Loading size="md" text="Loading customer reviews..." />
         </div>
       ) : reviews.length === 0 ? (
         <div className="p-16 text-center text-slate-500 bg-white border border-slate-200 rounded-3xl">

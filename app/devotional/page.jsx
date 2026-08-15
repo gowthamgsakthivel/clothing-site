@@ -11,6 +11,7 @@ import { useAppContext } from '@/context/AppContext';
 import { DEFAULT_CAROUSEL_CONTROLS } from '@/lib/carouselDefaults';
 
 import ProductCard from '@/components/ProductCard';
+import Loading from '@/components/Loading';
 
 const metadata = {
   title: 'Devotional | Sparrow Sports',
@@ -221,8 +222,8 @@ const DevotionalPage = () => {
           </div>
 
           {loadingProducts ? (
-            <div className="rounded-3xl border border-dashed border-slate-200 p-12 text-center text-sm font-semibold text-slate-500 bg-white/60">
-              Loading devotional products...
+            <div className="py-12 flex justify-center items-center">
+              <Loading size="md" text="Loading devotional products..." />
             </div>
           ) : products.length === 0 ? (
             <div className="rounded-3xl border border-dashed border-slate-200 p-12 text-center text-sm font-semibold text-slate-500 bg-white/60">

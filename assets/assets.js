@@ -1,4 +1,3 @@
-import logo from "./logo.svg";
 import search_icon from "./search_icon.svg";
 import user_icon from "./user_icon.svg";
 import cart_icon from "./cart_icon.svg";
@@ -31,7 +30,7 @@ import boy_with_laptop_image from "./boy_with_laptop_image.png";
 import checkmark from "./checkmark.png";
 
 export const assets = {
-  logo,
+  logo: "/logo.svg",
   search_icon,
   user_icon,
   cart_icon,

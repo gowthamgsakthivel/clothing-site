@@ -7,17 +7,17 @@ const emailPattern = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/;
 
 export async function GET(request) {
     try {
-        const { userId } = await auth();
+        const { searchParams } = new URL(request.url);
+        let email = searchParams.get('email')?.trim().toLowerCase();
 
-        if (!userId) {
-            return NextResponse.json({
-                success: true,
-                isSubscribed: false
-            });
+        if (!email) {
+            const { userId } = await auth();
+            if (!userId) {
+                return NextResponse.json({ success: true, isSubscribed: false });
+            }
+            const user = await currentUser();
+            email = user?.primaryEmailAddress?.emailAddress?.trim().toLowerCase();
         }
-
-        const user = await currentUser();
-        const email = user?.primaryEmailAddress?.emailAddress?.trim().toLowerCase();
 
         if (!email) {
             return NextResponse.json({
@@ -27,11 +27,15 @@ export async function GET(request) {
         }
 
         await connectDB();
-        const subscriber = await NewsletterSubscriber.findOne({ email });
+        const subscriber = await NewsletterSubscriber.findOne({ email }).select('_id').lean();
 
         return NextResponse.json({
             success: true,
             isSubscribed: Boolean(subscriber)
+        }, {
+            headers: {
+                'Cache-Control': 'private, max-age=300'
+            }
         });
     } catch (error) {
         console.error('Newsletter check error:', error);

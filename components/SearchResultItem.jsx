@@ -15,10 +15,16 @@ export default function SearchResultItem({ product, onSelect }) {
       onClick={() => onSelect(product)}
       className="flex w-full items-center gap-3 rounded-2xl border border-gray-100 bg-white p-3 text-left shadow-sm transition hover:border-orange-200 hover:bg-orange-50/60 hover:shadow-md"
     >
-      <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-gray-100">
+      <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-gray-100">
         {image ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={image} alt={product?.name || 'Product'} className="h-full w-full object-cover" />
+          <Image
+            src={image}
+            alt={product?.name || 'Product'}
+            width={56}
+            height={56}
+            sizes="56px"
+            className="h-full w-full object-cover"
+          />
         ) : (
           <div className="flex h-full w-full items-center justify-center text-gray-300">
             <Image src={assets.logo} alt="logo" width={28} height={28} className="opacity-40" />

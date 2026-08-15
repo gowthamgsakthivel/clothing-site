@@ -8,6 +8,7 @@ import {
     Users, Search, ShieldCheck, User, Filter,
     RefreshCw, Sparkles, X, Edit3, Calendar, Mail
 } from 'lucide-react';
+import Loading from '@/components/Loading';
 
 const OwnerCustomers = () => {
     const { getToken } = useAppContext();
@@ -144,9 +145,8 @@ const OwnerCustomers = () => {
             {/* Users Table */}
             <div className="rounded-3xl border border-slate-200/80 bg-white shadow-sm overflow-hidden">
                 {loading ? (
-                    <div className="p-16 text-center text-slate-500 font-medium">
-                        <div className="h-10 w-10 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent mx-auto mb-3" />
-                        Loading customer records...
+                    <div className="p-10 text-center text-slate-500 font-medium">
+                        <Loading size="md" text="Loading customer records..." />
                     </div>
                 ) : filteredUsers.length === 0 ? (
                     <div className="p-16 text-center text-slate-500">

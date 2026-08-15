@@ -8,45 +8,97 @@ import ShopByCategory from "@/components/ShopByCategory";
 import Footer from "@/components/Footer";
 import SEOMetadata from "@/components/SEOMetadata";
 import RecentlyViewed from "@/components/RecentlyViewed";
-import { headers } from 'next/headers';
+import connectDB from "@/config/db";
+import CarouselControls from "@/models/CarouselControls";
+import FeaturedProducts from "@/models/FeaturedProducts";
+import ProductV2 from "@/models/v2/Product";
+import ProductVariant from "@/models/v2/ProductVariant";
+import Inventory from "@/models/v2/Inventory";
+import { getDefaultCarouselControls } from "@/lib/carouselDefaults";
+import { buildInventoryByVariantId, getProductSummary } from "@/lib/v2ProductView";
 
-export const dynamic = 'force-dynamic';
+// Enable Incremental Static Regeneration (ISR) - revalidate every 60 seconds
+export const revalidate = 60;
 
-async function fetchCarouselControls(page) {
+async function getHomeCarouselSlides() {
   try {
-    const headerList = await headers();
-    const host = headerList.get('host');
-    const protocol = headerList.get('x-forwarded-proto') || 'http';
-    const baseUrl = host ? `${protocol}://${host}` : process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
-    const res = await fetch(`${baseUrl}/api/carousel-controls?page=${page}`, { cache: 'no-store' });
-    if (!res.ok) return [];
-    const data = await res.json();
-    return data?.slides || [];
+    await connectDB();
+    const doc = await CarouselControls.findOne().lean();
+    if (doc?.home && Array.isArray(doc.home) && doc.home.length > 0) {
+      return JSON.parse(JSON.stringify(doc.home));
+    }
+    const defaults = getDefaultCarouselControls();
+    return JSON.parse(JSON.stringify(defaults.home || []));
   } catch (e) {
-    console.error('fetchCarouselControls error', e);
-    return [];
+    console.error("getHomeCarouselSlides error:", e);
+    const defaults = getDefaultCarouselControls();
+    return JSON.parse(JSON.stringify(defaults.home || []));
   }
 }
 
-async function fetchFeaturedProducts() {
+async function getFeaturedProducts() {
   try {
-    const headerList = await headers();
-    const host = headerList.get('host');
-    const protocol = headerList.get('x-forwarded-proto') || 'http';
-    const baseUrl = host ? `${protocol}://${host}` : process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
-    const res = await fetch(`${baseUrl}/api/featured-products`, { cache: 'no-store' });
-    if (!res.ok) return [];
-    const data = await res.json();
-    return data?.featuredProducts || [];
+    await connectDB();
+    const settings = await FeaturedProducts.findOne().lean();
+    const featuredProductIds = settings?.featuredProductIds || [];
+    if (!featuredProductIds.length) return [];
+
+    const rawProducts = await ProductV2.find({ _id: { $in: featuredProductIds } }).lean();
+    const productIds = rawProducts.map((p) => p._id);
+
+    const variants = productIds.length
+      ? await ProductVariant.find({ productId: { $in: productIds }, visibility: { $ne: 'hidden' } }).lean()
+      : [];
+
+    const variantIds = variants.map((v) => v._id);
+    const inventories = variantIds.length
+      ? await Inventory.find({ variantId: { $in: variantIds } }).lean()
+      : [];
+
+    const variantsByProduct = new Map();
+    variants.forEach((variant) => {
+      const key = String(variant.productId);
+      if (!variantsByProduct.has(key)) {
+        variantsByProduct.set(key, []);
+      }
+      variantsByProduct.get(key).push(variant);
+    });
+
+    const inventoryByVariantId = buildInventoryByVariantId(inventories);
+    const bundlesById = new Map(rawProducts.map((product) => [String(product._id), product]));
+
+    const featured = featuredProductIds
+      .map((id) => {
+        const product = bundlesById.get(String(id));
+        if (!product) return null;
+
+        const bundle = {
+          product,
+          variants: variantsByProduct.get(String(product._id)) || [],
+          inventoryByVariantId
+        };
+
+        const summary = getProductSummary(bundle);
+        return {
+          ...summary,
+          _id: String(summary._id || id),
+          image: summary.images?.[0] || ''
+        };
+      })
+      .filter(Boolean);
+
+    return JSON.parse(JSON.stringify(featured));
   } catch (e) {
-    console.error('fetchFeaturedProducts error', e);
+    console.error("getFeaturedProducts error:", e);
     return [];
   }
 }
 
 const Home = async () => {
-  const homeSlides = await fetchCarouselControls('home');
-  const featuredProducts = await fetchFeaturedProducts();
+  const [homeSlides, featuredProducts] = await Promise.all([
+    getHomeCarouselSlides(),
+    getFeaturedProducts()
+  ]);
 
   return (
     <>

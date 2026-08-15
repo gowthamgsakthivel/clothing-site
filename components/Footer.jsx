@@ -73,7 +73,9 @@ const Footer = () => {
               <Image
                 src={assets.logo}
                 alt="Sparrow Sports Logo"
-                className="w-32 mb-4"
+                width={128}
+                height={44}
+                className="w-32 h-auto mb-4"
               />
               <p className="text-sm leading-relaxed text-gray-600 mb-5">
                 Premium sportswear for champions.

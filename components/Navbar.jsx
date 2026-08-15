@@ -75,12 +75,16 @@ const Navbar = () => {
               </svg>
             </button>
 
-            <Image
-              className="cursor-pointer w-24 sm:w-28 shrink-0"
-              onClick={() => router.push('/')}
-              src={assets.logo}
-              alt="logo"
-            />
+            <Link href="/" className="shrink-0 flex items-center">
+              <Image
+                className="w-24 sm:w-28 h-auto shrink-0"
+                src={assets.logo}
+                alt="Sparrow Sports logo"
+                width={112}
+                height={32}
+                priority
+              />
+            </Link>
           </div>
 
           {/* Main Navigation Links (Visible on xl screens to preserve space) */}

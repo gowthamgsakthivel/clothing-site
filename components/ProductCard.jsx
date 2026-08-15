@@ -79,8 +79,9 @@ const ProductCard = ({ product, priority = false }) => {
                         src={summary.images[0]}
                         alt={summary.name}
                         className="transition-transform duration-700 ease-out group-hover/card:scale-105 object-contain p-2 w-full h-full mix-blend-multiply"
-                        width={800}
-                        height={800}
+                        width={400}
+                        height={400}
+                        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
                         priority={priority}
                     />
                 ) : (

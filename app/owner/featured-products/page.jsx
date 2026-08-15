@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { Search, X, Plus, Sparkles, CheckCircle2, Image as ImageIcon, Save } from 'lucide-react';
 import { getProductSummary } from '@/lib/v2ProductView';
 import { toast } from 'react-hot-toast';
+import Loading from '@/components/Loading';
 
 const FeaturedProductsPage = () => {
   const [featuredProductIds, setFeaturedProductIds] = useState([]);
@@ -117,11 +118,8 @@ const FeaturedProductsPage = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center py-36 text-slate-500">
-        <div className="flex flex-col items-center gap-3">
-          <div className="h-10 w-10 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent" />
-          <p className="text-xs font-bold text-slate-600">Loading Homepage Showcase Products...</p>
-        </div>
+      <div className="flex justify-center items-center py-28 text-slate-500">
+        <Loading size="lg" text="Loading Homepage Showcase Products..." />
       </div>
     );
   }

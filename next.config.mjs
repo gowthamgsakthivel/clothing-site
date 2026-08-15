@@ -4,6 +4,8 @@ const nextConfig = {
    * Image optimization (secure + required for production)
    */
   images: {
+    formats: ['image/avif', 'image/webp'],
+    minimumCacheTTL: 2592000,
     remotePatterns: [
       {
         protocol: "https",
@@ -22,6 +24,20 @@ const nextConfig = {
         hostname: "img.clerk.com",
       },
     ],
+  },
+
+  /**
+   * Package import optimization (tree-shaking for large icon & utility libraries)
+   */
+  experimental: {
+    optimizePackageImports: ['lucide-react', 'date-fns', '@clerk/nextjs'],
+  },
+
+  /**
+   * Compiler options: remove console logs in production builds
+   */
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production',
   },
 
   /**
@@ -48,16 +64,6 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: false,
   },
-
-  /**
-   * Webpack safety tweaks (optional but recommended)
-   */
-  // webpack: (config) => {
-  //   config.infrastructureLogging = {
-  //     level: "error",
-  //   };
-  //   return config;
-  // },
 };
 
 export default nextConfig;
