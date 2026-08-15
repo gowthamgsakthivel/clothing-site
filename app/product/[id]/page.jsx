@@ -513,29 +513,41 @@ const Product = () => {
                             </button>
                         )}
                     </div>
-                    <div className="flex items-end gap-3 mt-4 sm:mt-6">
-                        <p className="text-2xl sm:text-3xl font-semibold text-gray-900">
-                            ₹{productData.offerPrice}
-                        </p>
-                        <span className="text-xs sm:text-base font-normal text-gray-500 line-through">
-                            ₹{productData.price}
-                        </span>
+                    {/* Price & Savings Callout */}
+                    <div className="mt-4 sm:mt-6 p-4 rounded-2xl bg-slate-50/80 border border-slate-100">
+                        <div className="flex items-baseline gap-3">
+                            <span className="text-3xl sm:text-4xl font-black text-slate-900">
+                                ₹{productData.offerPrice}
+                            </span>
+                            {productData.price > productData.offerPrice && (
+                                <>
+                                    <span className="text-base sm:text-lg font-semibold text-slate-400 line-through">
+                                        ₹{productData.price}
+                                    </span>
+                                    <span className="bg-emerald-100 text-emerald-800 font-extrabold text-xs px-2.5 py-1 rounded-full">
+                                        Save ₹{productData.price - productData.offerPrice} ({Math.round(((productData.price - productData.offerPrice) / productData.price) * 100)}% OFF)
+                                    </span>
+                                </>
+                            )}
+                        </div>
+                        <p className="text-[11px] text-slate-500 font-medium mt-1">Inclusive of all taxes • Free Shipping available</p>
                     </div>
-                    <hr className="bg-gray-200 my-4 sm:my-6" />
-                    <div className="space-y-4">
+
+                    <hr className="border-slate-100 my-4 sm:my-6" />
+                    <div className="space-y-5">
                         <div className="space-y-1">
-                            <p className="text-xs font-semibold text-gray-700">Brand</p>
-                            <p className="text-sm text-gray-800/80">{productData.brand}</p>
+                            <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Brand</p>
+                            <p className="text-sm font-semibold text-slate-900">{productData.brand || "Sparrow Sports"}</p>
                         </div>
 
-                        <div className="space-y-1.5">
+                        <div className="space-y-2">
                             <div className="flex items-center justify-between">
-                                <p className="text-xs font-semibold text-gray-700">Color</p>
+                                <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Color</p>
                                 {selectedColor && (
-                                    <span className="text-[11px] text-gray-500">Selected: {selectedColor}</span>
+                                    <span className="text-xs font-bold text-orange-600">Selected: {selectedColor}</span>
                                 )}
                             </div>
-                            <div className="flex flex-wrap gap-1.5">
+                            <div className="flex flex-wrap gap-2">
                                 {(() => {
                                     const availableColors = getAvailableColors();
                                     return availableColors.length > 0 ? (
@@ -546,11 +558,11 @@ const Product = () => {
                                                 <button
                                                     key={c._id || idx}
                                                     type="button"
-                                                    className={`min-h-[40px] px-2.5 py-1.5 rounded-full border text-xs font-medium flex items-center gap-2 transition focus:outline-none ${isDisabled
-                                                        ? 'bg-gray-100 text-gray-400 opacity-50 cursor-not-allowed border-gray-200'
+                                                    className={`min-h-[42px] px-3.5 py-2 rounded-xl border text-xs font-bold flex items-center gap-2.5 transition-all focus:outline-none cursor-pointer ${isDisabled
+                                                        ? 'bg-slate-100 text-slate-400 opacity-50 cursor-not-allowed border-slate-200'
                                                         : isSelected
-                                                            ? 'border-orange-500 ring-2 ring-orange-300 bg-white'
-                                                            : 'border-gray-300 bg-white active:scale-[0.98]'
+                                                            ? 'border-orange-500 ring-2 ring-orange-400/50 bg-orange-50/50 text-orange-950 shadow-sm'
+                                                            : 'border-slate-200 bg-white hover:border-slate-300 text-slate-700 active:scale-[0.98]'
                                                         }`}
                                                     onClick={() => {
                                                         if (!isDisabled) {
@@ -564,42 +576,36 @@ const Product = () => {
                                                     disabled={isDisabled}
                                                 >
                                                     <span
-                                                        className="w-3.5 h-3.5 rounded-full border border-gray-300"
+                                                        className="w-3.5 h-3.5 rounded-full border border-slate-300 shadow-xs"
                                                         style={{ backgroundColor: c.color }}
                                                         aria-hidden="true"
                                                     />
-                                                    <span className="whitespace-nowrap">{c.color}</span>
-                                                    {isDisabled && <span className="text-xs">(Out)</span>}
+                                                    <span>{c.color}</span>
+                                                    {isDisabled && <span className="text-[10px] text-rose-500 font-bold">(Out)</span>}
                                                 </button>
                                             );
                                         })
                                     ) : (
-                                        <span className="text-sm text-gray-500">No colors available</span>
+                                        <span className="text-sm text-slate-500">Standard</span>
                                     );
                                 })()}
                             </div>
                         </div>
 
-                        <div className="space-y-1.5">
+                        <div className="space-y-2">
                             <div className="flex items-center justify-between">
-                                <p className="text-xs font-semibold text-gray-700">Size</p>
+                                <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Size</p>
                                 <button
                                     onClick={() => setShowSizeGuide(true)}
-                                    className="text-[11px] text-orange-600 font-medium flex items-center gap-1"
+                                    className="text-xs text-orange-600 font-bold flex items-center gap-1 hover:underline cursor-pointer"
                                 >
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                     </svg>
                                     Size Guide
                                 </button>
                             </div>
-                            <p className="text-[11px] text-gray-500">
-                                {(() => {
-                                    const availableSizes = getAvailableSizes();
-                                    return availableSizes.includes('L') ? 'Most customers buy L' : 'True to size';
-                                })()}
-                            </p>
-                            <div className="flex flex-wrap gap-1.5">
+                            <div className="flex flex-wrap gap-2">
                                 {(() => {
                                     const availableSizes = getAvailableSizes();
                                     return availableSizes.length > 0 ? (
@@ -608,17 +614,17 @@ const Product = () => {
                                             const isOutOfStock = selectedColor && sizeStock <= 0;
                                             const isDisabled = !selectedColor || isOutOfStock;
                                             const isSelected = selectedSize === size;
-                                            const isLowStock = selectedColor && sizeStock > 0 && sizeStock <= 2;
+                                            const isLowStock = selectedColor && sizeStock > 0 && sizeStock <= 3;
 
                                             return (
                                                 <div key={size} className="flex flex-col items-start">
                                                     <button
                                                         type="button"
-                                                        className={`min-h-[40px] px-3.5 py-1.5 rounded-full border text-xs font-semibold transition focus:outline-none ${isDisabled
-                                                            ? 'bg-gray-100 text-gray-400 opacity-50 cursor-not-allowed border-gray-200'
+                                                        className={`min-h-[42px] min-w-[48px] px-3.5 py-2 rounded-xl border text-xs font-extrabold transition-all focus:outline-none cursor-pointer ${isDisabled
+                                                            ? 'bg-slate-100 text-slate-400 opacity-50 cursor-not-allowed border-slate-200'
                                                             : isSelected
-                                                                ? 'bg-orange-500 text-white border-orange-500'
-                                                                : 'bg-white text-gray-700 border-gray-300 active:scale-[0.98]'
+                                                                ? 'bg-slate-900 text-white border-slate-900 shadow-md ring-2 ring-slate-400/40'
+                                                                : 'bg-white text-slate-800 border-slate-200 hover:border-slate-400 active:scale-[0.98]'
                                                             }`}
                                                         onClick={() => {
                                                             if (!isDisabled) {
@@ -628,55 +634,47 @@ const Product = () => {
                                                         }}
                                                         disabled={isDisabled}
                                                         aria-pressed={isSelected}
-                                                        title={isOutOfStock ? `${size} is out of stock in ${selectedColor}` :
-                                                            selectedColor ? `${sizeStock} ${size} available in ${selectedColor}` :
-                                                                'Please select a color first'}
                                                     >
                                                         {size}
-                                                        {isOutOfStock && <span className="ml-1 text-red-400">✕</span>}
+                                                        {isOutOfStock && <span className="ml-1 text-rose-400">✕</span>}
                                                     </button>
                                                     {isLowStock && (
-                                                        <span className="mt-1 text-[10px] text-red-600 font-medium">Only {sizeStock} left</span>
+                                                        <span className="mt-1 text-[9px] text-rose-600 font-extrabold">Only {sizeStock} left</span>
                                                     )}
                                                 </div>
                                             );
                                         })
                                     ) : (
-                                        <span className="text-sm text-gray-500">No sizes available</span>
+                                        <span className="text-sm text-slate-500">Free Size</span>
                                     );
                                 })()}
                             </div>
                         </div>
 
-                        <div className="space-y-1">
-                            <p className="text-xs font-semibold text-gray-700">Category</p>
-                            <p className="text-sm text-gray-800/80">{productData.category}</p>
-                        </div>
-
                         <div className="space-y-1.5">
                             <div className="flex items-center justify-between">
-                                <label className="text-xs font-semibold text-gray-700">Quantity</label>
+                                <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Quantity</label>
                                 {selectedColor && selectedSize && (
-                                    <span className="text-[11px] text-gray-500 font-medium">
+                                    <span className="text-xs text-slate-500 font-medium">
                                         {getColorSizeStock(selectedColor, selectedSize)} available
                                     </span>
                                 )}
                             </div>
                             <div className="flex items-center gap-3">
-                                <div className="flex items-center border border-gray-300 rounded-xl overflow-hidden bg-white">
+                                <div className="flex items-center border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-xs">
                                     <button
                                         type="button"
                                         onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                                        className="w-10 h-10 flex items-center justify-center active:bg-gray-100 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                                        className="w-10 h-10 flex items-center justify-center active:bg-slate-100 transition disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                                         disabled={quantity <= 1}
                                         aria-label="Decrease quantity"
                                     >
-                                        <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg className="w-4 h-4 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
                                         </svg>
                                     </button>
-                                    <div className="w-12 h-10 flex items-center justify-center border-x border-gray-300 bg-gray-50">
-                                        <span className="text-sm font-semibold text-gray-900">{quantity}</span>
+                                    <div className="w-12 h-10 flex items-center justify-center border-x border-slate-200 bg-slate-50">
+                                        <span className="text-sm font-bold text-slate-900">{quantity}</span>
                                     </div>
                                     <button
                                         type="button"
@@ -686,64 +684,37 @@ const Product = () => {
                                                 setQuantity(quantity + 1);
                                             }
                                         }}
-                                        className="w-10 h-10 flex items-center justify-center active:bg-gray-100 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                                        className="w-10 h-10 flex items-center justify-center active:bg-slate-100 transition disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                                         disabled={(() => {
                                             const maxStock = getColorSizeStock(selectedColor, selectedSize);
                                             return !selectedColor || !selectedSize || quantity >= maxStock;
                                         })()}
                                         aria-label="Increase quantity"
                                     >
-                                        <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg className="w-4 h-4 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                                         </svg>
                                     </button>
                                 </div>
-                                {selectedColor && selectedSize && quantity > 0 && (
-                                    <div className="flex flex-col gap-1 text-[11px]">
-                                        <span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded-md font-medium w-fit">
-                                            {quantity} {quantity === 1 ? 'item' : 'items'}
-                                        </span>
-                                        {(() => {
-                                            const remaining = getColorSizeStock(selectedColor, selectedSize) - quantity;
-                                            if (remaining > 0 && remaining < 10) {
-                                                if (remaining <= 2) {
-                                                    return (
-                                                        <span className="text-red-600 font-medium">Only {remaining} left</span>
-                                                    );
-                                                }
-                                                return <span className="text-gray-500">{remaining} left</span>;
-                                            }
-                                            return null;
-                                        })()}
-                                    </div>
-                                )}
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5 text-[11px] text-gray-600">
-                            <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-2.5 py-1.5">
-                                <svg className="w-3.5 h-3.5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                </svg>
-                                Factory stitched
+                        {/* Trust Perks */}
+                        <div className="grid grid-cols-3 gap-2 text-[11px] text-slate-600 pt-2">
+                            <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200/60 rounded-xl p-2 font-bold text-slate-800">
+                                <span className="text-emerald-600">✓</span> 100% Genuine
                             </div>
-                            <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-2.5 py-1.5">
-                                <svg className="w-3.5 h-3.5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                </svg>
-                                Direct from manufacturer
+                            <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200/60 rounded-xl p-2 font-bold text-slate-800">
+                                <span className="text-blue-600">⚡</span> Fast Dispatch
                             </div>
-                            <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-2.5 py-1.5">
-                                <svg className="w-3.5 h-3.5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                </svg>
-                                Quality checked
+                            <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200/60 rounded-xl p-2 font-bold text-slate-800">
+                                <span className="text-amber-600">🔄</span> 7-Day Exchange
                             </div>
                         </div>
                     </div>
 
-                    <div className="flex flex-col sm:flex-row items-stretch gap-2 sm:gap-4 mt-8 sm:mt-10">
-                        {/* Check if selected color-size combination is out of stock */}
+                    {/* Desktop Action Buttons */}
+                    <div className="flex flex-col sm:flex-row items-stretch gap-3 mt-8 sm:mt-10">
                         {(() => {
                             const colorSizeStock = getColorSizeStock(selectedColor, selectedSize);
                             const isOutOfStock = selectedColor && selectedSize && colorSizeStock <= 0;
@@ -753,10 +724,10 @@ const Product = () => {
                                 return (
                                     <button
                                         onClick={subscribeToStockNotifications}
-                                        className={`w-full py-3.5 ${isNotifying ? 'bg-gray-200 cursor-wait' :
-                                            notifySuccess ? 'bg-green-500 text-white' :
-                                                'bg-blue-500 text-white hover:bg-blue-600'
-                                            } transition`}
+                                        className={`w-full py-4 rounded-full font-bold ${isNotifying ? 'bg-slate-200 cursor-wait' :
+                                            notifySuccess ? 'bg-emerald-500 text-white' :
+                                                'bg-indigo-600 text-white hover:bg-indigo-700'
+                                            } transition shadow-md`}
                                         disabled={isNotifying || notifySuccess}
                                     >
                                         {isNotifying ? 'Processing...' :
@@ -769,41 +740,83 @@ const Product = () => {
                             return (
                                 <>
                                     <button
+                                        type="button"
                                         onClick={() => {
                                             if (canAddToCart) {
-                                                // Add items with specified quantity
                                                 addToCart(productData._id, { color: selectedColor, size: selectedSize, quantity });
+                                            } else if (!selectedColor) {
+                                                toast.error('Please select a color');
+                                            } else if (!selectedSize) {
+                                                toast.error('Please select a size');
                                             }
                                         }}
-                                        className={`w-full py-3.5 ${canAddToCart ?
-                                            'bg-gray-100 text-gray-800/80 hover:bg-gray-200' :
-                                            'bg-gray-200 text-gray-400 cursor-not-allowed'
-                                            } transition`}
-                                        disabled={!canAddToCart}
+                                        className={`w-full sm:flex-1 py-4 rounded-full font-extrabold text-sm border-2 transition-all duration-300 cursor-pointer ${canAddToCart ?
+                                            'border-slate-900 bg-white text-slate-900 hover:bg-slate-50 active:scale-95 shadow-xs' :
+                                            'border-slate-200 bg-slate-100 text-slate-400'
+                                            }`}
                                     >
                                         Add to Cart
                                     </button>
                                     <button
+                                        type="button"
                                         onClick={() => {
                                             if (canAddToCart) {
-                                                // Add items with specified quantity
                                                 addToCart(productData._id, { color: selectedColor, size: selectedSize, quantity });
                                                 router.push('/cart');
+                                            } else if (!selectedColor) {
+                                                toast.error('Please select a color');
+                                            } else if (!selectedSize) {
+                                                toast.error('Please select a size');
                                             }
                                         }}
-                                        className={`w-full py-3.5 ${canAddToCart ?
-                                            'bg-orange-500 text-white hover:bg-orange-600' :
-                                            'bg-orange-200 text-gray-400 cursor-not-allowed'
-                                            } transition`}
-                                        disabled={!canAddToCart}
+                                        className={`w-full sm:flex-1 py-4 rounded-full font-extrabold text-sm transition-all duration-300 cursor-pointer shadow-lg ${canAddToCart ?
+                                            'bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 text-white hover:from-orange-500 hover:to-amber-400 active:scale-95 shadow-orange-500/25' :
+                                            'bg-slate-300 text-slate-500'
+                                            }`}
                                     >
-                                        Buy now
+                                        Buy Now
                                     </button>
                                 </>
                             );
                         })()}
                     </div>
 
+                    {/* Mobile Sticky Bottom Floating Action Bar */}
+                    <div className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 p-3 flex items-center justify-between gap-3 shadow-2xl">
+                        <div className="flex flex-col">
+                            <span className="text-[10px] text-slate-500 uppercase tracking-wider font-bold">Total Price</span>
+                            <span className="text-lg font-black text-slate-900">₹{productData.offerPrice * quantity}</span>
+                        </div>
+                        <div className="flex items-center gap-2 flex-1 justify-end">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    if (selectedColor && selectedSize) {
+                                        addToCart(productData._id, { color: selectedColor, size: selectedSize, quantity });
+                                    } else {
+                                        toast.error('Please choose color & size');
+                                    }
+                                }}
+                                className="px-4 py-2.5 rounded-full border border-slate-900 bg-white text-slate-900 font-extrabold text-xs"
+                            >
+                                Add to Cart
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    if (selectedColor && selectedSize) {
+                                        addToCart(productData._id, { color: selectedColor, size: selectedSize, quantity });
+                                        router.push('/cart');
+                                    } else {
+                                        toast.error('Please choose color & size');
+                                    }
+                                }}
+                                className="px-5 py-2.5 rounded-full bg-gradient-to-r from-orange-600 to-amber-500 text-white font-extrabold text-xs shadow-md shadow-orange-500/20"
+                            >
+                                Buy Now
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
 

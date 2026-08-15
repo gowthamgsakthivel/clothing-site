@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import { NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/authRoles';
 import { buildError } from '@/lib/errors';
-import { cancelOrder } from '@/services/orders/OrderService';
+import { updateRefundStatus } from '@/services/orders/OrderService';
 
 const isValidObjectId = (value) => mongoose.Types.ObjectId.isValid(value);
 
@@ -23,8 +23,8 @@ export async function PATCH(request, context) {
       body = {};
     }
 
-    const { reason, notes } = body;
-    const result = await cancelOrder(id, { reason, notes, cancelledBy: 'admin' });
+    const { refundStatus, refundId } = body;
+    const result = await updateRefundStatus(id, { refundStatus: refundStatus || 'completed', refundId });
 
     return NextResponse.json({
       success: true,

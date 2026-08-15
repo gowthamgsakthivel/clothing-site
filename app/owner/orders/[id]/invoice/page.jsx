@@ -139,9 +139,27 @@ export default function OrderInvoicePage({ params }) {
                                 return (
                                     <tr key={idx} className="text-sm text-slate-800 border-b border-slate-200">
                                         <td className="p-3 border-r border-slate-300 text-center font-medium bg-slate-50/50">{idx + 1}</td>
-                                        <td className="p-3 border-r border-slate-300 min-w-[200px]">
-                                            <p className="font-bold text-slate-900">{item.designName || item.productName || 'Custom Equipment'}</p>
-                                            <p className="text-xs text-slate-500 mt-1 whitespace-nowrap">SKU: {item.sku} {item.size ? `| Size: ${item.size}` : ''} {item.color ? `| Color: ${item.color}` : ''}</p>
+                                        <td className="p-3 border-r border-slate-300 min-w-[220px]">
+                                            <p className="font-bold text-slate-900 text-sm">
+                                                {item.designName || item.productName || 'Sports Apparel'}
+                                            </p>
+                                            <div className="text-xs text-slate-700 font-medium mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-0.5">
+                                                {item.color && (
+                                                    <span><strong>Color:</strong> {item.color}</span>
+                                                )}
+                                                {item.size && (
+                                                    <span><strong>Size:</strong> {item.size}</span>
+                                                )}
+                                                {item.brand && (
+                                                    <span><strong>Brand:</strong> {item.brand}</span>
+                                                )}
+                                                {item.category && (
+                                                    <span><strong>Category:</strong> {item.category}</span>
+                                                )}
+                                            </div>
+                                            <p className="text-[11px] text-slate-500 mt-1 font-mono">
+                                                SKU: <span className="font-semibold text-slate-700">{item.sku}</span> • HSN: 6109
+                                            </p>
                                             {item.isCustomDesign && <span className="inline-block mt-1 px-2 py-0.5 bg-blue-50 text-blue-700 text-[10px] font-bold uppercase rounded border border-blue-200">Custom Design</span>}
                                         </td>
                                         <td className="p-3 border-r border-slate-300 text-center font-bold bg-slate-50/50">{item.quantity}</td>

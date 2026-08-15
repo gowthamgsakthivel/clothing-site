@@ -293,35 +293,71 @@ const ProfilePage = () => {
                     <main className="space-y-6">
                         {activeSection === 'overview' && (
                             <div className="space-y-6">
-                                <div className="rounded-2xl bg-white p-5 sm:p-6 shadow-sm">
-                                    <div className="flex flex-wrap items-start justify-between gap-4">
+                                <div className="rounded-3xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-950 p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
+                                    <div className="absolute top-0 right-0 w-64 h-64 bg-orange-600/15 rounded-full blur-3xl pointer-events-none" />
+                                    <div className="relative z-10 flex flex-wrap items-start justify-between gap-4">
                                         <div>
-                                            <p className="text-xs uppercase tracking-[0.35em] text-orange-500">Profile Overview</p>
-                                            <h1 className={`${headingFont.className} mt-2 text-3xl font-semibold text-gray-900`}>
-                                                Welcome back, {displayName}.
+                                            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-500/20 border border-orange-500/30 text-orange-400 text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-2">
+                                                Sparrow Athlete Profile
+                                            </div>
+                                            <h1 className={`${headingFont.className} text-2xl sm:text-3xl font-extrabold text-white`}>
+                                                Welcome back, {displayName}
                                             </h1>
-                                            <p className="mt-3 text-sm text-gray-600">
-                                                Keep your details updated and track your latest orders and saved addresses.
+                                            <p className="mt-1.5 text-xs sm:text-sm text-slate-300 max-w-lg">
+                                                Manage your orders, custom team designs, and saved delivery addresses with ease.
                                             </p>
                                         </div>
                                         <button
                                             onClick={() => router.push('/all-products')}
-                                            className="w-full sm:w-auto rounded-full bg-orange-600 px-5 py-2 text-xs font-semibold uppercase tracking-wider text-white transition hover:bg-orange-500"
+                                            className="w-full sm:w-auto rounded-full bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 px-6 py-2.5 text-xs font-extrabold uppercase tracking-wider text-white transition shadow-lg shadow-orange-600/30 cursor-pointer"
                                         >
-                                            Shop now
+                                            Shop New Drops
                                         </button>
                                     </div>
+
+                                    {/* Profile Completeness Progress */}
+                                    {(() => {
+                                        const hasName = Boolean(profileName && profileName.trim().length > 0);
+                                        const hasEmail = Boolean(user?.primaryEmailAddress?.emailAddress);
+                                        const hasPhone = Boolean(addresses.some(a => a.phoneNumber));
+                                        const hasAddress = Boolean(addresses && addresses.length > 0);
+                                        const score = [hasName, hasEmail, hasPhone, hasAddress].filter(Boolean).length * 25;
+
+                                        return (
+                                            <div className="mt-6 pt-5 border-t border-white/10 flex flex-col gap-2">
+                                                <div className="flex items-center justify-between text-xs">
+                                                    <span className="font-bold text-slate-200">
+                                                        Profile Completeness: <span className="text-orange-400">{score}%</span>
+                                                    </span>
+                                                    <span className="text-[11px] text-slate-400">
+                                                        {score === 100 ? '🎉 Ready for 1-Tap Checkout!' : 'Complete profile for faster shipping'}
+                                                    </span>
+                                                </div>
+                                                <div className="w-full h-2 rounded-full bg-white/10 overflow-hidden">
+                                                    <div
+                                                        className="h-full rounded-full bg-gradient-to-r from-orange-500 to-emerald-400 transition-all duration-700"
+                                                        style={{ width: `${score}%` }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        );
+                                    })()}
                                 </div>
 
                                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                                     {[
-                                        { label: 'Total Orders', value: orders.length },
-                                        { label: 'Delivered', value: orders.filter(o => o.status === 'Delivered').length },
-                                        { label: 'Saved Addresses', value: addresses.length }
+                                        { label: 'Total Orders', value: orders.length, icon: '📦' },
+                                        { label: 'Delivered', value: orders.filter(o => o.status === 'Delivered').length, icon: '🏆' },
+                                        { label: 'Saved Addresses', value: addresses.length, icon: '📍' }
                                     ].map((stat) => (
-                                        <div key={stat.label} className="rounded-2xl bg-white p-5 shadow-sm">
-                                            <p className="text-xs uppercase tracking-[0.3em] text-gray-400">{stat.label}</p>
-                                            <p className={`${headingFont.className} mt-3 text-3xl font-semibold text-gray-900`}>{stat.value}</p>
+                                        <div key={stat.label} className="rounded-3xl bg-white p-5 sm:p-6 shadow-sm border border-slate-100 flex items-center justify-between">
+                                            <div>
+                                                <p className="text-xs uppercase tracking-wider font-bold text-slate-400">{stat.label}</p>
+                                                <p className={`${headingFont.className} mt-1 text-3xl font-black text-slate-900`}>{stat.value}</p>
+                                            </div>
+                                            <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-2xl border border-slate-100">
+                                                {stat.icon}
+                                            </div>
                                         </div>
                                     ))}
                                 </div>

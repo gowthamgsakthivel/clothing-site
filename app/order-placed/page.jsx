@@ -153,6 +153,11 @@ const OrderPlaced = () => {
         estimatedDelivery: rawOrder.shipment_status || 'Processing',
         transactionId: rawOrder.paymentDetails?.paymentId || null,
         statusTimeline: buildStatusTimeline(rawOrder.status),
+        cancellationReason: rawOrder.cancellationReason || null,
+        cancellationNotes: rawOrder.cancellationNotes || null,
+        cancelledBy: rawOrder.cancelledBy || null,
+        cancelledAt: rawOrder.cancelledAt || null,
+        refundStatus: rawOrder.refundStatus || null,
         pricing
       }
     }
@@ -295,6 +300,7 @@ const OrderPlaced = () => {
                 </div>
               </div>
 
+              {/* Delivery Information */}
               <div className="rounded-2xl border border-gray-100 bg-white p-6">
                 <h2 className="text-lg font-semibold text-gray-900">Delivery Information</h2>
                 <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-gray-700">
@@ -308,13 +314,18 @@ const OrderPlaced = () => {
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">Delivery Method</p>
-                    <p className="font-semibold text-gray-900 mt-1">{order.deliveryMethod}</p>
+                    <p className="font-semibold text-gray-900 mt-1">
+                      {['cancelled', 'rejected', 'failed', 'rto'].includes((order.orderStatus || '').toLowerCase()) ? 'Cancelled (No delivery)' : order.deliveryMethod}
+                    </p>
                     <p className="text-xs text-gray-500 mt-3">Estimated Delivery</p>
-                    <p className="font-semibold text-gray-900 mt-1">{order.estimatedDelivery}</p>
+                    <p className={`font-semibold mt-1 ${['cancelled', 'rejected', 'failed', 'rto'].includes((order.orderStatus || '').toLowerCase()) ? 'text-rose-600 font-bold' : 'text-gray-900'}`}>
+                      {['cancelled', 'rejected', 'failed', 'rto'].includes((order.orderStatus || '').toLowerCase()) ? 'Cancelled' : order.estimatedDelivery}
+                    </p>
                   </div>
                 </div>
               </div>
 
+              {/* Payment Information */}
               <div className="rounded-2xl border border-gray-100 bg-white p-6">
                 <h2 className="text-lg font-semibold text-gray-900">Payment Information</h2>
                 <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-gray-700">
@@ -324,7 +335,17 @@ const OrderPlaced = () => {
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">Payment Status</p>
-                    <p className="font-semibold text-green-600 mt-1">Successful</p>
+                    {['cancelled', 'rejected', 'failed', 'rto'].includes((order.orderStatus || '').toLowerCase()) ? (
+                      <p className="font-semibold text-rose-700 mt-1">
+                        {order.refundStatus === 'initiated' || order.refundStatus === 'completed'
+                          ? `Refund ${order.refundStatus === 'completed' ? 'Completed' : 'Initiated (3–5 Days)'}`
+                          : order.paymentStatus === 'Paid'
+                            ? 'Refund Initiated (3–5 Days)'
+                            : 'Cancelled (No Charge)'}
+                      </p>
+                    ) : (
+                      <p className="font-semibold text-green-600 mt-1">{order.paymentStatus || 'Successful'}</p>
+                    )}
                   </div>
                   {order.transactionId && (
                     <div>
@@ -335,6 +356,7 @@ const OrderPlaced = () => {
                 </div>
               </div>
 
+              {/* Order Status Timeline */}
               <div className="rounded-2xl border border-gray-100 bg-white p-6">
                 <h2 className="text-lg font-semibold text-gray-900">Order Status</h2>
                 <div className="mt-4">
@@ -342,98 +364,137 @@ const OrderPlaced = () => {
                     steps={order.statusTimeline.steps}
                     current={order.statusTimeline.current}
                     status={order.orderStatus}
+                    cancellationReason={order.cancellationReason}
+                    cancellationNotes={order.cancellationNotes}
+                    refundStatus={order.refundStatus}
+                    totalAmount={order.pricing?.total}
+                    cancelledAt={order.cancelledAt}
                   />
                 </div>
               </div>
 
-              <div id="tracking" className="rounded-2xl border border-gray-100 bg-white p-6">
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                  <div>
-                    <h2 className="text-lg font-semibold text-gray-900">Shipment Tracking</h2>
-                    <p className="text-sm text-gray-500 mt-1">Live updates from Shiprocket.</p>
+              {/* Shipment Tracking or Cancelled Notice */}
+              {['cancelled', 'rejected', 'failed', 'rto'].includes((order.orderStatus || '').toLowerCase()) ? (
+                <div id="tracking" className="rounded-2xl border border-rose-200 bg-rose-50/70 p-6 space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-2xl bg-rose-100 text-rose-700 flex items-center justify-center text-lg font-black shrink-0">
+                      ✕
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-bold text-rose-950">Shipment Cancelled & Voided</h2>
+                      <p className="text-xs text-rose-700 mt-0.5">This shipment has been cancelled. No package will be delivered.</p>
+                    </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      if (!order?.id) return
-                      setTrackingLoading(true)
-                      setTrackingError('')
-                      try {
-                        const response = await fetch(`/api/shipping/track?orderId=${order.id}`, { cache: 'no-store' })
-                        const data = await response.json()
-                        if (!response.ok || !data.success) {
-                          throw new Error(data.message || 'Tracking updates are not available yet.')
+
+                  <div className="p-4 bg-white rounded-xl border border-rose-100 text-xs text-rose-900 space-y-2 shadow-2xs">
+                    <div className="flex justify-between items-center pb-2 border-b border-rose-50">
+                      <span className="text-[11px] font-bold uppercase text-rose-500">Shipment Status</span>
+                      <span className="px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 font-bold">Cancelled</span>
+                    </div>
+                    <p className="pt-1"><strong>Reason:</strong> {order.cancellationReason || 'Item unavailable / Quality check issue'}</p>
+                    {order.cancellationNotes && (
+                      <p className="italic text-rose-700">&quot;{order.cancellationNotes}&quot;</p>
+                    )}
+                    {order.refundStatus && order.refundStatus !== 'not_applicable' && (
+                      <div className="pt-2 border-t border-rose-100 flex items-center justify-between font-semibold text-emerald-900">
+                        <span>💰 Refund Status:</span>
+                        <span className="bg-emerald-100 text-emerald-900 px-2.5 py-0.5 rounded-full capitalize font-bold">
+                          {order.refundStatus} (₹{order.pricing?.total?.toFixed(2)})
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div id="tracking" className="rounded-2xl border border-gray-100 bg-white p-6">
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <div>
+                      <h2 className="text-lg font-semibold text-gray-900">Shipment Tracking</h2>
+                      <p className="text-sm text-gray-500 mt-1">Live updates from Shiprocket.</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (!order?.id) return
+                        setTrackingLoading(true)
+                        setTrackingError('')
+                        try {
+                          const response = await fetch(`/api/shipping/track?orderId=${order.id}`, { cache: 'no-store' })
+                          const data = await response.json()
+                          if (!response.ok || !data.success) {
+                            throw new Error(data.message || 'Tracking updates are not available yet.')
+                          }
+                          setTracking(data.tracking)
+                        } catch (error) {
+                          setTracking(null)
+                          setTrackingError(error.message || 'Unable to load tracking details')
+                        } finally {
+                          setTrackingLoading(false)
                         }
-                        setTracking(data.tracking)
-                      } catch (error) {
-                        setTracking(null)
-                        setTrackingError(error.message || 'Unable to load tracking details')
-                      } finally {
-                        setTrackingLoading(false)
-                      }
-                    }}
-                    className="inline-flex items-center justify-center rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition"
-                    aria-label="Refresh tracking status"
-                  >
-                    {trackingLoading ? 'Refreshing…' : 'Refresh Status'}
-                  </button>
-                </div>
-                <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm text-gray-700">
-                  <div>
-                    <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider">Estimated Delivery</p>
-                    <p className="font-extrabold text-emerald-700 text-sm mt-1 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 inline-block">
-                      🚚 0 - 5 Business Days
-                    </p>
+                      }}
+                      className="inline-flex items-center justify-center rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition"
+                      aria-label="Refresh tracking status"
+                    >
+                      {trackingLoading ? 'Refreshing…' : 'Refresh Status'}
+                    </button>
                   </div>
-                  <div>
-                    <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider">Courier</p>
-                    <p className="font-semibold text-gray-900 mt-1">{order.courierName || 'Assigning Courier Partner'}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider">Shipment Status</p>
-                    <div className="mt-1">
-                      <ShipmentStatusBadge status={order.shipmentStatus || 'Processing'} />
-                    </div>
-                  </div>
-                  {order.awbCode && (
+                  <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm text-gray-700">
                     <div>
-                      <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider">AWB / Tracking ID</p>
-                      <p className="font-mono font-bold text-gray-900 mt-1">{order.awbCode}</p>
+                      <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider">Estimated Delivery</p>
+                      <p className="font-extrabold text-emerald-700 text-sm mt-1 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 inline-block">
+                        🚚 0 - 5 Business Days
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider">Courier</p>
+                      <p className="font-semibold text-gray-900 mt-1">{order.courierName || 'Assigning Courier Partner'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider">Shipment Status</p>
+                      <div className="mt-1">
+                        <ShipmentStatusBadge status={order.shipmentStatus || 'Processing'} />
+                      </div>
+                    </div>
+                    {order.awbCode && (
+                      <div>
+                        <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider">AWB / Tracking ID</p>
+                        <p className="font-mono font-bold text-gray-900 mt-1">{order.awbCode}</p>
+                      </div>
+                    )}
+                    {order.trackingUrl && (
+                      <div>
+                        <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider">Live Tracking Link</p>
+                        <a className="font-bold text-indigo-600 hover:text-indigo-800 mt-1 inline-flex items-center gap-1" href={order.trackingUrl} target="_blank" rel="noreferrer">
+                          Track on Courier Portal ↗
+                        </a>
+                      </div>
+                    )}
+                  </div>
+
+                  {trackingLoading && (
+                    <div className="mt-4 space-y-3 animate-pulse">
+                      {Array.from({ length: 2 }).map((_, idx) => (
+                        <div key={idx} className="h-14 rounded-xl bg-gray-100" />
+                      ))}
                     </div>
                   )}
-                  {order.trackingUrl && (
-                    <div>
-                      <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider">Live Tracking Link</p>
-                      <a className="font-bold text-indigo-600 hover:text-indigo-800 mt-1 inline-flex items-center gap-1" href={order.trackingUrl} target="_blank" rel="noreferrer">
-                        Track on Courier Portal ↗
-                      </a>
+
+                  {!trackingLoading && trackingEvents.length === 0 && (
+                    <div className="mt-4 rounded-2xl border border-indigo-100 bg-indigo-50/50 p-4 text-xs text-indigo-900 leading-relaxed space-y-1">
+                      <p className="font-extrabold text-sm text-indigo-950">📦 Dispatch & Delivery Information</p>
+                      <p>Your order has been packed and is being handed over to our courier partner. You will receive real-time location updates here as soon as the courier scans the parcel for pickup (Delivery window: <strong>0 to 5 Business Days</strong>).</p>
+                    </div>
+                  )}
+
+                  {!trackingLoading && trackingEvents.length > 0 && (
+                    <div className="mt-4 space-y-3">
+                      {trackingEvents.map((event, index) => (
+                        <TrackingEventCard key={`${event?.date || event?.event_date || 'event'}-${index}`} event={event} />
+                      ))}
                     </div>
                   )}
                 </div>
-
-                {trackingLoading && (
-                  <div className="mt-4 space-y-3 animate-pulse">
-                    {Array.from({ length: 2 }).map((_, idx) => (
-                      <div key={idx} className="h-14 rounded-xl bg-gray-100" />
-                    ))}
-                  </div>
-                )}
-
-                {!trackingLoading && trackingEvents.length === 0 && (
-                  <div className="mt-4 rounded-2xl border border-indigo-100 bg-indigo-50/50 p-4 text-xs text-indigo-900 leading-relaxed space-y-1">
-                    <p className="font-extrabold text-sm text-indigo-950">📦 Dispatch & Delivery Information</p>
-                    <p>Your order has been packed and is being handed over to our courier partner. You will receive real-time location updates here as soon as the courier scans the parcel for pickup (Delivery window: <strong>0 to 5 Business Days</strong>).</p>
-                  </div>
-                )}
-
-                {!trackingLoading && trackingEvents.length > 0 && (
-                  <div className="mt-4 space-y-3">
-                    {trackingEvents.map((event, index) => (
-                      <TrackingEventCard key={`${event?.date || event?.event_date || 'event'}-${index}`} event={event} />
-                    ))}
-                  </div>
-                )}
-              </div>
+              )}
             </div>
 
             {/* Price Summary */}

@@ -36,11 +36,30 @@ const Navbar = () => {
 
   return (
     <>
-      <nav className="fixed top-0 left-0 right-0 z-50 h-[var(--nav-height)] md:h-[var(--nav-height-md)] border-b border-gray-200/50 text-gray-700 bg-white/90 backdrop-blur-md px-3 sm:px-6">
+      <nav suppressHydrationWarning className="fixed top-0 left-0 right-0 z-50 h-[var(--nav-height)] md:h-[var(--nav-height-md)] border-b border-gray-200/50 text-gray-700 bg-white/90 backdrop-blur-md px-3 sm:px-6">
         <div className="flex h-full w-full items-center justify-between gap-2 sm:gap-4 max-w-7xl mx-auto">
           
-          {/* Logo & Mobile Menu Toggle */}
-          <div className="flex items-center gap-2 shrink-0">
+          {/* Logo, Back Button & Mobile Menu Toggle */}
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            {pathname !== '/' && (
+              <button
+                className="p-1.5 -ml-1 hover:bg-slate-100 active:scale-90 rounded-full transition md:hidden text-slate-800 flex items-center justify-center cursor-pointer"
+                aria-label="Go Back"
+                onClick={() => {
+                  if (typeof window !== 'undefined' && window.history.length > 1) {
+                    router.back();
+                  } else {
+                    router.push('/');
+                  }
+                }}
+                type="button"
+              >
+                <svg className="w-5 h-5 text-slate-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+            )}
+
             <button
               className="p-1.5 hover:bg-gray-100 rounded-lg transition md:hidden"
               aria-label="Menu"
@@ -311,7 +330,7 @@ const Navbar = () => {
         )}
 
       {/* Mobile bottom navigation bar - Glassmorphism */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md border-t border-gray-200/50 md:hidden z-40 pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+      <div suppressHydrationWarning className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md border-t border-gray-200/50 md:hidden z-40 pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
         <div className="relative">
           <div
             className={`absolute bottom-full left-1/2 mb-3 w-[92%] max-w-sm -translate-x-1/2 rounded-3xl border border-white/60 bg-gradient-to-br from-white/95 via-orange-50/70 to-white/90 p-4 shadow-[0_12px_40px_rgba(15,23,42,0.18)] backdrop-blur-xl ring-1 ring-orange-100/60 transition-all duration-300 ease-out ${showCategories ? 'opacity-100 translate-y-0 scale-100 pointer-events-auto' : 'opacity-0 translate-y-2 scale-95 pointer-events-none'}`}

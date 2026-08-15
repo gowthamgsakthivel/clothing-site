@@ -39,7 +39,13 @@ const orderSchema = new mongoose.Schema(
       },
       // Note: processedWebhookEvents removed in favor of a dedicated WebhookEvent collection
     shippingAddressId: { type: String, default: null },
-    inventoryReservedAt: { type: Date, default: null }
+    inventoryReservedAt: { type: Date, default: null },
+    // Cancellation & Refund Tracking
+    cancellationReason: { type: String, default: null },
+    cancellationNotes: { type: String, default: null },
+    cancelledBy: { type: String, enum: ['admin', 'customer', 'system', null], default: null },
+    cancelledAt: { type: Date, default: null },
+    refundStatus: { type: String, enum: ['not_applicable', 'pending', 'initiated', 'completed', 'failed'], default: 'not_applicable' }
   },
   { timestamps: true }
 );

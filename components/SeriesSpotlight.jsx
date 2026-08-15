@@ -78,24 +78,23 @@ const SeriesSpotlight = ({ products = [] }) => {
   return (
     <section className="py-12 md:py-20">
       {/* Header */}
-      <div className="mb-8 md:mb-12">
-        <h2 className="text-3xl md:text-4xl font-bold mb-4">FEATURED COLLECTIONS</h2>
-        <div className="w-16 h-1 bg-orange-600 mb-6"></div>
-        <p className="text-gray-600 text-sm md:text-base max-w-2xl leading-relaxed">
-          Discover our handpicked selection of premium sports apparel and equipment. 
-          Premium quality products designed for athletes and sports enthusiasts.
-        </p>
-      </div>
+      <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 md:mb-12 gap-4">
+        <div>
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 text-slate-900 tracking-tight">FEATURED COLLECTIONS</h2>
+          <div className="w-16 h-1 bg-orange-600 mb-4 rounded-full"></div>
+          <p className="text-gray-600 text-xs sm:text-sm md:text-base max-w-2xl leading-relaxed">
+            Discover our handpicked selection of premium sports apparel and equipment. 
+            Premium quality products designed for athletes and sports enthusiasts.
+          </p>
+        </div>
 
-      {/* Carousel Container */}
-      <div className="relative">
         {/* Navigation Buttons */}
         {showNav && (
-          <div className="absolute -top-12 right-0 z-10 flex items-center gap-2 rounded-full bg-white/80 backdrop-blur border border-slate-200/80 shadow-md px-1.5 py-1">
+          <div className="flex items-center justify-end gap-2 shrink-0 self-end md:self-auto">
             <button
               onClick={handlePrev}
               type="button"
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/90 border border-slate-200/80 shadow-sm transition-transform duration-200 hover:scale-105 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/60"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white border border-slate-200 shadow-sm transition-transform duration-200 hover:scale-105 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/60 cursor-pointer"
               aria-label="Previous"
             >
               <ChevronLeft size={20} className="text-slate-700" />
@@ -103,13 +102,17 @@ const SeriesSpotlight = ({ products = [] }) => {
             <button
               onClick={handleNext}
               type="button"
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/90 border border-slate-200/80 shadow-sm transition-transform duration-200 hover:scale-105 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/60"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white border border-slate-200 shadow-sm transition-transform duration-200 hover:scale-105 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/60 cursor-pointer"
               aria-label="Next"
             >
               <ChevronRight size={20} className="text-slate-700" />
             </button>
           </div>
         )}
+      </div>
+
+      {/* Carousel Container */}
+      <div className="relative">
 
         {/* Products Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
