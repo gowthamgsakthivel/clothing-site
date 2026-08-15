@@ -56,8 +56,8 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <ClerkProvider>
-      <html lang="en" data-scroll-behavior="smooth">
-        <body className={`${outfit.className} antialiased text-gray-700`} >
+      <html lang="en" data-scroll-behavior="smooth" suppressHydrationWarning>
+        <body className={`${outfit.className} antialiased text-gray-700`} suppressHydrationWarning>
           <Toaster
             position="top-center"
             reverseOrder={false}

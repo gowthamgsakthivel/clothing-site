@@ -10,6 +10,8 @@ import SEOMetadata from '@/components/SEOMetadata';
 import { useAppContext } from '@/context/AppContext';
 import { DEFAULT_CAROUSEL_CONTROLS } from '@/lib/carouselDefaults';
 
+import ProductCard from '@/components/ProductCard';
+
 const metadata = {
   title: 'Devotional | Sparrow Sports',
   description: 'Discover a curated range of devotional apparel. Comfortable and stylish t-shirts, tops, and accessories for spiritual expression.',
@@ -219,75 +221,18 @@ const DevotionalPage = () => {
           </div>
 
           {loadingProducts ? (
-            <div className="rounded-lg border border-dashed border-gray-200 p-10 text-center text-sm text-gray-500">
+            <div className="rounded-3xl border border-dashed border-slate-200 p-12 text-center text-sm font-semibold text-slate-500 bg-white/60">
               Loading devotional products...
             </div>
           ) : products.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-gray-200 p-10 text-center text-sm text-gray-500">
+            <div className="rounded-3xl border border-dashed border-slate-200 p-12 text-center text-sm font-semibold text-slate-500 bg-white/60">
               No devotional products available yet.
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {products.map((item) => {
-                const price = getDisplayPrice(item.variants);
-                const image = item.variants?.[0]?.images?.[0];
-                const productId = item.product?._id;
-
-                const content = (
-                  <div className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition cursor-pointer">
-                    <div className="relative h-56 md:h-72 overflow-hidden bg-gray-100">
-                      {image ? (
-                        <Image
-                          src={image}
-                          alt={item.product?.name}
-                          fill
-                          className="object-cover hover:scale-110 transition duration-300"
-                          sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                        />
-                      ) : (
-                        <div className="flex h-full items-center justify-center text-sm text-gray-400">No image</div>
-                      )}
-                    </div>
-                    <div className="p-4">
-                      <h3 className="font-semibold text-gray-900 mb-1 line-clamp-2">{item.product?.name}</h3>
-                      <p className="text-sm text-gray-600 mb-3">Faith-inspired apparel</p>
-                      <div className="flex items-center justify-between mb-3">
-                        <span className="text-lg font-bold text-emerald-600">
-                          {price ? `₹${price}` : '—'}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={(event) => handleBuyNow(event, item)}
-                          className="flex-1 rounded-lg border border-slate-200 bg-white py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-900 hover:text-white"
-                          disabled={!productId}
-                        >
-                          Buy Now
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(event) => handleAddToCart(event, item)}
-                          className="flex-1 rounded-lg bg-emerald-600 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700"
-                          disabled={!productId}
-                        >
-                          Add to Cart
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                );
-
-                return productId ? (
-                  <Link key={productId} href={`/product/${productId}`} className="block">
-                    {content}
-                  </Link>
-                ) : (
-                  <div key={`devotional-${item.product?.name || 'product'}`}>
-                    {content}
-                  </div>
-                );
-              })}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 md:gap-6">
+              {products.map((item, index) => (
+                <ProductCard key={item?.product?._id || item?._id || index} product={item} priority={index === 0} />
+              ))}
             </div>
           )}
         </section>

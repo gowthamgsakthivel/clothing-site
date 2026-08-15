@@ -12,6 +12,14 @@ async function loadControls() {
     return doc.toObject();
   }
 
+  // Sanitize legacy non-sports placeholder copy if present
+  const hasLegacyCopy = (doc.home || []).some(s => s.title && (s.title.includes('MacBook') || s.title.includes('Apple')));
+  if (hasLegacyCopy) {
+    const defaults = getDefaultCarouselControls();
+    doc.home = defaults.home;
+    await CarouselControls.findByIdAndUpdate(doc._id, { home: defaults.home });
+  }
+
   return doc;
 }
 

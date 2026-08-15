@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import connectDB from "@/config/db";
 import Address from "@/models/Address";
+import User from "@/models/User";
 
 // PUT - Update address
 export async function PUT(req, { params }) {

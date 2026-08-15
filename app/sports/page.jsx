@@ -10,6 +10,7 @@ import SEOMetadata from '@/components/SEOMetadata';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAppContext } from '@/context/AppContext';
 import { DEFAULT_CAROUSEL_CONTROLS } from '@/lib/carouselDefaults';
+import ProductCard from '@/components/ProductCard';
 
 // SEO Metadata
 const metadata = {
@@ -333,79 +334,26 @@ const SportsPage = () => {
             </div>
 
             {loadingProducts ? (
-              <div className="rounded-lg border border-dashed border-gray-200 p-10 text-center text-sm text-gray-500">
+              <div className="rounded-3xl border border-dashed border-slate-200 p-12 text-center text-sm font-semibold text-slate-500 bg-white/60">
                 Loading sports products...
               </div>
             ) : filteredProducts.length > 0 ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                {filteredProducts.map((item) => {
-                  const price = getDisplayPrice(item.variants || item.product?.variants);
-                  const image = item.variants?.[0]?.images?.[0] || item.product?.variants?.[0]?.images?.[0];
-                  const productId = item.product?._id || item._id;
-                  const productName = item.product?.name || item.name || 'Product';
-                  const sportCategory = item.product?.sportCategory || item.sportCategory;
-
-                  const content = (
-                  <div
-                    className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition cursor-pointer"
-                  >
-                    <div className="relative h-56 md:h-72 overflow-hidden bg-gray-100">
-                      {image ? (
-                        <Image
-                          src={image}
-                          alt={item.product?.name}
-                          fill
-                          className="object-cover hover:scale-110 transition duration-300"
-                          sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                        />
-                      ) : (
-                        <div className="flex h-full items-center justify-center text-sm text-gray-400">No image</div>
-                      )}
-                    </div>
-                    <div className="p-4">
-                      <h3 className="font-semibold text-gray-900 mb-1 line-clamp-2">{productName}</h3>
-                      <p className="text-sm text-gray-600 mb-3">
-                        {SPORTS_CATEGORIES.find((category) => category.id === sportCategory)?.name || 'Sports'}
-                      </p>
-                      <div className="flex items-center justify-between mb-3">
-                        <span className="text-lg font-bold text-orange-600">
-                          {price ? `₹${price}` : '—'}
-                        </span>
-                      </div>
-                      <div className="flex flex-col gap-2">
-                        <button
-                          type="button"
-                          onClick={(event) => handleAddToCart(event, item)}
-                          className="inline-flex w-full items-center justify-center rounded-lg bg-orange-600 py-2 font-semibold text-white transition hover:bg-orange-700"
-                        >
-                          Add to Cart
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(event) => handleBuyNow(event, item)}
-                          className="inline-flex w-full items-center justify-center rounded-lg border border-gray-200 bg-white py-2 font-semibold text-gray-800 transition hover:bg-gray-100"
-                        >
-                          Buy Now
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                  );
-
-                  return productId ? (
-                    <Link key={productId} href={`/product/${productId}`} className="block">
-                      {content}
-                    </Link>
-                  ) : (
-                    <div key={`sports-${item.product?.name || 'product'}`}>
-                      {content}
-                    </div>
-                  );
-                })}
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 md:gap-6">
+                {filteredProducts.map((item, index) => (
+                  <ProductCard key={item?.product?._id || item?._id || index} product={item} priority={index === 0} />
+                ))}
               </div>
             ) : (
-              <div className="text-center py-12">
-                <p className="text-gray-600 text-lg">No products found in this category</p>
+              <div className="text-center py-16 bg-white rounded-3xl border border-slate-200/80 p-8">
+                <p className="text-slate-700 text-lg font-bold">No products found in this category</p>
+                <p className="text-slate-400 text-sm mt-1">Try selecting another sport category or view all products.</p>
+                <button
+                  type="button"
+                  onClick={() => setSelectedCategory(null)}
+                  className="mt-4 px-6 py-2.5 rounded-full bg-slate-900 text-white text-xs font-bold hover:bg-orange-600 transition"
+                >
+                  View All Sports Gear
+                </button>
               </div>
             )}
           </div>

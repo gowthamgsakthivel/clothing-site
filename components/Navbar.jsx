@@ -36,15 +36,55 @@ const Navbar = () => {
 
   return (
     <>
-      <nav className="fixed top-0 left-0 right-0 z-50 h-[var(--nav-height)] md:h-[var(--nav-height-md)] border-b border-gray-200/50 text-gray-700 bg-white/80 backdrop-blur-md pl-4">
-        <div className="flex h-full w-full items-center px-3 sm:px-4 lg:px-6">
-          <Image
-            className="cursor-pointer w-24 md:w-28 shrink-0 ml-4 md:ml-6"
-            onClick={() => router.push('/')}
-            src={assets.logo}
-            alt="logo"
-          />
-          <div className="flex items-center gap-4 lg:gap-8 max-md:hidden ml-4 lg:ml-6">
+      <nav suppressHydrationWarning className="fixed top-0 left-0 right-0 z-50 h-[var(--nav-height)] md:h-[var(--nav-height-md)] border-b border-gray-200/50 text-gray-700 bg-white/90 backdrop-blur-md px-3 sm:px-6">
+        <div className="flex h-full w-full items-center justify-between gap-2 sm:gap-4 max-w-7xl mx-auto">
+          
+          {/* Logo, Back Button & Mobile Menu Toggle */}
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            {pathname !== '/' && (
+              <button
+                className="p-1.5 -ml-1 hover:bg-slate-100 active:scale-90 rounded-full transition md:hidden text-slate-800 flex items-center justify-center cursor-pointer"
+                aria-label="Go Back"
+                onClick={() => {
+                  if (typeof window !== 'undefined' && window.history.length > 1) {
+                    router.back();
+                  } else {
+                    router.push('/');
+                  }
+                }}
+                type="button"
+              >
+                <svg className="w-5 h-5 text-slate-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+            )}
+
+            <button
+              className="p-1.5 hover:bg-gray-100 rounded-lg transition md:hidden"
+              aria-label="Menu"
+              onClick={() => setShowMobileMenu(!showMobileMenu)}
+              type="button"
+            >
+              <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                {showMobileMenu ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                )}
+              </svg>
+            </button>
+
+            <Image
+              className="cursor-pointer w-24 sm:w-28 shrink-0"
+              onClick={() => router.push('/')}
+              src={assets.logo}
+              alt="logo"
+            />
+          </div>
+
+          {/* Main Navigation Links (Visible on xl screens to preserve space) */}
+          <div className="hidden xl:flex items-center gap-5 text-sm font-medium shrink-0">
             <Link href="/" className={`transition ${isActive('/') ? 'text-orange-600 font-semibold' : 'text-gray-700 hover:text-gray-900'}`}>
               Home
             </Link>
@@ -66,125 +106,77 @@ const Navbar = () => {
             <Link href="/contact" className={`transition ${isActive('/contact') ? 'text-orange-600 font-semibold' : 'text-gray-700 hover:text-gray-900'}`}>
               Contact
             </Link>
+          </div>
 
-            {isAdmin && (
+          {/* Desktop SearchBar Container - Flexes dynamically */}
+          <div className="hidden md:flex flex-1 max-w-xs lg:max-w-md min-w-[140px] mx-2">
+            <SearchBar className="w-full" />
+          </div>
+
+          {/* Right Action Items - ALWAYS VISIBLE & SHRINK-0 */}
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0 ml-auto">
+            {Boolean(user && isAdmin) && (
               <button
                 type="button"
                 onClick={() => router.push('/owner')}
-                className="text-xs border px-4 py-1.5 rounded-full hover:bg-gray-100 cursor-pointer inline-block"
+                className="hidden lg:inline-flex text-xs border border-gray-200 px-3 py-1.5 rounded-full hover:bg-gray-100 cursor-pointer font-medium shrink-0"
               >
-                Owner Dashboard
+                Owner
               </button>
             )}
 
+            {user ? (
+              <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                <div className="shrink-0">
+                  <UnifiedNotificationIcon />
+                </div>
+                <div className="shrink-0">
+                  <CartCounter />
+                </div>
+                <div className="shrink-0">
+                  <UserButton>
+                    <UserButton.MenuItems>
+                      <UserButton.Action label="My Profile" labelIcon={<svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" /></svg>} onClick={() => router.push('/profile')} />
+                    </UserButton.MenuItems>
+                    {Boolean(user && isAdmin) && (
+                      <UserButton.MenuItems>
+                        <UserButton.Action label="Owner Dashboard" labelIcon={<svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M3 13h2v8H3zm4-8h2v16H7zm4-2h2v18h-2zm4 4h2v14h-2zm4-2h2v16h-2z" /></svg>} onClick={() => router.push('/owner')} />
+                      </UserButton.MenuItems>
+                    )}
+                    <UserButton.MenuItems>
+                      <UserButton.Action label="Wishlist" labelIcon={<svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M20.8 4.6c-1.5-1.3-3.7-1.1-5 .3l-.8.8-.8-.8c-1.3-1.4-3.5-1.6-5-.3-1.7 1.5-1.8 4.1-.2 5.7l8 8c.4.4 1 .4 1.4 0l8-8c1.6-1.6 1.5-4.2-.2-5.7z" /></svg>} onClick={() => router.push('/wishlist')} />
+                    </UserButton.MenuItems>
+                    <UserButton.MenuItems>
+                      <UserButton.Action label="Cart" labelIcon={<CartIcon />} onClick={() => router.push('/cart')} />
+                    </UserButton.MenuItems>
+                    <UserButton.MenuItems>
+                      <UserButton.Action label="My Orders" labelIcon={<BagIcon />} onClick={() => router.push('/my-orders')} />
+                    </UserButton.MenuItems>
+                    <UserButton.MenuItems>
+                      <UserButton.Action label="Returns & Refunds" labelIcon={<svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm2-7h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z" /></svg>} onClick={() => router.push('/returns')} />
+                    </UserButton.MenuItems>
+                    <UserButton.MenuItems>
+                      <UserButton.Action label="Custom Designs" labelIcon={<BoxIcon />} onClick={() => router.push('/custom-design')} />
+                    </UserButton.MenuItems>
+                    <UserButton.MenuItems>
+                      <UserButton.Action label="My Designs" labelIcon={<BagIcon />} onClick={() => router.push('/my-designs')} />
+                    </UserButton.MenuItems>
+                    <UserButton.MenuItems>
+                      <UserButton.Action label="Stock Notifications" labelIcon={<BagIcon />} onClick={() => router.push('/notifications')} />
+                    </UserButton.MenuItems>
+                  </UserButton>
+                </div>
+              </div>
+            ) : (
+              <button onClick={openSignIn} className="flex items-center gap-1.5 text-xs sm:text-sm font-medium hover:text-gray-900 transition shrink-0 border border-gray-200 px-3 py-1.5 rounded-full">
+                <Image src={assets.user_icon} alt="user icon" className="w-4 h-4" />
+                <span>Account</span>
+              </button>
+            )}
           </div>
 
-          <ul className="hidden md:flex items-center gap-4 ml-auto">
-            <li className="min-w-[420px]">
-              <SearchBar className="w-full" />
-            </li>
-            {
-              user
-                ? <>
-                  <li>
-                    <UnifiedNotificationIcon />
-                  </li>
-                  <li>
-                    <CartCounter />
-                  </li>
-                  <li>
-                    <UserButton>
-                      <UserButton.MenuItems>
-                        <UserButton.Action label="My Profile" labelIcon={<svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" /></svg>} onClick={() => router.push('/profile')} />
-                      </UserButton.MenuItems>
-                      {isAdmin && (
-                        <UserButton.MenuItems>
-                          <UserButton.Action label="Owner Dashboard" labelIcon={<svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M3 13h2v8H3zm4-8h2v16H7zm4-2h2v18h-2zm4 4h2v14h-2zm4-2h2v16h-2z" /></svg>} onClick={() => router.push('/owner')} />
-                        </UserButton.MenuItems>
-                      )}
-                      <UserButton.MenuItems>
-                        <UserButton.Action label="Wishlist" labelIcon={<svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M20.8 4.6c-1.5-1.3-3.7-1.1-5 .3l-.8.8-.8-.8c-1.3-1.4-3.5-1.6-5-.3-1.7 1.5-1.8 4.1-.2 5.7l8 8c.4.4 1 .4 1.4 0l8-8c1.6-1.6 1.5-4.2-.2-5.7z" /></svg>} onClick={() => router.push('/wishlist')} />
-                      </UserButton.MenuItems>
-                      <UserButton.MenuItems>
-                        <UserButton.Action label="Cart" labelIcon={<CartIcon />} onClick={() => router.push('/cart')} />
-                      </UserButton.MenuItems>
-                      <UserButton.MenuItems>
-                        <UserButton.Action label="My Orders" labelIcon={<BagIcon />} onClick={() => router.push('/my-orders')} />
-                      </UserButton.MenuItems>
-                      <UserButton.MenuItems>
-                        <UserButton.Action label="Returns & Refunds" labelIcon={<svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm2-7h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z" /></svg>} onClick={() => router.push('/returns')} />
-                      </UserButton.MenuItems>
-                      <UserButton.MenuItems>
-                        <UserButton.Action label="Custom Designs" labelIcon={<BoxIcon />} onClick={() => router.push('/custom-design')} />
-                      </UserButton.MenuItems>
-                      <UserButton.MenuItems>
-                        <UserButton.Action label="My Designs" labelIcon={<BagIcon />} onClick={() => router.push('/my-designs')} />
-                      </UserButton.MenuItems>
-                      <UserButton.MenuItems>
-                        <UserButton.Action label="Stock Notifications" labelIcon={<BagIcon />} onClick={() => router.push('/notifications')} />
-                      </UserButton.MenuItems>
-                    </UserButton>
-                  </li>
-                </>
-                : <button onClick={openSignIn} className="flex items-center gap-2 hover:text-gray-900 transition">
-                  <Image src={assets.user_icon} alt="user icon" />
-                  Account
-                </button>
-            }
-          </ul>
-
-          <div className="flex items-center md:hidden gap-3 ml-auto">
-            <button
-              className="p-2 hover:bg-gray-100 rounded-lg transition"
-              aria-label="Menu"
-              onClick={() => setShowMobileMenu(!showMobileMenu)}
-              type="button"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                {showMobileMenu ? (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                ) : (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                )}
-              </svg>
-            </button>
-
-            {
-              user
-                ? <>
-                  <div className="flex items-center gap-2">
-                    <UnifiedNotificationIcon />
-                    <CartCounter />
-                    <UserButton>
-                      <UserButton.MenuItems>
-                        <UserButton.Action label="My Profile" labelIcon={<svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" /></svg>} onClick={() => router.push('/profile')} />
-                      </UserButton.MenuItems>
-                      {isAdmin && (
-                        <UserButton.MenuItems>
-                          <UserButton.Action label="Owner Dashboard" labelIcon={<svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M3 13h2v8H3zm4-8h2v16H7zm4-2h2v18h-2zm4 4h2v14h-2zm4-2h2v16h-2z" /></svg>} onClick={() => router.push('/owner')} />
-                        </UserButton.MenuItems>
-                      )}
-                      <UserButton.MenuItems>
-                        <UserButton.Action label="Wishlist" labelIcon={<svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M20.8 4.6c-1.5-1.3-3.7-1.1-5 .3l-.8.8-.8-.8c-1.3-1.4-3.5-1.6-5-.3-1.7 1.5-1.8 4.1-.2 5.7l8 8c.4.4 1 .4 1.4 0l8-8c1.6-1.6 1.5-4.2-.2-5.7z" /></svg>} onClick={() => router.push('/wishlist')} />
-                      </UserButton.MenuItems>
-                      <UserButton.MenuItems>
-                        <UserButton.Action label="Returns & Refunds" labelIcon={<svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm2-7h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z" /></svg>} onClick={() => router.push('/returns')} />
-                      </UserButton.MenuItems>
-                      <UserButton.MenuItems>
-                        <UserButton.Action label="My Designs" labelIcon={<BagIcon />} onClick={() => router.push('/my-designs')} />
-                      </UserButton.MenuItems>
-                      <UserButton.MenuItems>
-                        <UserButton.Action label="Stock Notifications" labelIcon={<BagIcon />} onClick={() => router.push('/notifications')} />
-                      </UserButton.MenuItems>
-                    </UserButton>
-                  </div>
-                </>
-                : <button onClick={openSignIn} className="flex items-center gap-2 text-sm hover:text-gray-900 transition">
-                  <Image src={assets.user_icon} alt="user icon" className="w-5 h-5" />
-                </button>
-            }
-          </div>
         </div>
+      </nav>
 
         {/* Mobile menu drawer */}
         {showMobileMenu && (
@@ -205,7 +197,7 @@ const Navbar = () => {
                     </button>
               </div>
               <div className="py-2">
-                {isAdmin && (
+                {Boolean(user && isAdmin) && (
                   <Link
                     href="/owner"
                     className={`flex items-center gap-3 px-6 py-3 transition ${isActive('/owner') ? 'bg-orange-50 text-orange-700 border-l-4 border-orange-600' : 'hover:bg-gray-50'}`}
@@ -337,10 +329,8 @@ const Navbar = () => {
           </>
         )}
 
-      </nav>
-
       {/* Mobile bottom navigation bar - Glassmorphism */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md border-t border-gray-200/50 md:hidden z-40 pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+      <div suppressHydrationWarning className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md border-t border-gray-200/50 md:hidden z-40 pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
         <div className="relative">
           <div
             className={`absolute bottom-full left-1/2 mb-3 w-[92%] max-w-sm -translate-x-1/2 rounded-3xl border border-white/60 bg-gradient-to-br from-white/95 via-orange-50/70 to-white/90 p-4 shadow-[0_12px_40px_rgba(15,23,42,0.18)] backdrop-blur-xl ring-1 ring-orange-100/60 transition-all duration-300 ease-out ${showCategories ? 'opacity-100 translate-y-0 scale-100 pointer-events-auto' : 'opacity-0 translate-y-2 scale-95 pointer-events-none'}`}

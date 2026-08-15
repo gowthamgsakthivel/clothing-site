@@ -165,7 +165,12 @@ export async function GET() {
         awb_code: shipment?.awb || shipment?.awbCode || null,
         tracking_url: shipment?.trackingUrl || null,
         courier_name: shipment?.courier || null,
-        paymentDetails: null
+        paymentDetails: null,
+        cancellationReason: order.cancellationReason || null,
+        cancellationNotes: order.cancellationNotes || null,
+        cancelledBy: order.cancelledBy || null,
+        cancelledAt: order.cancelledAt || null,
+        refundStatus: order.refundStatus || null
       };
     });
 

@@ -182,7 +182,7 @@ const createOrder = async (orderData) => {
   return { order };
 };
 
-const cancelOrder = async (orderId) => {
+const cancelOrder = async (orderId, { reason = 'Cancelled by store admin', notes = null, cancelledBy = 'admin' } = {}) => {
   await connectDB();
 
   const session = await mongoose.startSession();
@@ -215,6 +215,15 @@ const cancelOrder = async (orderId) => {
       }
 
       order.status = 'cancelled';
+      order.cancellationReason = reason || 'Cancelled by store admin';
+      order.cancellationNotes = notes || null;
+      order.cancelledBy = cancelledBy || 'admin';
+      order.cancelledAt = new Date();
+
+      if (order.paymentStatus === 'paid') {
+        order.refundStatus = 'initiated';
+      }
+
       await order.save({ session });
 
       shipment = await Shipment.findOne({ orderId }).session(session);
@@ -229,6 +238,32 @@ const cancelOrder = async (orderId) => {
   }
 
   return { order, shipment: shipment || null };
+};
+
+const updateRefundStatus = async (orderId, { refundStatus = 'completed', refundId = null } = {}) => {
+  await connectDB();
+  const order = await OrderV2.findById(orderId);
+  if (!order) {
+    throw buildError({ message: 'Order not found', status: 404, code: 'ORDER_NOT_FOUND' });
+  }
+
+  order.refundStatus = refundStatus;
+  if (refundStatus === 'completed') {
+    order.paymentStatus = 'refunded';
+  }
+  if (refundId && !order.paymentMetadata?.refunds?.some((r) => r.id === refundId)) {
+    if (!order.paymentMetadata) order.paymentMetadata = {};
+    if (!order.paymentMetadata.refunds) order.paymentMetadata.refunds = [];
+    order.paymentMetadata.refunds.push({
+      id: refundId,
+      status: refundStatus,
+      amount: order.grandTotal,
+      createdAt: new Date()
+    });
+  }
+
+  await order.save();
+  return { order };
 };
 
 const confirmShipment = async (orderId) => {
@@ -423,13 +458,109 @@ const getOrdersWithPagination = async ({
     return acc;
   }, {});
 
-  const data = orders.map((orderDoc) => ({
-    ...orderDoc,
-    orderCode: orderDoc.orderCode || null,
-    shipment: shipmentMap[orderDoc._id.toString()] || null,
-    customerName: userMap[orderDoc.userId]?.name || orderDoc.userId,
-    customerEmail: userMap[orderDoc.userId]?.email || null
-  }));
+  // Collect all variant IDs and SKUs across all orders to hydrate items in one single query
+  const allVariantIds = [
+    ...new Set(
+      orders.flatMap((o) => (o.items || []).map((i) => i.variantId).filter(Boolean))
+    )
+  ];
+  const allSkus = [
+    ...new Set(
+      orders.flatMap((o) => (o.items || []).map((i) => i.sku).filter(Boolean))
+    )
+  ];
+
+  const orQueries = [];
+  if (allVariantIds.length) orQueries.push({ _id: { $in: allVariantIds } });
+  if (allSkus.length) orQueries.push({ sku: { $in: allSkus } });
+
+  const variants = orQueries.length
+    ? await ProductVariant.find({ $or: orQueries })
+        .populate('productId', 'name productCode brand category genderCategory sportCategory slug image images')
+        .lean()
+    : [];
+
+  const variantIdMap = {};
+  const variantSkuMap = {};
+
+  variants.forEach((v) => {
+    if (v._id) variantIdMap[v._id.toString()] = v;
+    if (v.sku) variantSkuMap[v.sku.toString()] = v;
+  });
+
+  const decodeSkuFallback = (sku) => {
+    if (!sku || typeof sku !== 'string') return {};
+    const parts = sku.split('-');
+    if (parts.length >= 5) {
+      const rawCat = parts[1]?.toUpperCase();
+      const rawBrand = parts[2]?.toUpperCase();
+      const rawColor = parts[3]?.toUpperCase();
+      const rawSize = parts[4]?.toUpperCase();
+
+      const categoryMap = {
+        'TSH': 'T-Shirts', 'SHO': 'Shorts', 'JAC': 'Jackets', 'JER': 'Jerseys',
+        'POL': 'Polo T-Shirts', 'HOO': 'Hoodies', 'TRA': 'Track Pants', 'CAP': 'Caps'
+      };
+      const brandMap = {
+        'PUM': 'Puma', 'NIK': 'Nike', 'ADI': 'Adidas', 'SPA': 'Sparrow Sports',
+        'UND': 'Under Armour', 'REE': 'Reebok'
+      };
+      const colorMap = {
+        'BLA': 'Black', 'WHI': 'White', 'RED': 'Red', 'BLU': 'Blue', 'NAV': 'Navy Blue',
+        'GRE': 'Green', 'YEL': 'Yellow', 'ORA': 'Orange', 'PUR': 'Purple', 'PIN': 'Pink',
+        'GRA': 'Grey', 'ROY': 'Royal Blue', 'MAR': 'Maroon', 'TEA': 'Teal'
+      };
+      const sizeMap = {
+        'XS': 'XS', 'SX': 'S', 'SM': 'S', 'MX': 'M', 'MD': 'M', 'LX': 'L', 'LG': 'L',
+        'XL': 'XL', '2X': '2XL', 'XX': 'XXL', '3X': '3XL'
+      };
+
+      return {
+        category: categoryMap[rawCat] || rawCat,
+        brand: brandMap[rawBrand] || rawBrand,
+        color: colorMap[rawColor] || rawColor,
+        size: sizeMap[rawSize] || rawSize.replace(/X$/, '') || rawSize
+      };
+    }
+    return {};
+  };
+
+  const data = orders.map((orderDoc) => {
+    const hydratedItems = (orderDoc.items || []).map((item) => {
+      const variant = (item.variantId ? variantIdMap[item.variantId.toString()] : null) || (item.sku ? variantSkuMap[item.sku.toString()] : null);
+      const fallback = decodeSkuFallback(item.sku);
+
+      const productName = item.designName || variant?.productId?.name || item.productName || item.sku || 'Sports Apparel';
+      const brand = variant?.productId?.brand || fallback.brand || 'Sparrow Sports';
+      const category = variant?.productId?.category || fallback.category || 'Sportswear';
+      const color = item.color || variant?.color || fallback.color || null;
+      const size = item.size || variant?.size || fallback.size || null;
+      const productCode = variant?.productId?.productCode || null;
+      const productId = variant?.productId?._id?.toString() || null;
+      const productImage = variant?.images?.[0] || variant?.productId?.images?.[0] || variant?.productId?.image?.[0] || item.customDesignImage || null;
+
+      return {
+        ...item,
+        productId,
+        productName,
+        brand,
+        category,
+        color,
+        size,
+        productCode,
+        productImage
+      };
+    });
+
+    return {
+      ...orderDoc,
+      items: hydratedItems,
+      orderCode: orderDoc.orderCode || null,
+      shipment: shipmentMap[orderDoc._id.toString()] || null,
+      customerName: userMap[orderDoc.userId]?.name || orderDoc.userId,
+      customerEmail: userMap[orderDoc.userId]?.email || null
+    };
+  });
 
   return {
     orders: data,
@@ -454,29 +585,89 @@ const getOrderById = async (orderId) => {
   const user = order.userId ? await User.findById(order.userId).select('name email').lean() : null;
   const address = order.shippingAddressId ? await Address.findById(order.shippingAddressId).lean() : null;
 
-  // Hydrate order items with actual product names
-  const hydratedItems = await Promise.all(
-    order.items.map(async (item) => {
-      let productName = null;
-      let productCode = null;
-      if (item.variantId) {
-        const variant = await ProductVariant.findById(item.variantId)
-          .populate('productId', 'name productCode')
-          .lean();
-        if (variant?.productId?.name) {
-          productName = variant.productId.name;
-        }
-        if (variant?.productId?.productCode) {
-          productCode = variant.productId.productCode;
-        }
-      }
-      return {
-        ...item,
-        productName,
-        productCode
+  const allVariantIds = (order.items || []).map((i) => i.variantId).filter(Boolean);
+  const allSkus = (order.items || []).map((i) => i.sku).filter(Boolean);
+
+  const orQueries = [];
+  if (allVariantIds.length) orQueries.push({ _id: { $in: allVariantIds } });
+  if (allSkus.length) orQueries.push({ sku: { $in: allSkus } });
+
+  const variants = orQueries.length
+    ? await ProductVariant.find({ $or: orQueries })
+        .populate('productId', 'name productCode brand category genderCategory sportCategory slug image images')
+        .lean()
+    : [];
+
+  const variantIdMap = {};
+  const variantSkuMap = {};
+
+  variants.forEach((v) => {
+    if (v._id) variantIdMap[v._id.toString()] = v;
+    if (v.sku) variantSkuMap[v.sku.toString()] = v;
+  });
+
+  const decodeSkuFallback = (sku) => {
+    if (!sku || typeof sku !== 'string') return {};
+    const parts = sku.split('-');
+    if (parts.length >= 5) {
+      const rawCat = parts[1]?.toUpperCase();
+      const rawBrand = parts[2]?.toUpperCase();
+      const rawColor = parts[3]?.toUpperCase();
+      const rawSize = parts[4]?.toUpperCase();
+
+      const categoryMap = {
+        'TSH': 'T-Shirts', 'SHO': 'Shorts', 'JAC': 'Jackets', 'JER': 'Jerseys',
+        'POL': 'Polo T-Shirts', 'HOO': 'Hoodies', 'TRA': 'Track Pants', 'CAP': 'Caps'
       };
-    })
-  );
+      const brandMap = {
+        'PUM': 'Puma', 'NIK': 'Nike', 'ADI': 'Adidas', 'SPA': 'Sparrow Sports',
+        'UND': 'Under Armour', 'REE': 'Reebok'
+      };
+      const colorMap = {
+        'BLA': 'Black', 'WHI': 'White', 'RED': 'Red', 'BLU': 'Blue', 'NAV': 'Navy Blue',
+        'GRE': 'Green', 'YEL': 'Yellow', 'ORA': 'Orange', 'PUR': 'Purple', 'PIN': 'Pink',
+        'GRA': 'Grey', 'ROY': 'Royal Blue', 'MAR': 'Maroon', 'TEA': 'Teal'
+      };
+      const sizeMap = {
+        'XS': 'XS', 'SX': 'S', 'SM': 'S', 'MX': 'M', 'MD': 'M', 'LX': 'L', 'LG': 'L',
+        'XL': 'XL', '2X': '2XL', 'XX': 'XXL', '3X': '3XL'
+      };
+
+      return {
+        category: categoryMap[rawCat] || rawCat,
+        brand: brandMap[rawBrand] || rawBrand,
+        color: colorMap[rawColor] || rawColor,
+        size: sizeMap[rawSize] || rawSize.replace(/X$/, '') || rawSize
+      };
+    }
+    return {};
+  };
+
+  const hydratedItems = (order.items || []).map((item) => {
+    const variant = (item.variantId ? variantIdMap[item.variantId.toString()] : null) || (item.sku ? variantSkuMap[item.sku.toString()] : null);
+    const fallback = decodeSkuFallback(item.sku);
+
+    const productName = item.designName || variant?.productId?.name || item.productName || item.sku || 'Sports Apparel';
+    const brand = variant?.productId?.brand || fallback.brand || 'Sparrow Sports';
+    const category = variant?.productId?.category || fallback.category || 'Sportswear';
+    const color = item.color || variant?.color || fallback.color || null;
+    const size = item.size || variant?.size || fallback.size || null;
+    const productCode = variant?.productId?.productCode || null;
+    const productId = variant?.productId?._id?.toString() || null;
+    const productImage = variant?.images?.[0] || variant?.productId?.images?.[0] || variant?.productId?.image?.[0] || item.customDesignImage || null;
+
+    return {
+      ...item,
+      productId,
+      productName,
+      brand,
+      category,
+      color,
+      size,
+      productCode,
+      productImage
+    };
+  });
 
   const hydratedOrder = {
     ...order,
@@ -490,7 +681,7 @@ const getOrderById = async (orderId) => {
   return { order: hydratedOrder, shipment: shipment || null };
 };
 
-export { createOrder, cancelOrder, confirmShipment, packOrder, shipOrder, deliverOrder, getOrdersWithPagination, getOrderById };
+export { createOrder, cancelOrder, confirmShipment, packOrder, shipOrder, deliverOrder, getOrdersWithPagination, getOrderById, updateRefundStatus };
 
 // Process Razorpay webhooks in an idempotent, replay-protected way.
 // This function will NOT create application orders; it only updates existing orders

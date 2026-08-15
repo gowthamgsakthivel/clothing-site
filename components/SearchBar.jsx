@@ -16,9 +16,8 @@ export default function SearchBar({ className = '' }) {
         className={`flex w-full items-center gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-3 text-left shadow-sm transition hover:border-orange-200 hover:shadow-md ${className}`}
         aria-label="Open search"
       >
-        <Image src={assets.search_icon} alt="search" width={18} height={18} />
-        <span className="min-w-0 flex-1 truncate text-sm text-gray-400">Search products, brands or categories</span>
-        <span className="shrink-0 rounded-full bg-orange-50 px-3 py-1 text-xs font-semibold text-orange-700">
+        <span className="min-w-0 flex-1 truncate text-xs sm:text-sm text-gray-400">Search products, brands or categories</span>
+        <span className="shrink-0 rounded-full bg-orange-50 px-2.5 py-1 text-xs font-semibold text-orange-700 hidden sm:inline-block">
           Search
         </span>
       </button>

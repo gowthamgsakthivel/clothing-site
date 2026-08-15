@@ -12,27 +12,34 @@ export async function PATCH(request) {
 
         const body = await request.json();
         const name = String(body?.name || '').trim();
+        const phone = String(body?.phone || '').trim();
 
-        if (!name) {
-            return NextResponse.json({ success: false, message: 'Name is required' }, { status: 400 });
+        if (!name && !phone) {
+            return NextResponse.json({ success: false, message: 'Name or phone is required' }, { status: 400 });
         }
 
         await connectDB();
-        const user = await User.findByIdAndUpdate(userId, { name }, { new: true });
+        const updateData = {};
+        if (name) updateData.name = name;
+        if (phone) updateData.phone = phone;
+
+        const user = await User.findByIdAndUpdate(userId, updateData, { new: true });
 
         if (!user) {
             return NextResponse.json({ success: false, message: 'User not found' }, { status: 404 });
         }
 
-        try {
-            const client = await clerkClient();
-            const [firstName, ...lastNameParts] = name.split(' ');
-            await client.users.updateUser(userId, {
-                firstName,
-                lastName: lastNameParts.join(' ') || undefined
-            });
-        } catch (clerkError) {
-            console.warn('Could not update Clerk name:', clerkError);
+        if (name) {
+            try {
+                const client = await clerkClient();
+                const [firstName, ...lastNameParts] = name.split(' ');
+                await client.users.updateUser(userId, {
+                    firstName,
+                    lastName: lastNameParts.join(' ') || undefined
+                });
+            } catch (clerkError) {
+                console.warn('Could not update Clerk name:', clerkError);
+            }
         }
 
         return NextResponse.json({
@@ -40,6 +47,7 @@ export async function PATCH(request) {
             user: {
                 _id: user._id,
                 name: user.name,
+                phone: user.phone,
                 email: user.email,
                 imageUrl: user.imageUrl
             }

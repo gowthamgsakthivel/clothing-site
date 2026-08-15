@@ -245,96 +245,102 @@ const OrderSummary = () => {
           </h2>
           <hr className="border-gray-500/30 my-5" />
           <div className="space-y-6">
+            {/* Address Selection */}
             <div>
-              <label className="text-base font-medium uppercase text-gray-600 block mb-2">
-                Select Address
+              <label className="text-xs font-extrabold uppercase tracking-wider text-slate-500 block mb-2">
+                Shipping Destination
               </label>
-              <div className="relative inline-block w-full text-sm border">
+              <div className="relative w-full">
                 <button
-                  className="peer w-full text-left px-4 pr-2 py-2 bg-white text-gray-700 focus:outline-none"
+                  type="button"
+                  className="w-full text-left px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 hover:border-slate-300 text-slate-800 text-xs font-semibold focus:outline-none flex items-center justify-between transition cursor-pointer"
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                 >
-                  <span>
+                  <span className="truncate pr-2">
                     {selectedAddress
-                      ? `${selectedAddress.fullName}, ${selectedAddress.area}, ${selectedAddress.city}, ${selectedAddress.state}`
-                      : "Select Address"}
+                      ? `📍 ${selectedAddress.fullName}, ${selectedAddress.city} - ${selectedAddress.pincode}`
+                      : "Select delivery address"}
                   </span>
-                  <svg className={`w-5 h-5 inline float-right transition-transform duration-200 ${isDropdownOpen ? "rotate-0" : "-rotate-90"}`}
-                    xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="#6B7280"
+                  <svg className={`w-4 h-4 shrink-0 transition-transform duration-200 ${isDropdownOpen ? "rotate-180" : ""}`}
+                    fill="none" viewBox="0 0 24 24" stroke="currentColor"
                   >
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
 
                 {isDropdownOpen && (
-                  <ul className="absolute w-full bg-white border shadow-md mt-1 z-10 py-1.5">
+                  <div className="absolute w-full bg-white border border-slate-200 shadow-xl rounded-2xl mt-1.5 z-20 overflow-hidden py-1">
                     {userAddresses.map((address, index) => (
-                      <li
+                      <div
                         key={index}
-                        className="px-4 py-2 hover:bg-gray-500/10 cursor-pointer"
+                        className="px-4 py-2.5 hover:bg-orange-50/60 cursor-pointer text-xs font-medium text-slate-700 transition"
                         onClick={() => handleAddressSelect(address)}
                       >
-                        {address.fullName}, {address.area}, {address.city}, {address.state}
-                      </li>
+                        <p className="font-bold text-slate-900">{address.fullName} {address.isDefault && <span className="text-[10px] text-emerald-600 font-bold ml-1 bg-emerald-50 px-1.5 py-0.5 rounded">Default</span>}</p>
+                        <p className="text-[11px] text-slate-500 truncate">{address.area}, {address.city} - {address.pincode}</p>
+                      </div>
                     ))}
-                    <li
+                    <div
                       onClick={() => router.push("/add-address")}
-                      className="px-4 py-2 hover:bg-gray-500/10 cursor-pointer text-center"
+                      className="px-4 py-2.5 bg-slate-50 hover:bg-orange-100/60 cursor-pointer text-xs font-bold text-orange-600 text-center border-t border-slate-100"
                     >
-                      + Add New Address
-                    </li>
-                  </ul>
+                      + Add New Delivery Address
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
 
+            {/* Promo Code Input */}
             <div>
-              <label className="text-base font-medium uppercase text-gray-600 block mb-2">
-                Promo Code
+              <label className="text-xs font-extrabold uppercase tracking-wider text-slate-500 block mb-2">
+                Coupon / Promo Code
               </label>
-              <div className="flex flex-col items-start gap-3">
+              <div className="flex items-center gap-2">
                 <input
                   type="text"
-                  placeholder="Enter promo code"
-                  className="flex-grow w-full outline-none p-2.5 text-gray-600 border"
+                  placeholder="Enter discount code"
+                  className="flex-1 w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
                 />
-                <button className="bg-orange-600 text-white px-9 py-2 hover:bg-orange-700">
+                <button
+                  type="button"
+                  className="px-5 py-2.5 bg-slate-900 hover:bg-orange-600 text-white text-xs font-extrabold rounded-xl transition cursor-pointer"
+                >
                   Apply
                 </button>
               </div>
             </div>
 
-            <hr className="border-gray-500/30 my-5" />
+            <hr className="border-slate-100 my-4" />
 
-            {/* Free Shipping Progress Bar */}
-            <div className="bg-emerald-50/60 rounded-xl p-4 border border-emerald-200/80 mb-6 flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                </svg>
+            {/* Free Shipping Highlight */}
+            <div className="bg-emerald-50 rounded-2xl p-3.5 border border-emerald-200/60 flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 shrink-0 font-bold">
+                ✓
               </div>
               <div>
-                <span className="text-xs font-black text-emerald-900 block">FREE Shipping Unlocked! 🎉</span>
-                <span className="text-[11px] text-emerald-700 font-medium">Enjoy 100% free delivery on all sportswear orders.</span>
+                <span className="text-xs font-black text-emerald-900 block">FREE Express Delivery Applied</span>
+                <span className="text-[11px] text-emerald-700 font-medium">Fast 24-48h dispatch across India</span>
               </div>
             </div>
 
-            <div className="space-y-4">
-              <div className="flex justify-between text-base font-medium">
-                <p className="uppercase text-gray-600">Subtotal ({getCartCount()} Items)</p>
-                <p className="text-gray-800">{currency}{getCartAmount()}</p>
+            {/* Breakdown */}
+            <div className="space-y-3 pt-2">
+              <div className="flex justify-between text-xs font-medium text-slate-600">
+                <span>Items Subtotal ({getCartCount()})</span>
+                <span className="font-bold text-slate-900">{currency}{getCartAmount()}</span>
               </div>
-              <div className="flex justify-between text-xs text-gray-500">
-                <p>Includes 5% GST</p>
-                <p>{currency}{Math.round(getCartAmount() - (getCartAmount() / 1.05))}</p>
+              <div className="flex justify-between text-[11px] text-slate-500">
+                <span>GST Tax (5% included)</span>
+                <span>{currency}{Math.round(getCartAmount() - (getCartAmount() / 1.05))}</span>
               </div>
-              <div className="flex justify-between">
-                <p className="text-gray-600">Shipping Fee</p>
-                <p className="font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded text-sm">FREE</p>
+              <div className="flex justify-between text-xs font-medium text-slate-600">
+                <span>Delivery Charge</span>
+                <span className="font-bold text-emerald-600 uppercase bg-emerald-50 px-2 py-0.5 rounded-full text-[10px]">Free</span>
               </div>
-              <div className="flex justify-between text-lg md:text-xl font-bold border-t pt-4 mt-2">
-                <p>Total Payable</p>
-                <p>{currency}{getCartAmount()}</p>
+              <div className="flex justify-between text-base sm:text-lg font-black text-slate-900 border-t border-slate-100 pt-3 mt-2">
+                <span>Total Amount</span>
+                <span>{currency}{getCartAmount()}</span>
               </div>
             </div>
           </div>
@@ -342,11 +348,15 @@ const OrderSummary = () => {
           <LoadingButton
             onClick={handleRazorpayPayment}
             isLoading={loadingStates.payment}
-            className="w-full bg-orange-600 text-white py-3.5 mt-6 rounded-xl font-semibold hover:bg-orange-700 hover:shadow-lg hover:shadow-orange-600/30 transition-all active:scale-[0.98]"
-            loadingText="Preparing Payment..."
+            className="w-full bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white py-4 mt-6 rounded-2xl font-black text-sm shadow-xl shadow-orange-600/30 transition-all active:scale-[0.98] cursor-pointer"
+            loadingText="Securing Payment..."
           >
-            Proceed to Payment
+            🔒 Pay {currency}{getCartAmount()} Securely
           </LoadingButton>
+
+          <p className="text-center text-[10px] text-slate-400 font-medium mt-3 flex items-center justify-center gap-1">
+            <span>🛡️ 256-Bit SSL Encrypted Razorpay Checkout</span>
+          </p>
         </div>
       </LoadingOverlay>
     </div>
