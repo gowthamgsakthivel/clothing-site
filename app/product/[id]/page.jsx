@@ -2,7 +2,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { assets } from "@/assets/assets";
 import ProductCard from "@/components/ProductCard";
-import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Image from "next/image";
 import { useParams } from "next/navigation";
@@ -12,8 +11,9 @@ import SEOMetadata from "@/components/SEOMetadata";
 import ProductReviews from "@/components/ProductReviews";
 import RecentlyViewed from "@/components/RecentlyViewed";
 import { addToRecentlyViewed } from "@/lib/recentlyViewed";
-import SizeGuideModal from "@/components/SizeGuideModal";
-import SizeRecommendation from "@/components/SizeRecommendation";
+import dynamic from "next/dynamic";
+const SizeGuideModal = dynamic(() => import("@/components/SizeGuideModal"), { ssr: false });
+const SizeRecommendation = dynamic(() => import("@/components/SizeRecommendation"), { ssr: false });
 import { getSizeChart } from "@/lib/sizeGuideData";
 import { buildColorSizeMatrix, getAvailableSizes as getVariantSizes, getPriceSummary, getProductImages } from "@/lib/v2ProductView";
 import ShareButton from "@/components/ShareButton";
@@ -392,8 +392,7 @@ const Product = () => {
                 ratings: productData.ratings || []
             }}
         />
-        <Navbar />
-        <div className="px-3 sm:px-6 md:px-16 lg:px-32 pt-[var(--nav-height)] md:pt-24 space-y-6 md:space-y-10">
+        <div className="px-3 sm:px-6 md:px-16 lg:px-32 py-4 md:py-8 space-y-6 md:space-y-10">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-12 lg:gap-16">
                 <div className="px-0 sm:px-2 lg:px-4 xl:px-6">
                     <div className="rounded-2xl md:rounded-lg overflow-hidden bg-gray-500/10 mb-4 relative aspect-[4/5] p-2.5 sm:p-4">
@@ -432,9 +431,10 @@ const Product = () => {
                         {(mainImage || productData.image?.[0]) ? (
                             <Image
                                 src={mainImage || productData.image[0]}
-                                alt="alt"
+                                alt={productData.name || 'Product Image'}
                                 fill
                                 sizes="(max-width: 768px) 100vw, 50vw"
+                                priority
                                 className="object-contain mix-blend-multiply"
                             />
                         ) : (
@@ -458,10 +458,11 @@ const Product = () => {
                                         >
                                             <Image
                                                 src={image}
-                                                alt="alt"
+                                                alt={`${productData.name || 'Product'} thumbnail ${index + 1}`}
                                                 className="object-cover w-full h-full"
                                                 width={48}
                                                 height={48}
+                                                sizes="48px"
                                             />
                                         </button>
                                     ))}

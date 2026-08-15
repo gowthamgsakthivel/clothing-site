@@ -10,6 +10,7 @@ import Link from 'next/link';
 import QuoteResponseButtons from '@/components/QuoteResponseButtons';
 import CustomDesignPaymentButton from '@/components/CustomDesignPaymentButton';
 import NegotiationHistory from '@/components/NegotiationHistory';
+import Loading from '@/components/Loading';
 import dynamic from 'next/dynamic';
 
 const MyDesignsPage = () => {
@@ -134,8 +135,8 @@ const MyDesignsPage = () => {
                     </div>
 
                     {loading ? (
-                        <div className="flex justify-center py-12">
-                            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500"></div>
+                        <div className="py-8">
+                            <Loading size="md" text="Loading Design Requests..." />
                         </div>
                     ) : designRequests.length === 0 ? (
                         <div className="bg-white rounded-lg shadow p-8 text-center">

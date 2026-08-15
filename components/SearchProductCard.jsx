@@ -27,8 +27,9 @@ const SearchProductCard = ({ product }) => {
           <Image
             src={summary.images[0]}
             alt={summary.name}
-            width={800}
-            height={900}
+            width={400}
+            height={500}
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
         ) : (

@@ -4,6 +4,7 @@ import { toast } from 'react-hot-toast';
 import Image from 'next/image';
 import { useAppContext } from '@/context/AppContext';
 import { PAYMENT_RECOVERY_MESSAGE, recordPaymentRecoveryFallback } from '@/lib/paymentRecovery';
+import Loading from '@/components/Loading';
 
 const CustomDesignPaymentModal = ({ design, onClose, onPaymentComplete }) => {
     const { getToken } = useAppContext();
@@ -376,9 +377,8 @@ const CustomDesignPaymentModal = ({ design, onClose, onPaymentComplete }) => {
 
                 <div className="p-4">
                     {isLoading ? (
-                        <div className="text-center py-8">
-                            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500 mx-auto"></div>
-                            <p className="mt-4 text-gray-600">Loading payment options...</p>
+                        <div className="text-center py-4">
+                            <Loading size="sm" text="Loading payment options..." />
                         </div>
                     ) : (
                         <>
@@ -470,10 +470,13 @@ const CustomDesignPaymentModal = ({ design, onClose, onPaymentComplete }) => {
                                     disabled={isLoading}
                                 >
                                     {isLoading ? (
-                                        <>
-                                            <span className="inline-block animate-spin mr-2">⟳</span>
-                                            Processing...
-                                        </>
+                                        <span className="inline-flex items-center justify-center gap-1.5">
+                                            <svg className="w-4 h-4 animate-spin -rotate-90" viewBox="0 0 24 24">
+                                                <circle cx="12" cy="12" r="9" className="opacity-25" stroke="currentColor" strokeWidth="3" fill="none" />
+                                                <path className="opacity-90" fill="currentColor" d="M12 3a9 9 0 0 1 9 9h-3a6 6 0 0 0-6-6V3z" />
+                                            </svg>
+                                            <span>Processing Payment...</span>
+                                        </span>
                                     ) : (
                                         `Pay Now${paymentMethod === 'cod' ? ' (Cash on Delivery)' : ''}`
                                     )}

@@ -8,6 +8,7 @@ import {
     MessageSquare, Mail, RefreshCw, Reply, CheckCircle2,
     X, Sparkles, User, Eye, EyeOff, ShieldCheck
 } from 'lucide-react';
+import Loading from '@/components/Loading';
 
 export default function OwnerMessages() {
     const { user, getToken } = useAppContext();
@@ -143,9 +144,8 @@ export default function OwnerMessages() {
             {/* Messages Table Container */}
             <div className="rounded-3xl border border-slate-200/80 bg-white shadow-sm overflow-hidden">
                 {loading ? (
-                    <div className="p-16 text-center text-slate-500 font-medium">
-                        <div className="h-10 w-10 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent mx-auto mb-3" />
-                        Loading inbox messages...
+                    <div className="p-10 text-center text-slate-500 font-medium">
+                        <Loading size="md" text="Loading inbox messages..." />
                     </div>
                 ) : contacts.length === 0 ? (
                     <div className="p-16 text-center text-slate-500">

@@ -245,14 +245,14 @@ export default function ContactPage() {
                         <div className="grid md:grid-cols-2 gap-12 items-center">
                             {/* Shop Images */}
                             <div className="grid grid-cols-2 gap-4">
-                                <div className="rounded-lg overflow-hidden shadow-lg h-64 bg-gradient-to-br from-orange-300 to-orange-500 flex items-center justify-center relative">
-                                    <Image src="https://images.unsplash.com/photo-1556821552-9e6878ffc335?w=400&h=300&fit=crop" alt="Manufacturing Facility" fill unoptimized className="object-cover" />
+                                <div className="rounded-2xl overflow-hidden shadow-lg h-64 bg-slate-900 flex items-center justify-center relative p-4">
+                                    <Image src="/assets/img/cricket_jersey.png" alt="Manufacturing Facility" fill className="object-contain p-4" sizes="(max-width: 768px) 50vw, 25vw" />
                                 </div>
-                                <div className="rounded-lg overflow-hidden shadow-lg h-64 bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center relative">
-                                    <Image src="https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&h=300&fit=crop" alt="Sports Gear Production" fill unoptimized className="object-cover" />
+                                <div className="rounded-2xl overflow-hidden shadow-lg h-64 bg-slate-900 flex items-center justify-center relative p-4">
+                                    <Image src="/assets/img/running.png" alt="Sports Gear Production" fill className="object-contain p-4" sizes="(max-width: 768px) 50vw, 25vw" />
                                 </div>
-                                <div className="rounded-lg overflow-hidden shadow-lg h-64 bg-gradient-to-br from-blue-300 to-blue-500 flex items-center justify-center col-span-2 relative">
-                                    <Image src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800&h=300&fit=crop" alt="Sparrow Sports Hub" fill unoptimized className="object-cover" />
+                                <div className="rounded-2xl overflow-hidden shadow-lg h-64 bg-gradient-to-r from-orange-600 via-amber-500 to-slate-900 flex items-center justify-center col-span-2 relative p-4">
+                                    <Image src="/assets/img/basketball_jersey.png" alt="Sparrow Sports Hub" fill className="object-contain p-4" sizes="(max-width: 768px) 100vw, 50vw" />
                                 </div>
                             </div>
 

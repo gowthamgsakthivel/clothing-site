@@ -60,6 +60,8 @@ if (mongoose.models.ProductV2) {
   // Define indexes only once during initial model registration
   productSchema.index({ status: 1 });
   productSchema.index({ collectionName: 1 });
+  productSchema.index({ status: 1, collectionName: 1, createdAt: -1 });
+  productSchema.index({ status: 1, createdAt: -1 });
   productSchema.index({ sportCategory: 1 });
   productSchema.index({ category: 1 });
   productSchema.index({ brand: 1 });

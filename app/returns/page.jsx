@@ -8,6 +8,7 @@ import toast from 'react-hot-toast';
 import Image from 'next/image';
 // Navbar provided by app layout
 import Footer from '@/components/Footer';
+import Loading from '@/components/Loading';
 import { getDisplayOrderCode } from '@/lib/codeGenerators';
 
 const ReturnPolicy = () => (
@@ -248,8 +249,8 @@ const ReturnsPage = () => {
     if (loading) {
         return (
             <>
-                <div className="min-h-screen flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div>
+                <div className="min-h-[70vh] flex items-center justify-center">
+                    <Loading size="lg" text="Loading Returns & Claims..." />
                 </div>
                 <Footer />
             </>

@@ -8,6 +8,7 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
 import { Oswald, Sora } from 'next/font/google';
+import Loading from '@/components/Loading';
 // Navbar is provided globally in app layout
 import { getDisplayOrderCode } from '@/lib/codeGenerators';
 
@@ -216,7 +217,7 @@ const ProfilePage = () => {
     if (!isLoaded || loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-slate-50">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+                <Loading size="lg" text="Loading Profile..." />
             </div>
         );
     }

@@ -6,6 +6,7 @@ import ReviewForm from './ReviewForm';
 import ReviewCard from './ReviewCard';
 import { useAppContext } from '@/context/AppContext';
 import toast from 'react-hot-toast';
+import Loading from '@/components/Loading';
 
 const ProductReviews = ({ productId }) => {
     const { user } = useAppContext();
@@ -109,8 +110,8 @@ const ProductReviews = ({ productId }) => {
 
     if (loading) {
         return (
-            <div className="py-12 text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mx-auto"></div>
+            <div className="py-6 text-center">
+                <Loading size="sm" text="Loading Reviews..." />
             </div>
         );
     }

@@ -119,7 +119,8 @@ const HeaderSlider = ({ slides = [] }) => {
                     alt={slide.title || "Sparrow Sports Gear"}
                     fill
                     sizes="(min-width: 768px) 40vw, 80vw"
-                    priority
+                    priority={index === 0}
+                    loading={index === 0 ? "eager" : "lazy"}
                   />
                 </div>
               ) : (

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import CustomDesignPaymentModal from './CustomDesignPaymentModal';
+import Loading from '@/components/Loading';
 
 const QuoteResponseButtons = ({ design, getToken, onQuoteResponded }) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -307,12 +308,9 @@ const QuoteResponseButtons = ({ design, getToken, onQuoteResponded }) => {
                     />
                 </div>
             ) : showPaymentModal ? (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-                    <div className="bg-white p-6 rounded-lg shadow-xl">
-                        <div className="flex items-center space-x-3">
-                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-500"></div>
-                            <p className="text-lg">Loading payment options...</p>
-                        </div>
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs">
+                    <div className="bg-white p-6 rounded-2xl shadow-xl min-w-[280px]">
+                        <Loading size="sm" text="Loading payment options..." />
                     </div>
                 </div>
             ) : null}

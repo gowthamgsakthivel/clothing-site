@@ -4,6 +4,7 @@ import Inventory from "@/models/v2/Inventory";
 import { NextResponse } from "next/server";
 import connectDB from "@/config/db";
 import { buildInventoryByVariantId } from "@/lib/v2ProductView";
+import { getCachedResponse } from "@/lib/apiCache";
 
 export async function GET(request) {
     try {
@@ -13,78 +14,88 @@ export async function GET(request) {
         const skip = (page - 1) * limit;
         const collectionName = url.searchParams.get('collectionName') || undefined;
 
-        await connectDB();
+        const cacheKey = `products:list:${collectionName || 'all'}:${page}:${limit}`;
 
-        const filter = { status: 'active' };
-        if (collectionName) {
-            filter.collectionName = collectionName;
-        }
+        const data = await getCachedResponse(cacheKey, async () => {
+            await connectDB();
 
-        // Get total count for pagination info
-        const totalProducts = await ProductV2.countDocuments(filter);
-        const totalPages = Math.ceil(totalProducts / limit);
-
-        // Get paginated products
-        const rawProducts = await ProductV2.find(filter)
-            .sort({ createdAt: -1 })
-            .skip(skip)
-            .limit(limit)
-            .lean();
-
-        const productIds = rawProducts.map((product) => product._id);
-
-        const variants = productIds.length
-            ? await ProductVariant.find({
-                productId: { $in: productIds },
-                visibility: { $ne: 'hidden' }
-            }).lean()
-            : [];
-        const variantIds = variants.map((variant) => variant._id);
-        const inventories = variantIds.length
-            ? await Inventory.find({ variantId: { $in: variantIds } }).lean()
-            : [];
-
-        const variantsByProduct = new Map();
-        variants.forEach((variant) => {
-            const key = String(variant.productId);
-            if (!variantsByProduct.has(key)) {
-                variantsByProduct.set(key, []);
+            const filter = { status: 'active' };
+            if (collectionName) {
+                filter.collectionName = collectionName;
             }
-            variantsByProduct.get(key).push(variant);
-        });
 
-        const inventoryByVariantId = buildInventoryByVariantId(inventories);
+            // Get total count for pagination info
+            const totalProducts = await ProductV2.countDocuments(filter);
+            const totalPages = Math.ceil(totalProducts / limit);
 
-        const products = rawProducts.map((product) => {
-            const variantsForProduct = variantsByProduct.get(String(product._id)) || [];
-            const inventoryForProduct = {};
-            variantsForProduct.forEach((variant) => {
-                const key = String(variant._id);
-                if (inventoryByVariantId[key]) {
-                    inventoryForProduct[key] = inventoryByVariantId[key];
+            // Get paginated products
+            const rawProducts = await ProductV2.find(filter)
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(limit)
+                .lean();
+
+            const productIds = rawProducts.map((product) => product._id);
+
+            const variants = productIds.length
+                ? await ProductVariant.find({
+                    productId: { $in: productIds },
+                    visibility: { $ne: 'hidden' }
+                }).lean()
+                : [];
+            const variantIds = variants.map((variant) => variant._id);
+            const inventories = variantIds.length
+                ? await Inventory.find({ variantId: { $in: variantIds } }).lean()
+                : [];
+
+            const variantsByProduct = new Map();
+            variants.forEach((variant) => {
+                const key = String(variant.productId);
+                if (!variantsByProduct.has(key)) {
+                    variantsByProduct.set(key, []);
                 }
+                variantsByProduct.get(key).push(variant);
+            });
+
+            const inventoryByVariantId = buildInventoryByVariantId(inventories);
+
+            const products = rawProducts.map((product) => {
+                const variantsForProduct = variantsByProduct.get(String(product._id)) || [];
+                const inventoryForProduct = {};
+                variantsForProduct.forEach((variant) => {
+                    const key = String(variant._id);
+                    if (inventoryByVariantId[key]) {
+                        inventoryForProduct[key] = inventoryByVariantId[key];
+                    }
+                });
+
+                return {
+                    product,
+                    variants: variantsForProduct,
+                    inventoryByVariantId: inventoryForProduct
+                };
             });
 
             return {
-                product,
-                variants: variantsForProduct,
-                inventoryByVariantId: inventoryForProduct
+                success: true,
+                products,
+                pagination: {
+                    total: totalProducts,
+                    page,
+                    limit,
+                    totalPages,
+                    hasNextPage: page < totalPages,
+                    hasPrevPage: page > 1
+                }
             };
-        });
+        }, 60);
 
-        return NextResponse.json({
-            success: true,
-            products,
-            pagination: {
-                total: totalProducts,
-                page,
-                limit,
-                totalPages,
-                hasNextPage: page < totalPages,
-                hasPrevPage: page > 1
+        return NextResponse.json(data, {
+            headers: {
+                'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300'
             }
         });
     } catch (error) {
-        return NextResponse.json({ success: false, message: error.message })
+        return NextResponse.json({ success: false, message: error.message });
     }
 }

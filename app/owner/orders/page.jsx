@@ -5,6 +5,7 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import { useAppContext } from '@/context/AppContext';
 import Link from 'next/link';
+import Image from 'next/image';
 import { getDisplayOrderCode } from '@/lib/codeGenerators';
 import {
   Pagination
@@ -433,9 +434,12 @@ const OrdersV2Page = () => {
               {Array.isArray(order.items) && order.items.length > 0 && (
                 <div className="relative w-9 h-9 rounded-xl border border-slate-200 bg-slate-50 overflow-hidden shrink-0 flex items-center justify-center shadow-2xs">
                   {order.items[0]?.productImage ? (
-                    <img
+                    <Image
                       src={order.items[0].productImage}
                       alt={order.items[0].productName || 'product'}
+                      width={36}
+                      height={36}
+                      sizes="36px"
                       className="w-full h-full object-cover"
                     />
                   ) : (
@@ -1092,9 +1096,12 @@ const OrdersV2Page = () => {
                           {/* Product Image Thumbnail */}
                           <div className="relative w-12 h-12 rounded-xl bg-white border border-slate-200 overflow-hidden shrink-0 flex items-center justify-center shadow-2xs">
                             {item.productImage ? (
-                              <img
+                              <Image
                                 src={item.productImage}
-                                alt={item.productName || item.sku}
+                                alt={item.productName || item.sku || 'Product image'}
+                                width={48}
+                                height={48}
+                                sizes="48px"
                                 className="w-full h-full object-cover"
                               />
                             ) : (

@@ -1,11 +1,31 @@
-import React from 'react'
+'use client';
 
-const Loading = () => {
-    return (
-        <div className="flex justify-center items-center h-[70vh]">
-            <div className="animate-spin rounded-full h-20 w-20 border-4 border-t-orange-300 border-gray-200"></div>
-        </div>
-    )
-}
+import React from 'react';
+import LogoPreloader from './LogoPreloader';
 
-export default Loading
+const Loading = ({
+  size = 'md',
+  text = 'Loading...',
+  fullScreen = false,
+  showText = true,
+  className = ''
+}) => {
+  return (
+    <div
+      className={`flex justify-center items-center ${
+        fullScreen
+          ? 'fixed inset-0 z-50 bg-white/90 backdrop-blur-xs'
+          : 'w-full py-6'
+      } ${className}`}
+    >
+      <LogoPreloader
+        size={size}
+        text={text}
+        showText={showText}
+        fullScreen={false}
+      />
+    </div>
+  );
+};
+
+export default Loading;

@@ -13,7 +13,7 @@ const Banner = ({ banners = [] }) => {
   const title = first?.title || 'Create Your Custom Team Jersey';
   const description = first?.description || 'Upload your club logo, pick colors, customize numbers & get instant bulk quotes!';
   const link = first?.link || '/custom-design';
-  const imageUrl = first?.image || "https://images.unsplash.com/photo-1517466787929-bc90951d0974?w=900&h=700&fit=crop&q=80";
+  const imageUrl = first?.image || "/assets/img/cricket_jersey.png";
 
   return (
     <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-orange-50/90 via-amber-50/50 to-stone-50 border border-orange-100/90 text-slate-900 my-8 sm:my-12 md:my-14 shadow-sm">

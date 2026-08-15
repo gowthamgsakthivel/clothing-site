@@ -12,6 +12,7 @@ import {
     Save, CheckCircle2, AlertTriangle, ShieldCheck, X,
     Sparkles, Edit3, ExternalLink
 } from 'lucide-react';
+import Loading from '@/components/Loading';
 
 const COLOR_MAP = {
     black: '#000000',
@@ -504,9 +505,8 @@ const OwnerInventoryContent = () => {
                 {/* Right Variant Editor */}
                 <div className="lg:col-span-2 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm space-y-6 flex flex-col justify-between">
                     {loading ? (
-                        <div className="p-16 text-center text-slate-500 font-medium">
-                            <div className="h-10 w-10 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent mx-auto mb-3" />
-                            Loading variant inventory...
+                        <div className="p-10 text-center text-slate-500 font-medium">
+                            <Loading size="md" text="Loading variant inventory..." />
                         </div>
                     ) : activeProduct ? (
                         <div>

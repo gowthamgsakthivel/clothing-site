@@ -10,6 +10,7 @@ import {
   Sparkles, RefreshCw, ArrowUpRight, TrendingUp, TrendingDown,
   BarChart2, ShieldAlert, Award, ChevronRight
 } from 'lucide-react';
+import Loading from '@/components/Loading';
 
 const MetricCard = ({ label, value, trend, icon: Icon, accent, isPositive = true }) => (
   <div className="group relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm hover:shadow-md hover:border-indigo-200 transition-all duration-300">
@@ -189,11 +190,8 @@ const AnalyticsV2Page = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center py-40">
-        <div className="flex flex-col items-center gap-4 bg-white p-8 rounded-3xl border border-slate-200 shadow-xl">
-          <div className="h-12 w-12 animate-spin rounded-full border-4 border-indigo-100 border-t-indigo-600" />
-          <p className="text-xs font-bold text-slate-600 uppercase tracking-widest">Aggregating Business Intelligence...</p>
-        </div>
+      <div className="flex justify-center items-center py-28">
+        <Loading size="lg" text="Aggregating Business Intelligence..." />
       </div>
     );
   }

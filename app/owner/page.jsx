@@ -12,6 +12,7 @@ import {
     Sparkles, RefreshCw, Calendar, ArrowUpRight, CheckCircle2,
     ShieldAlert, Filter, Download
 } from 'lucide-react';
+import Loading from '@/components/Loading';
 
 const SimpleRevenueAreaChart = ({ data = [] }) => {
     const chartPoints = useMemo(() => {
@@ -186,14 +187,8 @@ const OwnerDashboard = () => {
 
     if (loading) {
         return (
-            <div className="flex justify-center items-center py-40">
-                <div className="flex flex-col items-center gap-4 bg-white p-8 rounded-3xl border border-slate-200 shadow-xl">
-                    <div className="relative flex items-center justify-center">
-                        <div className="h-12 w-12 animate-spin rounded-full border-4 border-indigo-100 border-t-indigo-600" />
-                        <Sparkles className="w-5 h-5 text-indigo-600 absolute animate-pulse" />
-                    </div>
-                    <p className="text-sm font-semibold text-slate-600">Synchronizing Store Performance...</p>
-                </div>
+            <div className="flex justify-center items-center py-28">
+                <Loading size="lg" text="Synchronizing Store Performance..." />
             </div>
         );
     }

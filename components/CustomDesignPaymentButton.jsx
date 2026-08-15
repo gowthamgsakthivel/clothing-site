@@ -193,10 +193,13 @@ const CustomDesignPaymentButton = ({ design, variant = 'primary', size = 'md', t
             disabled={isLoading}
         >
             {isLoading ? (
-                <>
-                    <span className="inline-block animate-spin mr-2">⟳</span>
-                    Adding...
-                </>
+                <span className="inline-flex items-center gap-1.5">
+                    <svg className="w-4 h-4 animate-spin -rotate-90" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="9" className="opacity-25" stroke="currentColor" strokeWidth="3" fill="none" />
+                        <path className="opacity-90" fill="currentColor" d="M12 3a9 9 0 0 1 9 9h-3a6 6 0 0 0-6-6V3z" />
+                    </svg>
+                    <span>Adding to Bag...</span>
+                </span>
             ) : (
                 text || 'Add to Cart'
             )}

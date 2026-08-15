@@ -24,9 +24,21 @@ const NewsLetter = () => {
         return;
       }
 
+      const cacheKey = `sparrow_subscribed_${signedInEmail}`;
+      const cached = typeof window !== 'undefined' ? sessionStorage.getItem(cacheKey) : null;
+      if (cached !== null) {
+        setIsSubscribed(cached === 'true');
+        setIsCheckingStatus(false);
+        return;
+      }
+
       try {
-        const { data } = await axios.get('/api/newsletter');
-        setIsSubscribed(data.isSubscribed || false);
+        const { data } = await axios.get(`/api/newsletter?email=${encodeURIComponent(signedInEmail)}`);
+        const status = Boolean(data.isSubscribed);
+        setIsSubscribed(status);
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem(cacheKey, String(status));
+        }
       } catch (error) {
         console.error('Failed to check subscription status:', error);
         setIsSubscribed(false);
@@ -36,7 +48,7 @@ const NewsLetter = () => {
     };
 
     checkSubscriptionStatus();
-  }, [isLoaded, canAutoSubscribe]);
+  }, [isLoaded, canAutoSubscribe, signedInEmail]);
 
   const handleSubmit = async (event) => {
     event.preventDefault();

@@ -35,7 +35,8 @@ const toCode = (value, length, fallback = 'X') => {
 const buildProductCode = (product) => {
   const categoryCode = toCode(product?.category || 'PRO', 3);
   const brandCode = toCode(product?.brand || 'BRD', 3);
-  return `${categoryCode}-${brandCode}`;
+  const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+  return `${categoryCode}-${brandCode}-${randomSuffix}`;
 };
 
 const buildSku = ({ productCode, color, size }) => {
@@ -208,7 +209,8 @@ const createFullProduct = async ({ payload, actorId }) => {
   const normalizedVariants = normalizeVariants(variants);
 
   const productCode = productInput?.productCode || buildProductCode({ category, brand });
-  const slug = `${slugify(name)}-${toCode(productCode, 8, 'P')}`;
+  const slug = `${slugify(name)}-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`;
+  const createdBy = actorId || 'admin';
 
   let createdProduct = null;
   let createdCount = 0;
@@ -234,7 +236,15 @@ const createFullProduct = async ({ payload, actorId }) => {
             metaDescription,
             relatedProducts,
             discountStartDate,
-            discountEndDate
+            discountEndDate,
+            createdBy,
+            activityLog: [
+              {
+                action: 'created',
+                actorId: createdBy,
+                note: 'Product created via Admin Portal'
+              }
+            ]
           }
         ], { session });
 
@@ -272,7 +282,15 @@ const createFullProduct = async ({ payload, actorId }) => {
         metaDescription,
         relatedProducts,
         discountStartDate,
-        discountEndDate
+        discountEndDate,
+        createdBy,
+        activityLog: [
+          {
+            action: 'created',
+            actorId: createdBy,
+            note: 'Product created via Admin Portal'
+          }
+        ]
       });
 
       const result = await createVariantsWithInventory({
