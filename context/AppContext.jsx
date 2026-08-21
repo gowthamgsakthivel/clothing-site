@@ -27,6 +27,16 @@ export const AppContextProvider = (props) => {
     const [favorites, setFavorites] = useState([])
     const productsRequestRef = useRef(null)
 
+    const productMap = useMemo(() => {
+        const map = new Map();
+        (products || []).forEach((bundle) => {
+            if (bundle?.product?._id) {
+                map.set(String(bundle.product._id), bundle);
+            }
+        });
+        return map;
+    }, [products]);
+
     // Loading states for different operations
     const [loadingStates, setLoadingStates] = useState({
         products: false,
@@ -345,7 +355,7 @@ export const AppContextProvider = (props) => {
                 const productId = split[0];
                 const color = split.length >= 2 ? split[1] : null;
                 const size = split.length >= 3 ? split[2] : null;
-                const bundle = products.find((product) => product?.product?._id === productId);
+                const bundle = productMap.get(productId);
 
                 if (cartItems[key] > 0 && bundle) {
                     const variants = getVisibleVariants(bundle.variants || []);
@@ -425,19 +435,24 @@ export const AppContextProvider = (props) => {
         }
     }, []);
 
-    const value = {
+    const value = useMemo(() => ({
         user, getToken,
         currency, router,
         isAdmin, setIsAdmin,
         userData, fetchUserData,
         products, fetchProductData,
-        searchProducts, // Add the search function
+        searchProducts,
         cartItems, setCartItems,
         addToCart, updateCartQuantity,
         getCartCount, getCartAmount,
         favorites, fetchFavorites, addFavorite, removeFavorite,
         loadingStates, setLoadingStates
-    }
+    }), [
+        user, getToken, currency, router, isAdmin, userData, fetchUserData,
+        products, fetchProductData, searchProducts, cartItems,
+        addToCart, updateCartQuantity, getCartCount, getCartAmount,
+        favorites, fetchFavorites, addFavorite, removeFavorite, loadingStates
+    ]);
 
     return (
         <AppContext.Provider value={value}>
