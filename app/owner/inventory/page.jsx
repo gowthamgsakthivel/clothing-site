@@ -13,6 +13,7 @@ import {
     Sparkles, Edit3, ExternalLink
 } from 'lucide-react';
 import Loading from '@/components/Loading';
+import { getColorHex } from '@/lib/colors';
 
 const COLOR_MAP = {
     black: '#000000',
@@ -576,8 +577,8 @@ const OwnerInventoryContent = () => {
                                             <div className="flex items-center gap-3">
                                                 <span
                                                     className="w-4.5 h-4.5 rounded-full border border-slate-300 shadow-sm shrink-0"
-                                                    style={{ backgroundColor: colorGroup.colorCode }}
-                                                    title={`Hex Code: ${colorGroup.colorCode}`}
+                                                    style={{ background: getColorHex(colorGroup.colorName, colorGroup.colorCode) }}
+                                                    title={`Hex Code: ${colorGroup.colorCode || getColorHex(colorGroup.colorName)}`}
                                                 />
                                                 <h4 className="font-extrabold text-xs text-slate-900 capitalize">{colorGroup.colorName}</h4>
                                                 <span className="text-[10px] font-mono text-slate-400">({colorGroup.colorCode})</span>

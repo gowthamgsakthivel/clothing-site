@@ -8,53 +8,7 @@ import {
     Plus, Upload, X, Trash2, CheckCircle2, Sparkles,
     Boxes, DollarSign, Layers, Tag
 } from 'lucide-react';
-
-const COLOR_MAP = {
-    black: '#000000',
-    white: '#ffffff',
-    red: '#ef4444',
-    crimson: '#dc2626',
-    maroon: '#800000',
-    blue: '#3b82f6',
-    royal: '#1d4ed8',
-    navy: '#1e3a8a',
-    sky: '#0ea5e9',
-    cyan: '#06b6d4',
-    teal: '#14b8a6',
-    green: '#22c55e',
-    emerald: '#10b981',
-    lime: '#84cc16',
-    yellow: '#eab308',
-    amber: '#f59e0b',
-    orange: '#f97316',
-    pink: '#ec4899',
-    magenta: '#d946ef',
-    purple: '#a855f7',
-    violet: '#7c3aed',
-    indigo: '#6366f1',
-    rose: '#f43f5e',
-    gray: '#6b7280',
-    grey: '#6b7280',
-    silver: '#c0c0c0',
-    gold: '#ffd700',
-    brown: '#78350f',
-    beige: '#f5f5dc',
-    cream: '#fffdd0',
-    charcoal: '#36454f'
-};
-
-const getDynamicColorHex = (colorName, fallbackCode) => {
-    const nameLower = (colorName || '').trim().toLowerCase();
-    if (nameLower) {
-        for (const [key, hex] of Object.entries(COLOR_MAP)) {
-            if (nameLower.includes(key)) return hex;
-        }
-    }
-    if (fallbackCode && /^#[0-9A-Fa-f]{6}$/.test(fallbackCode)) {
-        return fallbackCode;
-    }
-    return '#000000';
-};
+import { getColorHex } from '@/lib/colors';
 
 const AddProduct = () => {
     const { user, getToken } = useAppContext();
@@ -159,7 +113,10 @@ const AddProduct = () => {
             const nextVariants = [...prev.variants];
             nextVariants[colorIndex].color[field] = value;
             if (field === 'name') {
-                nextVariants[colorIndex].color.code = getDynamicColorHex(value, nextVariants[colorIndex].color.code);
+                const resolved = getColorHex(value);
+                if (/^#[0-9A-Fa-f]{6}$/.test(resolved)) {
+                    nextVariants[colorIndex].color.code = resolved;
+                }
             }
             return { ...prev, variants: nextVariants };
         });
