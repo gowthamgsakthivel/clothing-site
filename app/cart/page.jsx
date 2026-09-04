@@ -11,6 +11,7 @@ import SEOMetadata from "@/components/SEOMetadata";
 import { toast } from "react-hot-toast";
 import axios from "axios";
 import { findVariantForSelection, getProductSummary, getVisibleVariants } from "@/lib/v2ProductView";
+import { getColorHex } from "@/lib/colors";
 
 const Cart = () => {
   const {
@@ -530,22 +531,19 @@ const Cart = () => {
                             <div className="text-sm hidden md:block">
                               <p className="text-gray-800">{summary.name}</p>
                               {color && (
-                                <div className="flex items-center gap-1">
+                                <div className="flex items-center gap-1.5">
                                   <span className="text-xs text-gray-500">Color:</span>
-                                  {/* Display color circle only if it looks like a hex code or common color */}
-                                  {(color.startsWith('#') || ['red', 'blue', 'green', 'black', 'white', 'yellow', 'pink', 'purple', 'orange', 'brown', 'gray', 'grey'].includes(color.toLowerCase())) && (
-                                    <span
-                                      style={{
-                                        backgroundColor: color.startsWith('#') ? color : color.toLowerCase(),
-                                        border: '1px solid #ccc',
-                                        display: 'inline-block',
-                                        width: 16,
-                                        height: 16,
-                                        borderRadius: '50%'
-                                      }}
-                                    ></span>
-                                  )}
-                                  <span className="text-xs text-gray-600 ml-1">{color}</span>
+                                  <span
+                                    style={{
+                                      background: getColorHex(color),
+                                      border: '1px solid #cbd5e1',
+                                      display: 'inline-block',
+                                      width: 12,
+                                      height: 12,
+                                      borderRadius: '50%'
+                                    }}
+                                  ></span>
+                                  <span className="text-xs text-gray-700 font-medium capitalize">{color}</span>
                                 </div>
                               )}
                               {size && (

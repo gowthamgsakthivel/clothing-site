@@ -8,6 +8,7 @@ import logger from '@/lib/logger';
 import { buildError } from '@/lib/errors';
 import { requireFields, isNonEmptyString, toNumber } from '@/lib/validation';
 import { generateProductCode } from '@/lib/codeGenerators';
+import { getColorHex } from '@/lib/colors';
 
 const STATUS_VALUES = ['draft', 'active', 'hidden', 'archived'];
 const SPORT_CATEGORIES = ['cricket', 'football', 'basketball', 'badminton', 'tennis', 'gym'];
@@ -60,7 +61,8 @@ const normalizeVariants = (variants) => {
     const color = variant?.color?.trim() || 'Standard';
     let colorCode = variant?.colorCode ? variant.colorCode.trim() : null;
     if (!colorCode || !isValidColorCode(colorCode)) {
-      colorCode = '#6366f1';
+      const resolved = getColorHex(color);
+      colorCode = isValidColorCode(resolved) ? resolved : '#6366f1';
     }
 
     const size = variant?.size?.trim() || 'M';

@@ -72,24 +72,12 @@ export async function GET(request) {
         const filter = { status: 'active' };
         const andConditions = [];
         if (category && category.length > 0) {
-            andConditions.push({
-                $expr: {
-                    $in: [
-                        buildNormalizedFieldExpr('category'),
-                        category.map((value) => value.replace(/\s+/g, ''))
-                    ]
-                }
-            });
+            const catRegexes = category.map((val) => new RegExp(`^${escapeRegex(val.trim())}$`, 'i'));
+            andConditions.push({ category: { $in: catRegexes } });
         }
         if (gender && gender.length > 0) {
-            andConditions.push({
-                $expr: {
-                    $in: [
-                        buildNormalizedFieldExpr('genderCategory'),
-                        gender.map((value) => value.replace(/\s+/g, ''))
-                    ]
-                }
-            });
+            const genderRegexes = gender.map((val) => new RegExp(`^${escapeRegex(val.trim())}$`, 'i'));
+            andConditions.push({ genderCategory: { $in: genderRegexes } });
         }
         if (query && query.trim() !== '') {
             const normalizedQuery = normalizeToken(query).replace(/\s+/g, ' ');

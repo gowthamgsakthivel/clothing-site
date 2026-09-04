@@ -11,6 +11,7 @@ import {
   Sparkles, Layers, Image as ImageIcon, CheckCircle2, X, ExternalLink
 } from 'lucide-react';
 import Loading from '@/components/Loading';
+import { getColorHex } from '@/lib/colors';
 
 const OwnerProducts = () => {
   const { getToken } = useAppContext();
@@ -348,8 +349,8 @@ const OwnerProducts = () => {
                     <span className="font-extrabold text-slate-900 font-mono">₹{v.offerPrice || v.price}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="w-3 h-3 rounded-full border border-slate-300" style={{ backgroundColor: v.colorCode || '#000' }} />
-                    <span className="font-bold text-slate-800">{v.color} / {v.size}</span>
+                    <span className="w-3.5 h-3.5 rounded-full border border-slate-300 shadow-2xs" style={{ background: getColorHex(v.color, v.colorCode) }} />
+                    <span className="font-bold text-slate-800 capitalize">{v.color} / {v.size}</span>
                   </div>
                   <div className="text-[11px] text-slate-500">
                     Stock Quantity: <strong className="text-slate-900">{v.stockQuantity} units</strong>

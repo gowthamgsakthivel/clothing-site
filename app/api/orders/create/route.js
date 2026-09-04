@@ -8,6 +8,7 @@ import CustomDesign from '@/models/CustomDesign';
 import { createOrder } from '@/services/orders/OrderService';
 import OrderV2 from '@/models/v2/Order';
 import User from '@/models/User';
+import { validateOrderPayload } from '@/lib/validation';
 
 const findExistingOrderByPaymentId = async (paymentId, razorpayOrderId) => {
   if (!paymentId && !razorpayOrderId) return null;
@@ -58,11 +59,13 @@ export async function POST(request) {
     await connectDB();
 
     const payload = await request.json();
-    const items = Array.isArray(payload?.items) ? payload.items : [];
 
-    if (!payload?.address || !items.length) {
-      return NextResponse.json({ success: false, message: 'Invalid data' }, { status: 400 });
+    const validation = validateOrderPayload(payload);
+    if (!validation.valid) {
+      return NextResponse.json({ success: false, message: validation.message }, { status: 400 });
     }
+
+    const items = payload.items;
 
     // Idempotency check before processing items
     const providedPaymentId = payload?.paymentDetails?.paymentId || payload?.paymentDetails?.payment_id || payload?.razorpay_payment_id || null;

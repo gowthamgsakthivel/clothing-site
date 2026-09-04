@@ -57,6 +57,7 @@ if (mongoose.models.OrderV2) {
 } else {
   // Define indexes only once during initial model registration
   orderSchema.index({ status: 1, createdAt: -1 });
+  orderSchema.index({ userId: 1, createdAt: -1 });
   orderSchema.index({ orderCode: 1 }, { unique: true, sparse: true });
   
   OrderV2 = mongoose.model('OrderV2', orderSchema, 'orders_v2');

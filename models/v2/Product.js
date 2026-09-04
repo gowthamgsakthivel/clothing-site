@@ -62,9 +62,11 @@ if (mongoose.models.ProductV2) {
   productSchema.index({ collectionName: 1 });
   productSchema.index({ status: 1, collectionName: 1, createdAt: -1 });
   productSchema.index({ status: 1, createdAt: -1 });
+  productSchema.index({ status: 1, genderCategory: 1, category: 1 });
   productSchema.index({ sportCategory: 1 });
   productSchema.index({ category: 1 });
   productSchema.index({ brand: 1 });
+  productSchema.index({ name: 'text', description: 'text', brand: 'text', category: 'text' });
   productSchema.index({ productCode: 1 }, { unique: true, sparse: true });
 
   ProductV2 = mongoose.model('ProductV2', productSchema, 'products_v2');

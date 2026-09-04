@@ -706,6 +706,8 @@ const processRazorpayWebhook = async (eventPayload, eventId) => {
   const searchConditions = [];
   if (paymentEntity?.id) searchConditions.push({ 'paymentMetadata.razorpay_payment_id': paymentEntity.id });
   if (paymentEntity?.order_id) searchConditions.push({ 'paymentMetadata.razorpay_order_id': paymentEntity.order_id });
+  if (refundEntity?.payment_id) searchConditions.push({ 'paymentMetadata.razorpay_payment_id': refundEntity.payment_id });
+  if (refundEntity?.id) searchConditions.push({ 'paymentMetadata.refunds.id': refundEntity.id });
 
   let order = null;
   if (searchConditions.length) {

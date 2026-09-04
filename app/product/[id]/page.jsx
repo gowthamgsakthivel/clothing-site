@@ -16,6 +16,7 @@ const SizeGuideModal = dynamic(() => import("@/components/SizeGuideModal"), { ss
 const SizeRecommendation = dynamic(() => import("@/components/SizeRecommendation"), { ssr: false });
 import { getSizeChart } from "@/lib/sizeGuideData";
 import { buildColorSizeMatrix, getAvailableSizes as getVariantSizes, getPriceSummary, getProductImages } from "@/lib/v2ProductView";
+import { getColorHex } from "@/lib/colors";
 import ShareButton from "@/components/ShareButton";
 import React from "react";
 import toast from "react-hot-toast";
@@ -277,6 +278,7 @@ const Product = () => {
         if (Array.isArray(productData.inventory) && productData.inventory.length > 0) {
             return productData.inventory.map(item => ({
                 color: item.color.name,
+                colorCode: item.color.code || item.color.colorCode || null,
                 stock: item.sizeStock.reduce((sum, sizeStock) => sum + (sizeStock.quantity || 0), 0),
                 _id: item._id || item.color.name
             }));
@@ -284,7 +286,10 @@ const Product = () => {
 
         // Fallback to old format
         if (Array.isArray(productData.color)) {
-            return productData.color;
+            return productData.color.map(c => ({
+                ...c,
+                colorCode: c.colorCode || c.code || null
+            }));
         }
 
         return [];
@@ -577,11 +582,11 @@ const Product = () => {
                                                     disabled={isDisabled}
                                                 >
                                                     <span
-                                                        className="w-3.5 h-3.5 rounded-full border border-slate-300 shadow-xs"
-                                                        style={{ backgroundColor: c.color }}
+                                                        className="w-3.5 h-3.5 rounded-full border border-slate-300 shadow-xs shrink-0"
+                                                        style={{ background: getColorHex(c.color, c.colorCode) }}
                                                         aria-hidden="true"
                                                     />
-                                                    <span>{c.color}</span>
+                                                    <span className="capitalize">{c.color}</span>
                                                     {isDisabled && <span className="text-[10px] text-rose-500 font-bold">(Out)</span>}
                                                 </button>
                                             );

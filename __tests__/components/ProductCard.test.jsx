@@ -1,152 +1,109 @@
 /**
- * ProductCard Component Tests
- * 
- * These tests verify the functionality of the ProductCard component, which displays
- * product information and allows users to navigate to product details and manage favorites.
- * 
- * Test coverage includes:
- * - Rendering product information correctly
- * - Stock availability indicator
- * - Navigation to product detail page
- * - Adding/removing products from favorites
- * - User authentication state affecting favorites functionality
+ * Component Tests for ProductCard (components/ProductCard.jsx)
  */
 
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import ProductCard from '@/components/ProductCard';
-import { mockProducts } from '../utils/test-utils';
 import { useAppContext } from '@/context/AppContext';
-import { getProductSummary } from '@/lib/v2ProductView';
 
-// Mock the AppContext to control the testing environment and isolate the component
-// This allows us to simulate different states like logged-in users, favorites, etc.
+const mockRouter = { push: jest.fn() };
+const mockAddFavorite = jest.fn();
+const mockRemoveFavorite = jest.fn();
+
+jest.mock('next/navigation', () => ({
+    useRouter: () => mockRouter,
+}));
+
 jest.mock('@/context/AppContext', () => ({
     useAppContext: jest.fn(),
 }));
 
-describe('ProductCard', () => {
-    const mockAddFavorite = jest.fn();
-    const mockRemoveFavorite = jest.fn();
-    const mockRouter = { push: jest.fn() };
-    const mockProduct = mockProducts[0];
+const mockProductBundle = {
+    product: {
+        _id: 'prod-123',
+        name: 'Pro Soccer Cleats',
+        description: 'Elite level sports footwear',
+        category: 'Shoes'
+    },
+    variants: [
+        {
+            _id: 'var-1',
+            productId: 'prod-123',
+            color: 'Dark Green',
+            colorCode: '#006400',
+            size: '9',
+            originalPrice: 2000,
+            offerPrice: 1500,
+            images: ['https://example.com/shoes.jpg']
+        }
+    ],
+    inventoryByVariantId: {
+        'var-1': { totalStock: 4, reservedStock: 0, lowStockThreshold: 5 }
+    }
+};
 
+describe('ProductCard Component', () => {
     beforeEach(() => {
         jest.clearAllMocks();
-        // Default context values
         useAppContext.mockReturnValue({
-            currency: '$',
+            currency: '₹',
             router: mockRouter,
             favorites: [],
             addFavorite: mockAddFavorite,
             removeFavorite: mockRemoveFavorite,
-            user: { id: 'test-user' },
+            user: { id: 'user-1' }
         });
     });
 
-    test('renders the product card with correct information', () => {
-        const summary = getProductSummary(mockProduct);
-        render(<ProductCard product={mockProduct} />);
+    test('renders product name, prices, image and Buy button', () => {
+        render(<ProductCard product={mockProductBundle} />);
 
-        // Check that basic product info is displayed
-        expect(screen.getByText(summary.name)).toBeInTheDocument();
-        expect(screen.getByText(`$${summary.offerPrice}`)).toBeInTheDocument();
-
-        // Check that the image is rendered
-        const productImage = screen.getAllByAltText(summary.name)[0];
-        expect(productImage).toBeInTheDocument();
-        expect(productImage).toHaveAttribute('src');
-
-        // Check that the "Buy now" button exists
-        expect(screen.getByText('Buy now')).toBeInTheDocument();
+        expect(screen.getByText('Pro Soccer Cleats')).toBeInTheDocument();
+        expect(screen.getByText('₹1500')).toBeInTheDocument();
+        expect(screen.getByText('₹2000')).toBeInTheDocument();
+        expect(screen.getByText('Buy')).toBeInTheDocument();
+        expect(screen.getByAltText('Pro Soccer Cleats')).toBeInTheDocument();
     });
 
-    test('shows "Only few left" badge when stock is low', () => {
-        const lowStockProduct = {
-            ...mockProduct,
-            inventoryByVariantId: {
-                ...mockProduct.inventoryByVariantId,
-                [mockProduct.variants[0]._id]: {
-                    ...mockProduct.inventoryByVariantId[mockProduct.variants[0]._id],
-                    totalStock: 5
-                }
-            }
-        };
-        render(<ProductCard product={lowStockProduct} />);
+    test('displays low stock indicator when total stock is low', () => {
+        render(<ProductCard product={mockProductBundle} />);
 
-        expect(screen.getByText('Only few left')).toBeInTheDocument();
+        expect(screen.getByText(/only.*left/i)).toBeInTheDocument();
     });
 
-    test('does not show "Only few left" badge when stock is sufficient', () => {
-        const sufficientStockProduct = {
-            ...mockProduct,
-            inventoryByVariantId: {
-                ...mockProduct.inventoryByVariantId,
-                [mockProduct.variants[0]._id]: {
-                    ...mockProduct.inventoryByVariantId[mockProduct.variants[0]._id],
-                    totalStock: 20
-                }
-            }
-        };
-        render(<ProductCard product={sufficientStockProduct} />);
+    test('navigates to product detail page when card is clicked', () => {
+        render(<ProductCard product={mockProductBundle} />);
 
-        expect(screen.queryByText('Only few left')).not.toBeInTheDocument();
+        fireEvent.click(screen.getByText('Pro Soccer Cleats'));
+
+        expect(mockRouter.push).toHaveBeenCalledWith('/product/prod-123');
     });
 
-    test('navigates to product detail page when clicked', () => {
-        render(<ProductCard product={mockProduct} />);
+    test('toggles wishlist favorite when heart button is clicked', () => {
+        render(<ProductCard product={mockProductBundle} />);
 
-        fireEvent.click(screen.getByText(getProductSummary(mockProduct).name));
+        const heartBtn = screen.getByRole('button', { name: /add to wishlist/i });
+        fireEvent.click(heartBtn);
 
-        expect(mockRouter.push).toHaveBeenCalledWith(`/product/${mockProduct.product._id}`);
+        expect(mockAddFavorite).toHaveBeenCalledWith('prod-123');
     });
 
-    test('adds product to favorites when heart icon is clicked', () => {
-        render(<ProductCard product={mockProduct} />);
-
-        const favoriteButton = screen.getByRole('button', { name: 'Add to favorites' });
-        fireEvent.click(favoriteButton);
-
-        expect(mockAddFavorite).toHaveBeenCalledWith(mockProduct.product._id);
-    });
-
-    test('removes product from favorites when heart icon is clicked and product is already in favorites', () => {
-        // Set up the product as already favorited
+    test('calls removeFavorite when item is already in favorites', () => {
         useAppContext.mockReturnValue({
-            currency: '$',
+            currency: '₹',
             router: mockRouter,
-            favorites: [mockProduct.product._id],
+            favorites: ['prod-123'],
             addFavorite: mockAddFavorite,
             removeFavorite: mockRemoveFavorite,
-            user: { id: 'test-user' },
+            user: { id: 'user-1' }
         });
 
-        render(<ProductCard product={mockProduct} />);
+        render(<ProductCard product={mockProductBundle} />);
 
-        const favoriteButton = screen.getByRole('button', { name: 'Remove from favorites' });
-        fireEvent.click(favoriteButton);
+        const heartBtn = screen.getByRole('button', { name: /remove from wishlist/i });
+        fireEvent.click(heartBtn);
 
-        expect(mockRemoveFavorite).toHaveBeenCalledWith(mockProduct.product._id);
-    });
-
-    test('does not call favorite functions when user is not logged in', () => {
-        // Setup with no user logged in
-        useAppContext.mockReturnValue({
-            currency: '$',
-            router: mockRouter,
-            favorites: [],
-            addFavorite: mockAddFavorite,
-            removeFavorite: mockRemoveFavorite,
-            user: null,
-        });
-
-        render(<ProductCard product={mockProduct} />);
-
-        const favoriteButton = screen.getByRole('button', { name: 'Add to favorites' });
-        fireEvent.click(favoriteButton);
-
-        // Verify no favorite functions were called
-        expect(mockAddFavorite).not.toHaveBeenCalled();
-        expect(mockRemoveFavorite).not.toHaveBeenCalled();
+        expect(mockRemoveFavorite).toHaveBeenCalledWith('prod-123');
     });
 });

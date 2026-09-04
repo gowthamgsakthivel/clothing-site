@@ -20,6 +20,7 @@ const customJestConfig = {
         '^@/assets/(.*)$': '<rootDir>/assets/$1',
         '^@/context/(.*)$': '<rootDir>/context/$1',
         '^@/services/(.*)$': '<rootDir>/services/$1',
+        '^bson$': '<rootDir>/node_modules/bson/lib/bson.cjs',
     },
     testPathIgnorePatterns: [
         '<rootDir>/node_modules/',
