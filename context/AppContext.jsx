@@ -2,7 +2,7 @@
 import { useAuth, useUser } from "@clerk/nextjs";
 import axios from "axios";
 import { useRouter } from "next/navigation";
-import { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, useMemo, useRef } from "react";
 import toast from "react-hot-toast";
 import { findVariantForSelection, getPriceSummary, getVisibleVariants } from "@/lib/v2ProductView";
 
